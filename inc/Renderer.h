@@ -1,7 +1,6 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
-#include <string>
 #include <map>
 
 namespace osp {
@@ -10,8 +9,8 @@ class Renderer {
 public:
   virtual bool Render(float _timestep) = 0;
   virtual ~Renderer();
-  void SetKeyPressed(std::string _key, bool _pressed);
-  bool KeyPressed(std::string _key) const;
+  void SetKeyPressed(int _key, bool _pressed);
+  bool KeyPressed(int _key) const;
   void SetWinWidth(unsigned int _winWidth);
   void SetWinHeight(unsigned int _winHeight);
   void SetMousePosition(float _mouseX, float _mouseY);
@@ -29,7 +28,7 @@ protected:
   float lastMouseX_;
   float lastMouseY_;
   // Keyboard
-  std::map<std::string, bool> keysPressed_; // Is key pressed or not?
+  std::map<int, bool> keysPressed_; // Is key pressed or not?
 };
 
 }

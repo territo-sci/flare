@@ -32,8 +32,8 @@ public:
   void SetCubeShaderProgram(ShaderProgram *_cubeShaderProgram);
   void SetQuadShaderProgram(ShaderProgram *_quadShaderProgram);
   void SetConfigFilename(std::string _configFilename);
-  void SetKeyLastState(std::string _key, bool _pressed);
-  bool KeyLastState(std::string _key) const;
+  void SetKeyLastState(int, bool _pressed);
+  bool KeyLastState(int _key) const;
 private:
   Raycaster();
   std::string configFilename_;
@@ -56,6 +56,7 @@ private:
   float pitch_;
   float yaw_;
   float roll_;
+  float startZoom_;
   float zoom_;
   // Tranformation matrices
   glm::mat4 model_;
@@ -69,7 +70,9 @@ private:
   bool matricesInitialized_;
   bool framebuffersInitialized_;
   // Extra keyboard state to prevent key repeat
-  std::map<std::string, bool> keysLastState_; 
+  std::map<int, bool> keysLastState_; 
+  // Helper for pressing button without repeat
+  bool KeyPressedNoRepeat(int _key);
 };
 
 }

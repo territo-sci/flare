@@ -1,5 +1,7 @@
 #include <Renderer.h>
 
+#include <utility>
+
 using namespace osp;
 
 Renderer::Renderer() : winWidth_(0), 
@@ -35,18 +37,18 @@ void Renderer::SetMousePressed(bool _leftPressed, bool _rightPressed) {
   rightMouseDown_ = _rightPressed;
 }
 
-void Renderer::SetKeyPressed(std::string _key, bool _pressed) {
-  std::map<std::string, bool>::iterator it;
+void Renderer::SetKeyPressed(int _key, bool _pressed) {
+  std::map<int, bool>::iterator it;
   it = keysPressed_.find(_key);
   if (it == keysPressed_.end()) {
-    keysPressed_.insert(make_pair(_key, _pressed));
+    keysPressed_.insert(std::make_pair(_key, _pressed));
   } else {
     it->second = _pressed;
   }
 }
 
-bool Renderer::KeyPressed(std::string _key) const {
-  std::map<std::string, bool>::const_iterator it;
+bool Renderer::KeyPressed(int _key) const {
+  std::map<int, bool>::const_iterator it;
   it = keysPressed_.find(_key);
   if (it == keysPressed_.end()) {
     return false;

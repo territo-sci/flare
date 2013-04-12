@@ -3,6 +3,7 @@
 #include <WindowManager.h>
 #include <Renderer.h>
 #include <Utils.h>
+#include <vector>
 
 using namespace osp;
 
@@ -91,6 +92,11 @@ bool WindowManager::StartLoop() {
   float oldTime = glfwGetTime();
   float currentTime = oldTime;
 
+  std::vector<int> keysToCheck;
+  keysToCheck.push_back('R');
+  keysToCheck.push_back('W');
+  keysToCheck.push_back('S');
+
   // Start the rendering loop
   while (true) {
 
@@ -101,10 +107,9 @@ bool WindowManager::StartLoop() {
       return false;
     }
 
-    if (glfwGetKey('R') == GLFW_PRESS) {
-      renderer_->SetKeyPressed("R", true);
-    } else {
-      renderer_->SetKeyPressed("R", false);
+    std::vector<int>::iterator it;
+    for (it = keysToCheck.begin(); it != keysToCheck.end(); it++) {
+      renderer_->SetKeyPressed(*it, (glfwGetKey(*it) == GLFW_PRESS));
     }
 
     // Mouse
