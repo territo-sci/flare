@@ -1,0 +1,16 @@
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+CMakeFiles/
+Debug/
+
+*.slo
+*.lo
+*.o
+
+*.so
+*.dylib
+
+*.lai
+*.la
+*.a
