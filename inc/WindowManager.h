@@ -2,6 +2,7 @@
 #define WINDOWMANAGER_H
 
 #include <string>
+#include <map>
 
 namespace osp {
   

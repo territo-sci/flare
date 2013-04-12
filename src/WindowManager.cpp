@@ -14,7 +14,8 @@ WindowManager::WindowManager(unsigned int _width,
                              height_(_height),
                              title_(_title),
                              windowOpen_(false),
-                             renderer_(NULL) { }    
+                             renderer_(NULL) { 
+}    
 
 WindowManager * WindowManager::New(unsigned int _width,
                                    unsigned int _height,
@@ -95,11 +96,25 @@ bool WindowManager::StartLoop() {
 
     // Handle input
     if (glfwGetKey(GLFW_KEY_ESC) == GLFW_PRESS || 
-        glfwGetWindowParam(GLFW_OPENED) == false)
-    {
+        glfwGetWindowParam(GLFW_OPENED) == false) {
       Close();
       return false;
     }
+
+    if (glfwGetKey('R') == GLFW_PRESS) {
+      renderer_->SetKeyPressed("R", true);
+    } else {
+      renderer_->SetKeyPressed("R", false);
+    }
+
+    // Mouse
+    int xMouse, yMouse;
+    glfwGetMousePos(&xMouse, &yMouse);
+    renderer_->SetMousePosition((float)xMouse, (float)yMouse);
+
+    bool leftButton = glfwGetMouseButton(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+    bool rightButton = glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT)== GLFW_PRESS;
+    renderer_->SetMousePressed(leftButton, rightButton);
 
     // Update time
     oldTime = currentTime;

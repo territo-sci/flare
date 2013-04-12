@@ -26,6 +26,7 @@ Raycaster::Raycaster() : Renderer(),
                          pitch_(-30.f),
                          yaw_(0.f),
                          roll_(30.f),
+                         zoom_(0.f),
                          model_(glm::mat4()),
                          view_(glm::mat4()),
                          proj_(glm::mat4()),
@@ -47,7 +48,7 @@ bool Raycaster::InitMatrices() {
   float aspect = (float)winWidth_/(float)winHeight_;
   proj_ = glm::perspective(40.f, aspect, 0.1f, 100.f);
   view_ = glm::rotate(glm::mat4(1.f), 180.f, glm::vec3(1.f, 0.f, 0.f));
-  view_ = glm::translate(view_, glm::vec3(-0.5f, -0.5f, 2.2f));
+  view_ = glm::translate(view_, glm::vec3(-0.5f, -0.5f, 2.f));
   matricesInitialized_ = true;
   return true;
 }
@@ -237,6 +238,7 @@ bool Raycaster::UpdateMatrices() {
   model_ = glm::rotate(model_, -pitch_, glm::vec3(0.f, 1.f, 0.0));
   model_ = glm::rotate(model_, yaw_, glm::vec3(0.f, 0.f, 1.f));
   model_ = glm::translate(model_, glm::vec3(-0.5f, -0.5f, -0.5f));
+  view_ = glm::translate(view_, glm::vec3(0.f, 0.f, zoom_));
   return true;
 }
 
@@ -303,6 +305,8 @@ bool Raycaster::Render(float _timestep) {
     return false;
   }
 
+  if (!HandleKeyboard()) return false;
+  if (!HandleMouse()) return false;
   if (!UpdateMatrices()) return false;
   if (!BindTransformationMatrices(cubeShaderProgram_)) return false;
 
@@ -389,6 +393,8 @@ bool Raycaster::Render(float _timestep) {
 }
 
 bool Raycaster::ReloadShaders() {
+  glGetError();
+  INFO("Reloading shaders");
   if (!cubeShaderProgram_->DeleteShaders()) return false;
   if (!quadShaderProgram_->DeleteShaders()) return false;
   if (!cubeShaderProgram_->Reload()) return false;
@@ -398,5 +404,49 @@ bool Raycaster::ReloadShaders() {
 }
 
 bool Raycaster::ReloadConfig() {
-  return ReadShaderConfig(configFilename_);
+  INFO("Reloading config");
+  return true;
+  //return ReadShaderConfig(configFilename_);
+}
+
+bool Raycaster::HandleMouse() {
+  if (leftMouseDown_) {
+    pitch_ += 0.2f*(float)(currentMouseX_ - lastMouseX_);
+    roll_ += 0.2f*(float)(currentMouseY_ - lastMouseY_);
+  }
+  return true;
+}
+
+bool Raycaster::HandleKeyboard() {
+  if (KeyPressed("R") == true) {
+    // Don't repeat key
+    if (KeyLastState("R") == false) {
+      SetKeyLastState("R", true);
+      if (!ReloadConfig()) return false;
+      if (!ReloadShaders()) return false;
+    }
+  } else {
+    SetKeyLastState("R", false);
+  }
+  return true;
+}
+
+void Raycaster::SetKeyLastState(std::string _key, bool _pressed) {
+  std::map<std::string, bool>::iterator it;
+  it = keysLastState_.find(_key);
+  if (it == keysLastState_.end()) {
+    keysLastState_.insert(make_pair(_key, _pressed));
+  } else {
+    it->second = _pressed;
+  }
+}
+
+bool Raycaster::KeyLastState(std::string _key) const {
+  std::map<std::string, bool>::const_iterator it;
+  it = keysLastState_.find(_key);
+  if (it == keysLastState_.end()) {
+    return false;
+  } else {
+    return it->second;
+  }
 }

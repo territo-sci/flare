@@ -15,8 +15,8 @@ public:
   static Raycaster * New();
   virtual ~Raycaster();
   virtual bool Render(float _timestep);
-  virtual bool ReloadShaders();
-  virtual bool ReloadConfig();
+  bool ReloadShaders();
+  bool ReloadConfig();
   bool InitMatrices();
   bool InitCube();
   bool InitQuad();
@@ -24,12 +24,16 @@ public:
   bool UpdateMatrices();
   bool BindTransformationMatrices(ShaderProgram *_program);
   bool ReadShaderConfig(const std::string &_filename);
+  bool HandleMouse();
+  bool HandleKeyboard();
   void SetCubeFrontTexture(Texture2D *_cubeFrontTexture);
   void SetCubeBackTexture(Texture2D *_cubeBackTexture);
   void SetQuadTexture(Texture2D *_quadTexture);
   void SetCubeShaderProgram(ShaderProgram *_cubeShaderProgram);
   void SetQuadShaderProgram(ShaderProgram *_quadShaderProgram);
   void SetConfigFilename(std::string _configFilename);
+  void SetKeyLastState(std::string _key, bool _pressed);
+  bool KeyLastState(std::string _key) const;
 private:
   Raycaster();
   std::string configFilename_;
@@ -52,6 +56,7 @@ private:
   float pitch_;
   float yaw_;
   float roll_;
+  float zoom_;
   // Tranformation matrices
   glm::mat4 model_;
   glm::mat4 view_;
@@ -63,6 +68,8 @@ private:
   bool quadInitialized_;
   bool matricesInitialized_;
   bool framebuffersInitialized_;
+  // Extra keyboard state to prevent key repeat
+  std::map<std::string, bool> keysLastState_; 
 };
 
 }
