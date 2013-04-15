@@ -5,6 +5,7 @@
 #include <Raycaster.h>
 #include <Texture2D.h>
 #include <sstream>
+#include <fstream>
 
 using namespace osp;
 
@@ -197,37 +198,67 @@ bool CLHandler::InitInterop(const Raycaster * _raycaster) {
     ERROR(GetErrorString(error_));
     return false;
   }
-  
-  readFromImage_ = 
-    clCreateFromGLTexture2D(context_,
-                            CL_MEM_READ_ONLY,
-                            GL_TEXTURE_2D,
-                            0,
-                            _raycaster->CubeFrontTexture()->Handle(),
-                            &error_);
-  if (error_ == CL_SUCCESS) {
-    INFO("Cube front tex set successfully");
-  } else {
-    ERROR("Failed to set front tex memory");
-    ERROR(GetErrorString(error_));
-  }
 
-	writeToImage_ =
+	cubeFront_ = 
+		clCreateFromGLTexture2D(context_,
+													  CL_MEM_READ_ONLY,
+														GL_TEXTURE_2D,
+														0,
+														_raycaster->CubeFrontTexture()->Handle(),
+														&error_);
+	if (error_ == CL_SUCCESS) {
+		INFO("CL cube front set successfully");
+	} else {
+		ERROR("Failed to set CL cube front texture");
+		ERROR(GetErrorString(error_));
+	}
+
+	cubeBack_ =
+		clCreateFromGLTexture2D(context_,
+														CL_MEM_READ_ONLY,
+														GL_TEXTURE_2D,
+														0,
+														_raycaster->CubeBackTexture()->Handle(),
+														&error_);
+	if (error_ = CL_SUCCESS) {
+		INFO("CL cube back set successfully");
+	} else {
+		ERROR("Failed to set CL cube back texture");
+		ERROR(GetErrorString(error_));
+	}
+
+	output_ =
 		clCreateFromGLTexture2D(context_,
 														CL_MEM_WRITE_ONLY,
 														GL_TEXTURE_2D,
 														0,
 														_raycaster->QuadTexture()->Handle(),
 														&error_);
-		if (error_ == CL_SUCCESS) {
-			INFO("Quad tex set successfully");
-		} else {
-			ERROR("Failed to set quad mem");
-			ERROR(GetErrorString(error_));
-		}
+	if (error_ == CL_SUCCESS) {
+		INFO("CL output set successfully");
+	} else {
+		ERROR("Failed to set CL output");
+		ERROR(GetErrorString(error_));
+	}
 
-
-
-  
   return true;
 }
+
+char * CLHandler::ReadSource(std::string _filename) const {
+	FILE *in;
+	char *content = NULL;
+	in = fopen(_filename.c_str(), "r");
+	if (in != NULL) {
+		fseek(in, 0, SEEK_END);
+		int count = ftell(in);
+		rewind(in);
+		content = (char *)malloc(sizeof(char)*(count+1));
+		count = fread(content, sizeof(char), count, in);
+		content[count] = '\0';
+		fclose(in);
+	} else {
+		ERROR("Could not read source from file " << _filename);
+	}
+	return content;
+}
+

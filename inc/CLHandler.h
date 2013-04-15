@@ -15,6 +15,7 @@ public:
   bool InitInterop(const Raycaster * _raycaster);
 private:
   CLHandler();
+	char * ReadSource(std::string _filename) const;
   std::string GetErrorString(cl_int _error);
   cl_int error_;
   cl_uint numPlatforms_;
@@ -24,8 +25,9 @@ private:
   char deviceName_[1024];
   cl_context context_;
   cl_command_queue commandQueue_;
-  cl_mem readFromImage_;
-  cl_mem writeToImage_;
+  cl_mem cubeFront_;
+	cl_mem cubeBack_;
+  cl_mem output_;
   static unsigned int instances_;
 
 };
