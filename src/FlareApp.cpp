@@ -60,6 +60,7 @@ int main() {
   raycaster->SetCubeShaderProgram(cubeShaderProgram);
   raycaster->SetQuadShaderProgram(quadShaderProgram);
   raycaster->InitFramebuffers();
+  raycaster->InitCL();
 
   // Go!
   manager->SetRenderer(raycaster);

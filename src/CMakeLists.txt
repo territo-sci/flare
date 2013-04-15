@@ -22,6 +22,7 @@ add_executable(FlareApp
                Raycaster.cpp
                Texture.cpp
                Texture2D.cpp
+               CLHandler.cpp
                ShaderProgram.cpp)
 
 target_link_libraries(FlareApp

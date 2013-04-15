@@ -4,11 +4,13 @@
 #include <map>
 #include <string>
 #include <glm/glm.hpp>
+#include <CL/cl.hpp>
 
 namespace osp {
 
 class ShaderProgram;
 class Texture2D;
+class CLHandler;
 
 class Raycaster : public Renderer {
 public:
@@ -20,6 +22,7 @@ public:
   bool InitMatrices();
   bool InitCube();
   bool InitQuad();
+  bool InitCL();
   bool InitFramebuffers();
   bool UpdateMatrices();
   bool BindTransformationMatrices(ShaderProgram *_program);
@@ -73,6 +76,8 @@ private:
   std::map<int, bool> keysLastState_; 
   // Helper for pressing button without repeat
   bool KeyPressedNoRepeat(int _key);
+
+  CLHandler * clHandler_;
 };
 
 }

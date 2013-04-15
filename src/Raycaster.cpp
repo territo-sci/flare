@@ -1,11 +1,13 @@
 #include <GL/glew.h>
 #include <GL/glfw.h>
+#include <GL/glx.h>
 #include <fstream>
 #include <Raycaster.h>
 #include <Texture2D.h>
 #include <Utils.h>
 #include <ShaderProgram.h>
 #include <glm/gtc/matrix_transform.hpp>
+#include <CLHandler.h>
 
 using namespace osp;
 
@@ -33,7 +35,8 @@ Raycaster::Raycaster() : Renderer(),
                          cubeInitialized_(false),
                          quadInitialized_(false),
                          matricesInitialized_(false),
-                         framebuffersInitialized_(false) {
+                         framebuffersInitialized_(false),
+                         clHandler_(CLHandler::New()) {
 
 }
 
@@ -354,6 +357,9 @@ bool Raycaster::Render(float _timestep) {
 
   // Alright, here is where the OpenCL happens
 
+
+
+
   // Output 
 
   // Render to screen using quad
@@ -417,7 +423,6 @@ bool Raycaster::HandleMouse() {
 }
 
 bool Raycaster::HandleKeyboard() {
-
   if (KeyPressedNoRepeat('R')) {
     if (!ReloadConfig()) return false;
     if (!ReloadShaders()) return false;
@@ -427,7 +432,6 @@ bool Raycaster::HandleKeyboard() {
   if (KeyPressed('S')) zoom_ += 0.1f;
 
   return true;
-
 }
 
 bool Raycaster::KeyPressedNoRepeat(int _key) {
@@ -461,3 +465,10 @@ bool Raycaster::KeyLastState(int _key) const {
     return it->second;
   }
 }
+
+bool Raycaster::InitCL() {
+  if (!clHandler_->Init()) return false;
+  if (!clHandler_->InitInterop(this)) return false;
+  return true;
+}
+

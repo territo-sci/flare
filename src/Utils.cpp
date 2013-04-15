@@ -1,11 +1,9 @@
 #include <GL/glew.h>
 #include <Utils.h>
 
-unsigned int osp::CheckGLError(std::string _location)
-{
+unsigned int osp::CheckGLError(std::string _location) {
   unsigned int error = glGetError();
-  switch (error)
-  {
+  switch (error) {
    case GL_NO_ERROR:
      break;
    case GL_INVALID_ENUM:
