@@ -12,7 +12,7 @@ class CLHandler {
 public:
   static CLHandler * New();
   bool Init();
-  bool InitInterop(Raycaster * _raycaster);
+  bool InitInterop(const Raycaster * _raycaster);
 private:
   CLHandler();
   std::string GetErrorString(cl_int _error);

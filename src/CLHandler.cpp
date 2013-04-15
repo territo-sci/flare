@@ -2,6 +2,9 @@
 #include <GL/glx.h>
 #include <Utils.h>
 #include <CLHandler.h>
+#include <Raycaster.h>
+#include <Texture2D.h>
+#include <sstream>
 
 using namespace osp;
 
@@ -19,9 +22,108 @@ CLHandler * CLHandler::New() {
 CLHandler::CLHandler() {
 }
 
-
 std::string CLHandler::GetErrorString(cl_int _error) {
-  return "hej";
+  switch (_error) {
+    case CL_SUCCESS:
+      return "CL_SUCCESS";
+    case CL_DEVICE_NOT_FOUND:
+      return "CL_DEVICE_NOT_FOUND";
+    case CL_DEVICE_NOT_AVAILABLE:
+      return "CL_DEVICE_NOT_AVAILABLE";
+    case CL_COMPILER_NOT_AVAILABLE:
+      return "CL_COMPILER_NOT_AVAILABLE";
+    case CL_MEM_OBJECT_ALLOCATION_FAILURE:
+      return "CL_MEM_OBJECT_ALLOCATION_FAILURE";
+    case CL_OUT_OF_RESOURCES:
+      return "CL_OUT_OF_RESOURCES";
+    case CL_OUT_OF_HOST_MEMORY:
+      return "CL_OUT_OF_HOST_MEMORY";
+    case CL_PROFILING_INFO_NOT_AVAILABLE:
+      return "CL_PROFILING_INFO_NOT_AVAILABLE";
+    case CL_MEM_COPY_OVERLAP:
+      return "CL_MEM_COPY_OVERLAP";
+    case CL_IMAGE_FORMAT_MISMATCH:
+      return "CL_IMAGE_FORMAT_MISMATCH";
+    case CL_IMAGE_FORMAT_NOT_SUPPORTED:
+      return "CL_IMAGE_FORMAT_NOT_SUPPORTED";
+    case CL_BUILD_PROGRAM_FAILURE:
+      return "CL_BUILD_PROGRAM_FAILURE";
+    case CL_MAP_FAILURE:
+      return "CL_MAP_FAILURE";
+    case CL_INVALID_VALUE:
+      return "CL_INVALID_VALUE";
+    case CL_INVALID_DEVICE_TYPE:
+      return "CL_INVALID_DEVICE_TYPE";
+    case CL_INVALID_PLATFORM:
+      return "CL_INVALID_PLATFORM";
+    case CL_INVALID_DEVICE:
+      return "CL_INVALID_DEVICE";
+    case CL_INVALID_CONTEXT:
+      return "CL_INVALID_CONTEXT";
+    case CL_INVALID_QUEUE_PROPERTIES:
+      return "CL_INVALID_QUEUE_PROPERTIES";
+    case CL_INVALID_COMMAND_QUEUE:
+      return "CL_INVALID_COMMAND_QUEUE";
+    case CL_INVALID_HOST_PTR:
+      return "CL_INVALID_HOST_PTR";
+    case CL_INVALID_MEM_OBJECT:
+      return "CL_INVALID_MEM_OBJECT";
+    case CL_INVALID_IMAGE_FORMAT_DESCRIPTOR:
+      return "CL_INVALID_IMAGE_FORMAT_DESCRIPTOR";
+    case CL_INVALID_IMAGE_SIZE:
+      return "CL_INVALID_IMAGE_SIZE";
+    case CL_INVALID_SAMPLER:
+      return "CL_INVALID_SAMPLER";
+    case CL_INVALID_BINARY:
+      return "CL_INVALID_BINARY";
+    case CL_INVALID_BUILD_OPTIONS:
+      return "CL_INVALID_BUILD_OPTIONS";
+    case CL_INVALID_PROGRAM:
+      return "CL_INVALID_PROGRAM";
+    case CL_INVALID_PROGRAM_EXECUTABLE:
+      return "CL_INVALID_PROGRAM_EXECUTABLE";
+    case CL_INVALID_KERNEL_NAME:
+      return "CL_INVALID_KERNEL_NAME";
+    case CL_INVALID_KERNEL_DEFINITION:
+      return "CL_INVALID_KERNEL_DEFINITION";
+    case  CL_INVALID_KERNEL:
+      return "CL_INVALID_KERNEL";
+    case CL_INVALID_ARG_INDEX:
+      return "CL_INVALID_ARG_INDEX";
+    case CL_INVALID_ARG_VALUE:
+      return "CL_INVALID_ARG_VALUE";
+    case CL_INVALID_ARG_SIZE:
+      return "CL_INVALID_ARG_SIZE";
+    case CL_INVALID_KERNEL_ARGS:
+      return "CL_INVALID_KERNEL_ARGS";
+    case CL_INVALID_WORK_DIMENSION:
+      return "CL_INVALID_WORK_DIMENSION";
+    case CL_INVALID_WORK_GROUP_SIZE:
+      return "CL_INVALID_WORK_GROUP_SIZE";
+    case CL_INVALID_WORK_ITEM_SIZE:
+      return "CL_INVALID_WORK_ITEM_SIZE";
+    case CL_INVALID_GLOBAL_OFFSET:
+      return "CL_INVALID_GLOBAL_OFFSET";
+    case CL_INVALID_EVENT_WAIT_LIST:
+      return "CL_INVALID_EVENT_WAIT_LIST";
+    case CL_INVALID_EVENT:
+      return "CL_INVALID_EVENT";
+    case CL_INVALID_OPERATION:
+      return "CL_INVALID_OPERATION";
+    case CL_INVALID_GL_OBJECT:
+      return "CL_INVALID_GL_OBJECT";
+    case  CL_INVALID_BUFFER_SIZE:
+      return "CL_INVALID_BUFFER_SIZE";
+    case CL_INVALID_MIP_LEVEL:
+      return "CL_INVALID_MIP_LEVEL";
+    case CL_INVALID_GLOBAL_WORK_SIZE:
+      return "CL_INVALID_GLOBAL_WORK_SIZE";
+    default:
+      std::stringstream ss;
+      std::string code;
+      ss << "Unknown OpenCL error code - " << _error;
+      return ss.str();
+  }
 }
 
 bool CLHandler::Init() {
@@ -73,7 +175,8 @@ bool CLHandler::Init() {
   return true;
 }
 
-bool CLHandler::InitInterop(Raycaster * _raycaster) {
+bool CLHandler::InitInterop(const Raycaster * _raycaster) {
+
   // Create an OpenCL context with a reference to an OpenGL context
   cl_context_properties contextProperties[] = {
     CL_GL_CONTEXT_KHR, (cl_context_properties)glXGetCurrentContext(),
@@ -94,6 +197,37 @@ bool CLHandler::InitInterop(Raycaster * _raycaster) {
     ERROR(GetErrorString(error_));
     return false;
   }
+  
+  readFromImage_ = 
+    clCreateFromGLTexture2D(context_,
+                            CL_MEM_READ_ONLY,
+                            GL_TEXTURE_2D,
+                            0,
+                            _raycaster->CubeFrontTexture()->Handle(),
+                            &error_);
+  if (error_ == CL_SUCCESS) {
+    INFO("Cube front tex set successfully");
+  } else {
+    ERROR("Failed to set front tex memory");
+    ERROR(GetErrorString(error_));
+  }
 
+	writeToImage_ =
+		clCreateFromGLTexture2D(context_,
+														CL_MEM_WRITE_ONLY,
+														GL_TEXTURE_2D,
+														0,
+														_raycaster->QuadTexture()->Handle(),
+														&error_);
+		if (error_ == CL_SUCCESS) {
+			INFO("Quad tex set successfully");
+		} else {
+			ERROR("Failed to set quad mem");
+			ERROR(GetErrorString(error_));
+		}
+
+
+
+  
   return true;
 }

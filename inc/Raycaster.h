@@ -36,6 +36,9 @@ public:
   void SetQuadShaderProgram(ShaderProgram *_quadShaderProgram);
   void SetConfigFilename(std::string _configFilename);
   void SetKeyLastState(int, bool _pressed);
+  Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
+  Texture2D * CubeBackTexture() const { return cubeBackTex_; }
+  Texture2D * QuadTexture() const { return quadTex_; }
   bool KeyLastState(int _key) const;
 private:
   Raycaster();
@@ -76,8 +79,8 @@ private:
   std::map<int, bool> keysLastState_; 
   // Helper for pressing button without repeat
   bool KeyPressedNoRepeat(int _key);
+  CLHandler *clHandler_;
 
-  CLHandler * clHandler_;
 };
 
 }
