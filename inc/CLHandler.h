@@ -13,9 +13,14 @@ public:
   static CLHandler * New();
   bool Init();
   bool InitInterop(const Raycaster * _raycaster);
+	bool CreateProgram(std::string _filename);
+	bool BuildProgram();
+	bool CreateKernel();
+	bool CreateCommandQueue();
+	bool RunRaycaster();
 private:
   CLHandler();
-	char * ReadSource(std::string _filename) const;
+	char * ReadSource(std::string _filename, int &_numChars) const;
   std::string GetErrorString(cl_int _error);
   cl_int error_;
   cl_uint numPlatforms_;
@@ -28,8 +33,9 @@ private:
   cl_mem cubeFront_;
 	cl_mem cubeBack_;
   cl_mem output_;
+	cl_program program_;
+	cl_kernel kernel_;
   static unsigned int instances_;
-
 };
 
 }

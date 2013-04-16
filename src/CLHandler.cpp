@@ -128,50 +128,51 @@ std::string CLHandler::GetErrorString(cl_int _error) {
 }
 
 bool CLHandler::Init() {
-    // Find platform(s)
-    error_ = clGetPlatformIDs(32, platforms_, &numPlatforms_);
-    if (error_ == CL_SUCCESS) {
-      INFO("Number of CL platforms: " << numPlatforms_);
-    } else {
-      ERROR("Failed to get CL platforms");
-      ERROR(GetErrorString(error_));
-      return false;
-    }
+	// Find platform(s)
+	error_ = clGetPlatformIDs(32, platforms_, &numPlatforms_);
+	if (error_ == CL_SUCCESS) {
+		INFO("Number of CL platforms: " << numPlatforms_);
+	} else {
+		ERROR("Failed to get CL platforms");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
 
-    // TODO Assume only one found platform for now
-    if (numPlatforms_ != 1) {
-      WARNING("numPlatforms not equal to 1, did not count on that");
-    }
+	// TODO Assume only one found platform for now
+	if (numPlatforms_ != 1) {
+		WARNING("numPlatforms not equal to 1, did not count on that");
+	}
 
-    // Find devices
-    error_ = clGetDeviceIDs(platforms_[0], 
-                            CL_DEVICE_TYPE_ALL,
-                            sizeof(devices_),
-                            devices_,
-                            &numDevices_);
-    if (error_ == CL_SUCCESS) {
-      INFO("Number of CL devices: " << numDevices_);
-    } else {
-      ERROR("Failed to get CL devices");
-      ERROR(GetErrorString(error_));
-      return false;
-    }
+	// Find devices
+	error_ = clGetDeviceIDs(platforms_[0], 
+													CL_DEVICE_TYPE_ALL,
+													sizeof(devices_),
+													devices_,
+													&numDevices_);
+	if (error_ == CL_SUCCESS) {
+		INFO("Number of CL devices: " << numDevices_);
+	} else {
+		ERROR("Failed to get CL devices");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
 
-    // Loop over devices
-    for (unsigned int i=0; i<numDevices_; i++) {
-      error_ = clGetDeviceInfo(devices_[i],
-                               CL_DEVICE_NAME,
-                               sizeof(deviceName_),
-                               deviceName_,
-                               NULL);
-      if (error_ == CL_SUCCESS) {
-        INFO("Device " << i << " name: " << deviceName_);
-      } else {
-        ERROR("Failed to get device name");
-        ERROR(GetErrorString(error_));
-        return false;
-      }
-    }
+	// Loop over devices
+	for (unsigned int i=0; i<numDevices_; i++) {
+		error_ = clGetDeviceInfo(devices_[i],
+														 CL_DEVICE_NAME,
+														 sizeof(deviceName_),
+														 deviceName_,
+														 NULL);
+		if (error_ == CL_SUCCESS) {
+			INFO("Device " << i << " name: " << deviceName_);
+		} else {
+			ERROR("Failed to get device name");
+			ERROR(GetErrorString(error_));
+			return false;
+		}
+	}
+
 
   return true;
 }
@@ -220,7 +221,7 @@ bool CLHandler::InitInterop(const Raycaster * _raycaster) {
 														0,
 														_raycaster->CubeBackTexture()->Handle(),
 														&error_);
-	if (error_ = CL_SUCCESS) {
+	if (error_ == CL_SUCCESS) {
 		INFO("CL cube back set successfully");
 	} else {
 		ERROR("Failed to set CL cube back texture");
@@ -244,13 +245,14 @@ bool CLHandler::InitInterop(const Raycaster * _raycaster) {
   return true;
 }
 
-char * CLHandler::ReadSource(std::string _filename) const {
+char * CLHandler::ReadSource(std::string _filename, int &_numChars) const {
 	FILE *in;
 	char *content = NULL;
 	in = fopen(_filename.c_str(), "r");
+	int count;
 	if (in != NULL) {
 		fseek(in, 0, SEEK_END);
-		int count = ftell(in);
+		count = ftell(in);
 		rewind(in);
 		content = (char *)malloc(sizeof(char)*(count+1));
 		count = fread(content, sizeof(char), count, in);
@@ -259,6 +261,118 @@ char * CLHandler::ReadSource(std::string _filename) const {
 	} else {
 		ERROR("Could not read source from file " << _filename);
 	}
+	_numChars = count;
 	return content;
 }
 
+bool CLHandler::CreateProgram(std::string _filename) {
+	int numChars;
+	char * source = ReadSource(_filename, numChars);
+	program_ = clCreateProgramWithSource(context_,
+																			 1,
+																			 (const char**)&source,
+																			 (const size_t*)&numChars,
+																			 &error_);
+	if (error_ == CL_SUCCESS) {
+		INFO("Created CL program successfully");
+		return true;
+	} else {
+		ERROR("Failed to create CL program");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
+}
+
+bool CLHandler::BuildProgram() {
+
+	error_ = clBuildProgram(program_, (cl_uint)0, NULL, NULL, NULL, NULL);
+
+	if (error_ == CL_SUCCESS) {
+		INFO("Built CL program successfully");
+		return true;
+	} else {
+		ERROR("Failed to build CL program");
+		ERROR(GetErrorString(error_));
+
+		// Print build log
+		char * log;
+		size_t logSize = 0;
+		clGetProgramBuildInfo(program_,
+													devices_[0],
+													CL_PROGRAM_BUILD_LOG,
+													0,
+													NULL,
+													&logSize);
+		if (logSize > 0) {
+			INFO("Build log:");
+			log = new char[logSize+1];
+			clGetProgramBuildInfo(program_,
+														devices_[0],
+														CL_PROGRAM_BUILD_LOG,
+														logSize,
+														log,
+														NULL);
+			log[logSize] = '\0';
+			INFO(log);
+			delete log;												
+		}
+
+		return false;
+	}
+}
+
+bool CLHandler::CreateKernel() {
+
+	kernel_ = clCreateKernel(program_, "Raycaster", &error_);
+	if (error_ == CL_SUCCESS) {
+		INFO("Created CL kernel successfully");
+		return true;
+	} else {
+		ERROR("Failed to create CL kernel");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
+}
+
+bool CLHandler::CreateCommandQueue() {
+	commandQueue_ = clCreateCommandQueue(context_,
+																			 devices_[0],
+																			 0,
+																			 &error_);
+	if (error_ == CL_SUCCESS) {
+		INFO("Created CL command queue successfully");
+		return true;
+	} else {
+		ERROR("Failed to create CL command queue");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
+}
+
+bool CLHandler::RunRaycaster() {
+	
+	size_t *globalSize = { 16, 16 };
+	size_t *localSize = { 32, 32 };
+	
+	error_ = clSetKernelArg(kernel_,
+													0,
+													(const void*)output_);
+	if (error_ != CL_SUCCESS) {
+		ERROR("Failed to set kernel argument 0");
+		ERROR(GetErrorString(error_);
+		return false;
+	}
+
+	error_ = clEnqueueNDRangeKernel(commandQueue_,
+													 kernel_, 
+													 2,
+													 NULL,
+													 globalSize,
+													 localSize, 
+													 0,
+													 NULL,
+													 NULL);
+
+	return true;
+}
+																		 

@@ -357,15 +357,14 @@ bool Raycaster::Render(float _timestep) {
 
   // Alright, here is where the OpenCL happens
 
-
-
+	if (!clHandler_->RunRaycaster()) return false;
 
   // Output 
 
   // Render to screen using quad
 
   // TODO use cube front textur as output for now
-  quadTex_ = cubeFrontTex_;
+ //   quadTex_ = cubeFrontTex_;
 
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
 
@@ -469,6 +468,10 @@ bool Raycaster::KeyLastState(int _key) const {
 bool Raycaster::InitCL() {
   if (!clHandler_->Init()) return false;
   if (!clHandler_->InitInterop(this)) return false;
+	if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) return false;
+	if (!clHandler_->BuildProgram()) return false;
+	if (!clHandler_->CreateKernel()) return false;
+	if (!clHandler_->CreateCommandQueue()) return false;
   return true;
 }
 
