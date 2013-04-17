@@ -203,9 +203,12 @@ bool CLHandler::CreateContext() {
   return true;
 }
 
-bool CLHandler::AddGLTexture(unsigned int _argNr, Texture2D *_texture) {
+bool CLHandler::AddGLTexture(unsigned int _argNr,
+														 Texture2D *_texture,
+														 bool _readOnly) {
+	cl_mem_flags flag = _readOnly ? CL_MEM_READ_ONLY : CL_MEM_WRITE_ONLY;
 	cl_mem texture = clCreateFromGLTexture2D(context_,
-																					 CL_MEM_READ_ONLY,
+																					 flag,
 																					 GL_TEXTURE_2D,
 																					 0,
 																					 _texture->Handle(),
@@ -347,7 +350,6 @@ bool CLHandler::RunRaycaster() {
 
 	// Set up kernel arguments for textures
 	for (it=GLTextures_.begin(); it!=GLTextures_.end(); it++) {
-		INFO("Setting up kernel argument " << it->first);
 		error_ = clSetKernelArg(kernel_,
 														it->first,
 														sizeof(cl_mem),

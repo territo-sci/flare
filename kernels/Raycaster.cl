@@ -1,6 +1,6 @@
 __kernel void
 Raycaster(__global __read_only image2d_t cubeFront,
-					__global __read_only image2d_t cubeBack,
+				  __global __read_only image2d_t cubeBack,
 					__global __write_only image2d_t output) {
 	
 	// Kernel should be launched in 2D

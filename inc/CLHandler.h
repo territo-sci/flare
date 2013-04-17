@@ -14,7 +14,7 @@ public:
   static CLHandler * New();
   bool Init();
   bool CreateContext();
-	bool AddGLTexture(unsigned int _argNr, Texture2D * _texture);
+	bool AddGLTexture(unsigned int _argNr, Texture2D * _texture, bool _readOnly);
 
 	bool CreateProgram(std::string _filename);
 	bool BuildProgram();

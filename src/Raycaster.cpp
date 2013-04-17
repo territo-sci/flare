@@ -468,9 +468,9 @@ bool Raycaster::KeyLastState(int _key) const {
 bool Raycaster::InitCL() {
   if (!clHandler_->Init()) return false;
   if (!clHandler_->CreateContext()) return false;
-	if (!clHandler_->AddGLTexture(0, cubeFrontTex_)) return false;
-	if (!clHandler_->AddGLTexture(1, cubeBackTex_)) return false;
-	if (!clHandler_->AddGLTexture(2, quadTex_)) return false;
+	if (!clHandler_->AddGLTexture(0, cubeFrontTex_, true)) return false;
+	if (!clHandler_->AddGLTexture(1, cubeBackTex_, true)) return false;
+	if (!clHandler_->AddGLTexture(2, quadTex_, false)) return false;
 	if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) return false;
 	if (!clHandler_->BuildProgram()) return false;
 	if (!clHandler_->CreateKernel()) return false;
