@@ -2,7 +2,6 @@
 #include <GL/glx.h>
 #include <Utils.h>
 #include <CLHandler.h>
-#include <Raycaster.h>
 #include <Texture2D.h>
 #include <sstream>
 #include <fstream>
@@ -13,6 +12,7 @@ unsigned int CLHandler::instances_ = 0;
 
 CLHandler * CLHandler::New() {
   if (instances_ == 0) {
+		instances_++;
     return new CLHandler();
   } else {
     ERROR("Can't create another instance of CLHandler");
@@ -177,7 +177,7 @@ bool CLHandler::Init() {
   return true;
 }
 
-bool CLHandler::InitInterop(const Raycaster * _raycaster) {
+bool CLHandler::CreateContext() {
 
   // Create an OpenCL context with a reference to an OpenGL context
   cl_context_properties contextProperties[] = {
@@ -200,49 +200,23 @@ bool CLHandler::InitInterop(const Raycaster * _raycaster) {
     return false;
   }
 
-	cubeFront_ = 
-		clCreateFromGLTexture2D(context_,
-													  CL_MEM_READ_ONLY,
-														GL_TEXTURE_2D,
-														0,
-														_raycaster->CubeFrontTexture()->Handle(),
-														&error_);
-	if (error_ == CL_SUCCESS) {
-		INFO("CL cube front set successfully");
-	} else {
-		ERROR("Failed to set CL cube front texture");
-		ERROR(GetErrorString(error_));
-	}
-
-	cubeBack_ =
-		clCreateFromGLTexture2D(context_,
-														CL_MEM_READ_ONLY,
-														GL_TEXTURE_2D,
-														0,
-														_raycaster->CubeBackTexture()->Handle(),
-														&error_);
-	if (error_ == CL_SUCCESS) {
-		INFO("CL cube back set successfully");
-	} else {
-		ERROR("Failed to set CL cube back texture");
-		ERROR(GetErrorString(error_));
-	}
-
-	output_ =
-		clCreateFromGLTexture2D(context_,
-														CL_MEM_WRITE_ONLY,
-														GL_TEXTURE_2D,
-														0,
-														_raycaster->QuadTexture()->Handle(),
-														&error_);
-	if (error_ == CL_SUCCESS) {
-		INFO("CL output set successfully");
-	} else {
-		ERROR("Failed to set CL output");
-		ERROR(GetErrorString(error_));
-	}
-
   return true;
+}
+
+bool CLHandler::AddGLTexture(unsigned int _argNr, Texture2D *_texture) {
+	cl_mem texture = clCreateFromGLTexture2D(context_,
+																					 CL_MEM_READ_ONLY,
+																					 GL_TEXTURE_2D,
+																					 0,
+																					 _texture->Handle(),
+																					 &error_);
+	if (error_ != CL_SUCCESS) {
+		ERROR("Failed to add GL texture");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
+	GLTextures_.insert(std::make_pair((cl_uint)_argNr, texture));
+	return true;
 }
 
 char * CLHandler::ReadSource(std::string _filename, int &_numChars) const {
@@ -351,28 +325,72 @@ bool CLHandler::CreateCommandQueue() {
 
 bool CLHandler::RunRaycaster() {
 	
-	size_t *globalSize = { 16, 16 };
-	size_t *localSize = { 32, 32 };
+	size_t globalSize[] = { 512, 512 };
+	size_t localSize[] = { 16, 16 };
+
+	// Let OpenCL take control of the shared GL objects
+	std::map<cl_uint, cl_mem>::iterator it;
+	for (it=GLTextures_.begin(); it!=GLTextures_.end(); it++) {
+		error_ = clEnqueueAcquireGLObjects(commandQueue_,
+																			 1,
+																			 &(it->second),
+																			 0,
+																			 NULL,
+																			 NULL);
+		if (error_ != CL_SUCCESS) {
+			ERROR("Failed to enqueue GL object aqcuisition");
+			ERROR("Failing object: " << it->first);
+			ERROR(GetErrorString(error_));
+			return false;
+		}
+	}
+
+	// Set up kernel arguments for textures
+	for (it=GLTextures_.begin(); it!=GLTextures_.end(); it++) {
+		INFO("Setting up kernel argument " << it->first);
+		error_ = clSetKernelArg(kernel_,
+														it->first,
+														sizeof(cl_mem),
+														&(it->second));
+		if (error_ != CL_SUCCESS) {
+			ERROR("Failed to set kernel argument " << it->first);
+			ERROR(GetErrorString(error_));
+			return false;
+		}
+	}
 	
-	error_ = clSetKernelArg(kernel_,
-													0,
-													(const void*)output_);
+	// Set up kernel execution
+	error_ = clEnqueueNDRangeKernel(commandQueue_,
+																	kernel_, 
+																	2,
+																	NULL,
+																	globalSize,
+																	localSize, 
+																	0,
+																	NULL,
+																	NULL);
 	if (error_ != CL_SUCCESS) {
-		ERROR("Failed to set kernel argument 0");
-		ERROR(GetErrorString(error_);
+		ERROR("Failed to enqueue kernel");
+		ERROR(GetErrorString(error_));
 		return false;
 	}
 
-	error_ = clEnqueueNDRangeKernel(commandQueue_,
-													 kernel_, 
-													 2,
-													 NULL,
-													 globalSize,
-													 localSize, 
-													 0,
-													 NULL,
-													 NULL);
-
+	// Release the shared GL objects
+	for (it=GLTextures_.begin(); it!=GLTextures_.end(); it++) {
+		error_ = clEnqueueReleaseGLObjects(commandQueue_,
+																			 1,
+																			 &(it->second),
+																			 0,
+																			 NULL,
+																			 NULL);
+		if (error_ != CL_SUCCESS) {
+			ERROR("Failed to release GL object");
+			ERROR("Failed object: " << it->first);
+			ERROR(GetErrorString(error_));
+			return false;
+		}
+	}
+	
 	return true;
 }
 																		 

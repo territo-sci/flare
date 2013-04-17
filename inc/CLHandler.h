@@ -2,17 +2,20 @@
 #define CL_HANDLER_H
 
 #include <string>
+#include <map>
 #include <CL/cl.hpp>
 
 namespace osp {
 
-class Raycaster;
+class Texture2D;
 
 class CLHandler {
 public:
   static CLHandler * New();
   bool Init();
-  bool InitInterop(const Raycaster * _raycaster);
+  bool CreateContext();
+	bool AddGLTexture(unsigned int _argNr, Texture2D * _texture);
+
 	bool CreateProgram(std::string _filename);
 	bool BuildProgram();
 	bool CreateKernel();
@@ -36,6 +39,11 @@ private:
 	cl_program program_;
 	cl_kernel kernel_;
   static unsigned int instances_;
+
+	// Stores textures together with their kernel argument number
+	std::map<cl_uint, cl_mem> GLTextures_;
+
+
 };
 
 }

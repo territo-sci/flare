@@ -102,14 +102,14 @@ bool Raycaster::InitCube() {
    1.f, 0.f, 0.f, 1.f
  };
 
- glGenBuffers(1, &cubePosbufferObject_);
- glBindBuffer(GL_ARRAY_BUFFER, cubePosbufferObject_);
- glBufferData(GL_ARRAY_BUFFER, sizeof(float)*144, v, GL_STATIC_DRAW);
- glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glGenBuffers(1, &cubePosbufferObject_);
+  glBindBuffer(GL_ARRAY_BUFFER, cubePosbufferObject_);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(float)*144, v, GL_STATIC_DRAW);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
 
- CheckGLError("InitCube()");
- cubeInitialized_ = true;
- return true;
+  CheckGLError("InitCube()");
+  cubeInitialized_ = true;
+  return true;
 }
 
 bool Raycaster::InitQuad() {
@@ -467,7 +467,10 @@ bool Raycaster::KeyLastState(int _key) const {
 
 bool Raycaster::InitCL() {
   if (!clHandler_->Init()) return false;
-  if (!clHandler_->InitInterop(this)) return false;
+  if (!clHandler_->CreateContext()) return false;
+	if (!clHandler_->AddGLTexture(0, cubeFrontTex_)) return false;
+	if (!clHandler_->AddGLTexture(1, cubeBackTex_)) return false;
+	if (!clHandler_->AddGLTexture(2, quadTex_)) return false;
 	if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) return false;
 	if (!clHandler_->BuildProgram()) return false;
 	if (!clHandler_->CreateKernel()) return false;

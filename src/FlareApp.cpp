@@ -12,8 +12,8 @@ using namespace osp;
 
 int main() {
 
-  unsigned int width = 600;
-  unsigned int height = 600;
+  unsigned int width = 512;
+  unsigned int height = 512;
 
   // Create a WindowManager, open window to init GLEW and GLFW
   WindowManager *manager = WindowManager::New(width, height, "FlareApp");
