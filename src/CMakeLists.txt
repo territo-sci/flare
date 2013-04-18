@@ -23,6 +23,7 @@ add_executable(FlareApp
                Texture.cpp
                Texture2D.cpp
                CLHandler.cpp
+							 VDFReader.cpp
                ShaderProgram.cpp)
 
 target_link_libraries(FlareApp

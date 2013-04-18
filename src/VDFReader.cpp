@@ -1,0 +1,53 @@
+#include <VDFReader.h>
+#include <fstream>
+#include <Utils.h>
+#include <VoxelData.h>
+
+using namespace osp;
+
+VDFReader::VDFReader() {
+}
+
+VDFReader * VDFReader::New() {
+	return new VDFReader();
+}
+
+VDFReader::~VDFReader() {
+}
+
+void VDFReader::SetVoxelData(VoxelData<float> *_voxelData) {
+	voxelData_ = _voxelData;
+}
+
+bool VDFReader::Read(std::string _filename) {
+	std::fstream in;
+	in.open(_filename.c_str(), std::ios_base::in | std::ios_base::binary);
+	if (!in.is_open()) {
+		ERROR("Could not open " << _filename);
+		return false;
+	}
+
+	in.read(reinterpret_cast<char*>(&(voxelData_->numTimesteps_)),
+	        sizeof(unsigned int));
+	in.read(reinterpret_cast<char*>(&(voxelData_->dataDimensionality_)),
+				  sizeof(unsigned int));
+	in.read(reinterpret_cast<char*>(&(voxelData_->xDim_)),
+	        sizeof(unsigned int));
+	in.read(reinterpret_cast<char*>(&(voxelData_->yDim_)),
+	        sizeof(unsigned int));
+	in.read(reinterpret_cast<char*>(&(voxelData_->zDim_)),
+					sizeof(unsigned int));
+	unsigned int size = voxelData_->xDim_ *
+	                    voxelData_->yDim_ *
+											voxelData_->zDim_;
+	voxelData_->data_.resize(size);
+	in.read(reinterpret_cast<char*>(&(voxelData_->data_[0])),
+	        size*sizeof(float));
+
+	INFO("Read x dimension: " << voxelData_->xDim_);
+	INFO("Read y dimension: " << voxelData_->yDim_);
+	INFO("Read z dimension: " << voxelData_->zDim_);
+
+	return true;
+}
+

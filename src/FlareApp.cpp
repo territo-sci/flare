@@ -4,6 +4,8 @@
 #include <Texture2D.h>
 #include <Raycaster.h>
 #include <ShaderProgram.h>
+#include <VDFReader.h>
+#include <VoxelData.h>
 #include <string>
 #include <cstdlib>
 #include <vector>
@@ -11,6 +13,12 @@
 using namespace osp;
 
 int main() {
+
+	// Read data
+	VoxelData<float> *floatData_ = new VoxelData<float>();
+	VDFReader *reader_ = VDFReader::New();
+	reader_->SetVoxelData(floatData_);
+	if (!reader_->Read("data/enlilTestData.vdf")) exit(1);
 
   unsigned int width = 512;
   unsigned int height = 512;
