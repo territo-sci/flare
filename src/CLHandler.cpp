@@ -3,6 +3,7 @@
 #include <Utils.h>
 #include <CLHandler.h>
 #include <Texture2D.h>
+#include <VoxelData.h>
 #include <sstream>
 #include <fstream>
 
@@ -324,6 +325,31 @@ bool CLHandler::CreateCommandQueue() {
 		ERROR(GetErrorString(error_));
 		return false;
 	}
+}
+
+bool CLHandler::BindData(unsigned int _argNr,
+                         VoxelData<float> *_voxelData) {
+	cl_mem voxelData_ = clCreateBuffer(context_,
+	                                   CL_MEM_READ_ONLY,
+																		 _voxelData->Size()*sizeof(float),
+																		 _voxelData->DataPtr(),
+																		 &error_);
+	if (error_ != CL_SUCCESS) {
+		ERROR("Failed to bind data");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
+	
+	error_ = clSetKernelArg(kernel_,
+	                        _argNr,
+													sizeof(cl_mem),
+													voxelData_);
+	if (error_ != CL_SUCCESS) {
+		ERROR("Failed to set data kernel argument");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
+	return true;
 }
 
 bool CLHandler::RunRaycaster() {

@@ -15,9 +15,9 @@ using namespace osp;
 int main() {
 
 	// Read data
-	VoxelData<float> *floatData_ = new VoxelData<float>();
+	VoxelData<float> *floatData = new VoxelData<float>();
 	VDFReader *reader_ = VDFReader::New();
-	reader_->SetVoxelData(floatData_);
+	reader_->SetVoxelData(floatData);
 	if (!reader_->Read("data/enlilTestData.vdf")) exit(1);
 
   unsigned int width = 512;
@@ -68,6 +68,7 @@ int main() {
   raycaster->SetCubeShaderProgram(cubeShaderProgram);
   raycaster->SetQuadShaderProgram(quadShaderProgram);
   raycaster->InitFramebuffers();
+	raycaster->SetVoxelData(floatData);
   raycaster->InitCL();
 
   // Go!

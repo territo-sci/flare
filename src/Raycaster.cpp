@@ -475,6 +475,11 @@ bool Raycaster::InitCL() {
 	if (!clHandler_->BuildProgram()) return false;
 	if (!clHandler_->CreateKernel()) return false;
 	if (!clHandler_->CreateCommandQueue()) return false;
+	if (!clHandler_->BindData(3, voxelData_)) return false;
   return true;
+}
+
+void Raycaster::SetVoxelData(VoxelData<float> *_voxelData) {
+	voxelData_ = _voxelData;
 }
 

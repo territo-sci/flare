@@ -5,6 +5,7 @@
 #include <string>
 #include <glm/glm.hpp>
 #include <CL/cl.hpp>
+#include <VoxelData.h>
 
 namespace osp {
 
@@ -29,6 +30,7 @@ public:
   bool ReadShaderConfig(const std::string &_filename);
   bool HandleMouse();
   bool HandleKeyboard();
+	void SetVoxelData(VoxelData<float> *_floatData);
   void SetCubeFrontTexture(Texture2D *_cubeFrontTexture);
   void SetCubeBackTexture(Texture2D *_cubeBackTexture);
   void SetQuadTexture(Texture2D *_quadTexture);
@@ -80,7 +82,8 @@ private:
   // Helper for pressing button without repeat
   bool KeyPressedNoRepeat(int _key);
   CLHandler *clHandler_;
-
+	// Data to render
+	VoxelData<float> *voxelData_;
 };
 
 }
