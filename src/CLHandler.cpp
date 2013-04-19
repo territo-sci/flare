@@ -6,6 +6,7 @@
 #include <VoxelData.h>
 #include <sstream>
 #include <fstream>
+#include <cmath>
 
 using namespace osp;
 
@@ -174,7 +175,6 @@ bool CLHandler::Init() {
 		}
 	}
 
-
   return true;
 }
 
@@ -327,30 +327,47 @@ bool CLHandler::CreateCommandQueue() {
 	}
 }
 
-bool CLHandler::BindData(unsigned int _argNr,
-                         VoxelData<float> *_voxelData) {
-	cl_mem voxelData_ = clCreateBuffer(context_,
-	                                   CL_MEM_READ_ONLY,
-																		 _voxelData->Size()*sizeof(float),
-																		 _voxelData->DataPtr(),
-																		 &error_);
+bool CLHandler::BindData(unsigned int _argNr, VoxelData<float> *_voxelData) { 
+
+	/*	
+	// TODO test data
+	unsigned int dim = 128;
+	float *testData = new float[dim*dim*dim];
+	for (unsigned int x=0; x<dim; x++) {
+		for (unsigned int y=0; y<dim; y++) {
+			for (unsigned int z=0; z<dim; z++) {
+				unsigned int idx = x+y*dim+z*dim*dim;
+				float xNorm = (float)x/127.f;
+				float yNorm = (float)y/127.f;
+				float zNorm = (float)z/127.f;
+				testData[idx] = sqrt(xNorm*xNorm+yNorm*yNorm+zNorm*zNorm)/1.74f;
+			}
+		}
+	}
+
+	INFO(testData[0]);
+	INFO(testData[128*128*128/2]);
+	INFO(testData[128*128*128-1]);
+	*/
+	cl_mem voxelData = clCreateBuffer(context_,
+	                                  CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+																		_voxelData->Size()*sizeof(float),
+																    _voxelData->DataPtr(),
+																		&error_);
+	//delete testData;
+
 	if (error_ != CL_SUCCESS) {
 		ERROR("Failed to bind data");
 		ERROR(GetErrorString(error_));
 		return false;
 	}
-	
-	error_ = clSetKernelArg(kernel_,
-	                        _argNr,
-													sizeof(cl_mem),
-													voxelData_);
-	if (error_ != CL_SUCCESS) {
-		ERROR("Failed to set data kernel argument");
-		ERROR(GetErrorString(error_));
-		return false;
-	}
+
+	floatData_.insert(std::make_pair((cl_uint)_argNr, voxelData));
+
 	return true;
 }
+
+																			
 
 bool CLHandler::RunRaycaster() {
 	
@@ -387,6 +404,20 @@ bool CLHandler::RunRaycaster() {
 		}
 	}
 	
+	// Set up kernel arguments for float data
+	std::map<cl_uint, cl_mem>::iterator fdit;
+	for (fdit=floatData_.begin(); fdit!=floatData_.end(); fdit++) {
+		error_ = clSetKernelArg(kernel_,
+														fdit->first,
+													  sizeof(cl_mem),
+														&(fdit->second));
+		if (error_ != CL_SUCCESS) {
+			ERROR("Failed to set kernel argument " << fdit->first);
+			ERROR(GetErrorString(error_));
+			return false;
+		}
+	}
+
 	// Set up kernel execution
 	error_ = clEnqueueNDRangeKernel(commandQueue_,
 																	kernel_, 

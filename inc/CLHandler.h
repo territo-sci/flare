@@ -45,7 +45,8 @@ private:
 	// Stores textures together with their kernel argument number
 	std::map<cl_uint, cl_mem> GLTextures_;
 
-
+	// Stores float data together with their kernel argument number
+	std::map<cl_uint, cl_mem> floatData_;
 };
 
 }
