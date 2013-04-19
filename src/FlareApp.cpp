@@ -18,7 +18,7 @@ int main() {
 	VoxelData<float> *floatData = new VoxelData<float>();
 	VDFReader *reader_ = VDFReader::New();
 	reader_->SetVoxelData(floatData);
-	if (!reader_->Read("data/enlilTestData.vdf")) exit(1);
+	if (!reader_->Read("/home/vsand/OpenSpace/enlilTestData.vdf")) exit(1);
 
   unsigned int width = 512;
   unsigned int height = 512;
