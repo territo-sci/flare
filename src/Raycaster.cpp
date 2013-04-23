@@ -36,7 +36,8 @@ Raycaster::Raycaster() : Renderer(),
                          quadInitialized_(false),
                          matricesInitialized_(false),
                          framebuffersInitialized_(false),
-                         clHandler_(CLHandler::New()) {
+                         clHandler_(CLHandler::New()),
+												 currentTimestep_(0) {
 
 }
 
@@ -355,9 +356,16 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
 
-  // Alright, here is where the OpenCL happens
+  // Alright, here is where the OpenCL happensi
 
-	if (!clHandler_->RunRaycaster()) return false;
+	if (currentTimestep_ < voxelData_->NumTimesteps()) {
+		currentTimestep_++;
+  } else {
+		currentTimestep_ = 0;
+	}
+
+  unsigned int timeStepOffset = voxelData_->TimestepOffset(currentTimestep_);
+	if (!clHandler_->RunRaycaster(currentTimestep_)) return false;
 
   // Output 
 

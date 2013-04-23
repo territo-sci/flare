@@ -327,7 +327,8 @@ bool CLHandler::CreateCommandQueue() {
 	}
 }
 
-bool CLHandler::BindData(unsigned int _argNr, VoxelData<float> *_voxelData) { 
+bool CLHandler::BindData(unsigned int _argNr, 
+                         VoxelData<float> *_voxelData) { 
 
 	/*	
 	// TODO test data
@@ -351,7 +352,7 @@ bool CLHandler::BindData(unsigned int _argNr, VoxelData<float> *_voxelData) {
 	*/
 	cl_mem voxelData = clCreateBuffer(context_,
 	                                  CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-																		_voxelData->Size()*sizeof(float),
+																		_voxelData->NumVoxelsTotal()*sizeof(float),
 																    _voxelData->DataPtr(),
 																		&error_);
 	//delete testData;
@@ -369,7 +370,7 @@ bool CLHandler::BindData(unsigned int _argNr, VoxelData<float> *_voxelData) {
 
 																			
 
-bool CLHandler::RunRaycaster() {
+bool CLHandler::RunRaycaster(unsigned int _timestepOffset) {
 	
 	size_t globalSize[] = { 512, 512 };
 	size_t localSize[] = { 16, 16 };
@@ -416,6 +417,17 @@ bool CLHandler::RunRaycaster() {
 			ERROR(GetErrorString(error_));
 			return false;
 		}
+	}
+
+	// Set up offset kernel argument
+	error_ = clSetKernelArg(kernel_,
+													4,
+													sizeof(unsigned int),
+													&_timestepOffset);
+  if (error_ != CL_SUCCESS) {
+		ERROR("Failed to set kernel argument 4");
+		ERROR(GetErrorString(error_));
+		return false;
 	}
 
 	// Set up kernel execution

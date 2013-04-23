@@ -19,7 +19,13 @@ public:
 	unsigned int XDim() const { return xDim_; }
 	unsigned int YDim() const { return yDim_; }
 	unsigned int ZDim() const { return zDim_; }
-	unsigned int Size() const { return xDim_*yDim_*zDim_; }
+	unsigned int NumVoxelsPerTimestep() const { return xDim_*yDim_*zDim_; }
+	unsigned int NumVoxelsTotal() const { 
+		return xDim_*yDim_*zDim_*numTimesteps_;
+	}
+	unsigned int TimestepOffset(unsigned int _timestep) {
+		return xDim_*yDim_*zDim_*_timestep;
+	}
 	T Data(unsigned int _x, unsigned int _y, unsigned int _z) const {
 		return data_.at(CoordsToIndex(_x, _y, _z));
 	}

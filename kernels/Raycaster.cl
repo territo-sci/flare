@@ -13,7 +13,8 @@ __kernel void
 Raycaster(__global __read_only image2d_t cubeFront,
 				  __global __read_only image2d_t cubeBack,
 					__global __write_only image2d_t output,
-					__global __read_only float *voxelData) {
+					__global __read_only float *voxelData,
+					int timestepOffset) {
 
 	int3 dimensions = (int3)(128, 128, 128);
 	
@@ -41,8 +42,10 @@ Raycaster(__global __read_only image2d_t cubeFront,
 	float stepSize = 0.01;
 	float3 samplePoint = cubeFrontColor.xyz;
 	float intensity = 0.0;
-	while (traversed < maxDistance) {
-		intensity += voxelData[CoordsToIndex(samplePoint, dimensions)];
+	while (traversed < maxDistance) 
+	{
+    int index = timestepOffset + CoordsToIndex(samplePoint, dimensions);
+		intensity += voxelData[index];
 		samplePoint += direction * stepSize;
 		traversed += stepSize;
 	}

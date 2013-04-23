@@ -84,6 +84,7 @@ private:
   CLHandler *clHandler_;
 	// Data to render
 	VoxelData<float> *voxelData_;
+	unsigned int currentTimestep_;
 };
 
 }

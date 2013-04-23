@@ -22,7 +22,7 @@ public:
 	bool CreateKernel();
 	bool CreateCommandQueue();
 	bool BindData(unsigned int _argNr, VoxelData<float> *_voxelData);
-	bool RunRaycaster();
+	bool RunRaycaster(unsigned int _timestepOffset);
 private:
   CLHandler();
 	char * ReadSource(std::string _filename, int &_numChars) const;
