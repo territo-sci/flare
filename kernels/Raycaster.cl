@@ -6,8 +6,29 @@ int CoordsToIndex(float3 _coordinates,
 	int y = (float)(_dimensions.y-1) * _coordinates.y;
 	int z = (float)(_dimensions.z-1) * _coordinates.z;
   // Return index
-	return x + y*_dimensions.x + z*_dimensions.x*_dimensions.z;
+	return x + y*_dimensions.x + z*_dimensions.x*_dimensions.y;
 }
+
+// Turn normalized [0..1] cartesian coordinates 
+// to normalized spherical [0..1] coordinates
+float3 CartesianToSpherical(float3 _cartesian) {
+	// Put cartesian in [-1..1] range
+	// r from [0..sqrt3] to [0..1] range
+	// theta from [0..PI] to [0..1] range
+	// phi from [-PI..PI] to [0..1] range
+	_cartesian = (float3)(-1.0) + 2.0* _cartesian;
+	float r = length(_cartesian);
+	float theta, phi;
+	if (r == 0.0) {
+		theta = phi = 0.0;
+	} else {
+		theta = acos(_cartesian.z/r) / M_PI;
+		phi = (M_PI + atan2(_cartesian.y, _cartesian.x)) / (2.0*M_PI);
+	}
+	r = r / sqrt(3.0);
+	return (float3)(r, theta, phi);
+}
+
 
 __kernel void
 Raycaster(__global __read_only image2d_t cubeFront,
@@ -41,17 +62,19 @@ Raycaster(__global __read_only image2d_t cubeFront,
 	// Sum colors
 	float stepSize = 0.01;
 	float3 samplePoint = cubeFrontColor.xyz;
+	float3 spherical;
 	float intensity = 0.0;
 	while (traversed < maxDistance) 
 	{
-    int index = timestepOffset + CoordsToIndex(samplePoint, dimensions);
+		spherical = CartesianToSpherical(samplePoint);
+		int index = timestepOffset + CoordsToIndex(spherical, dimensions);
 		intensity += voxelData[index];
 		samplePoint += direction * stepSize;
 		traversed += stepSize;
 	}
 
 	// Output
-	float4 color = 15.0 * stepSize * (float4)(intensity, intensity, intensity, 1.0);
+	float4 color = 50.0  * stepSize * (float4)(intensity, intensity, intensity, 1.0);
 
 	// Write to image
 	write_imagef(output, intCoords, color);
