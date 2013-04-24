@@ -282,8 +282,8 @@ void Raycaster::SetQuadShaderProgram(ShaderProgram *_quadShaderProgram) {
 bool Raycaster::Render(float _timestep) {
 
 	timeElapsed_ += _timestep;
-	DEBUG("timeElapsed: " << timeElapsed_);
-
+  
+	// Reset any errors
   glGetError();
 
   // TODO move init checks maybe baby
@@ -365,32 +365,22 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
 
-  // Alright, here is where the OpenCL happensi
-
+	// Advance the animation if it's time
   if (timeElapsed_ > animationRate_) {
 		timeElapsed_ = (timeElapsed_-animationRate_); 
-  
-		if (currentTimestep_ < voxelData_->NumTimesteps()-2) {
+		if (currentTimestep_ < voxelData_->NumTimesteps()-1) {
 			currentTimestep_++;
 		} else {
 			currentTimestep_ = 0;
 		}
-
   }
 
-	DEBUG("Current timestep: " << currentTimestep_);
-
   unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep_);
-	DEBUG("timestepOffset: : " << timestepOffset);
 	if (!clHandler_->RunRaycaster(timestepOffset)) return false;
 
   // Output 
 
   // Render to screen using quad
-
-  // TODO use cube front textur as output for now
- //   quadTex_ = cubeFrontTex_;
-
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
 
   glDisable(GL_CULL_FACE);

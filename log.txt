@@ -1,0 +1,34 @@
+Read data dimensionality: 1
+Read data num timesteps: 1
+Read x dimension: 128
+Read y dimension: 128
+Read z dimension: 128
+Opening 512 x 512 window
+OpenGL version: 4.2.0 NVIDIA 304.84
+Using GLEW 1.6.0
+Creating vertex shader from source file shaders/cubeVert.glsl
+Creating fragment shader from source file shaders/cubeFrag.glsl
+Creating shader program
+Linking shader program
+Creating vertex shader from source file shaders/quadVert.glsl
+Creating fragment shader from source file shaders/quadFrag.glsl
+Creating shader program
+Linking shader program
+Initializing Texture2D
+Initializing Texture2D
+Initializing Texture2D
+Initializing renderbuffer for depth
+Initializing front cube framebuffer
+Initializing back cube framebuffer
+Initializing framebuffers... complete
+Number of CL platforms: 1
+Number of CL devices: 2
+Device 0 name: GeForce GTX 690
+Device 1 name: GeForce GTX 690
+CL context set up properly
+Created CL program successfully
+Built CL program successfully
+Created CL kernel successfully
+Created CL command queue successfully
+Starting rendering loop
+GLFW terminated
