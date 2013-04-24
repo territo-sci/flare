@@ -69,6 +69,7 @@ int main() {
   raycaster->SetQuadShaderProgram(quadShaderProgram);
   raycaster->InitFramebuffers();
 	raycaster->SetVoxelData(floatData);
+	raycaster->SetAnimationRate(0.1f);
   raycaster->InitCL();
 
   // Go!

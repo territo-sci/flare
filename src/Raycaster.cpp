@@ -37,6 +37,8 @@ Raycaster::Raycaster() : Renderer(),
                          matricesInitialized_(false),
                          framebuffersInitialized_(false),
                          clHandler_(CLHandler::New()),
+												 timeElapsed_(0.f),
+												 animationRate_(0.f),
 												 currentTimestep_(0) {
 
 }
@@ -53,6 +55,10 @@ bool Raycaster::InitMatrices() {
   proj_ = glm::perspective(40.f, aspect, 0.1f, 100.f);
   matricesInitialized_ = true;
   return true;
+}
+
+void Raycaster::SetAnimationRate(float _animationRate) {
+	animationRate_ = _animationRate;
 }
 
 bool Raycaster::InitCube() {
@@ -275,6 +281,9 @@ void Raycaster::SetQuadShaderProgram(ShaderProgram *_quadShaderProgram) {
 
 bool Raycaster::Render(float _timestep) {
 
+	timeElapsed_ += _timestep;
+	DEBUG("timeElapsed: " << timeElapsed_);
+
   glGetError();
 
   // TODO move init checks maybe baby
@@ -358,14 +367,22 @@ bool Raycaster::Render(float _timestep) {
 
   // Alright, here is where the OpenCL happensi
 
-	if (currentTimestep_ < voxelData_->NumTimesteps()) {
-		currentTimestep_++;
-  } else {
-		currentTimestep_ = 0;
-	}
+  if (timeElapsed_ > animationRate_) {
+		timeElapsed_ = (timeElapsed_-animationRate_); 
+  
+		if (currentTimestep_ < voxelData_->NumTimesteps()-2) {
+			currentTimestep_++;
+		} else {
+			currentTimestep_ = 0;
+		}
 
-  unsigned int timeStepOffset = voxelData_->TimestepOffset(currentTimestep_);
-	if (!clHandler_->RunRaycaster(currentTimestep_)) return false;
+  }
+
+	DEBUG("Current timestep: " << currentTimestep_);
+
+  unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep_);
+	DEBUG("timestepOffset: : " << timestepOffset);
+	if (!clHandler_->RunRaycaster(timestepOffset)) return false;
 
   // Output 
 

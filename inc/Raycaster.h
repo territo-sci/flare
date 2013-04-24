@@ -38,6 +38,7 @@ public:
   void SetQuadShaderProgram(ShaderProgram *_quadShaderProgram);
   void SetConfigFilename(std::string _configFilename);
   void SetKeyLastState(int, bool _pressed);
+	void SetAnimationRate(float _animationRate);
   Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
   Texture2D * CubeBackTexture() const { return cubeBackTex_; }
   Texture2D * QuadTexture() const { return quadTex_; }
@@ -84,6 +85,10 @@ private:
   CLHandler *clHandler_;
 	// Data to render
 	VoxelData<float> *voxelData_;
+	// Time since last frame was rendered, used to control animation speed
+	float timeElapsed_;
+	float animationRate_;
+	// Animation timestep
 	unsigned int currentTimestep_;
 };
 
