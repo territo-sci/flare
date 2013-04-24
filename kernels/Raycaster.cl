@@ -12,10 +12,7 @@ int CoordsToIndex(float3 _coordinates,
 // Turn normalized [0..1] cartesian coordinates 
 // to normalized spherical [0..1] coordinates
 float3 CartesianToSpherical(float3 _cartesian) {
-	// Put cartesian in [-1..1] range
-	// r from [0..sqrt3] to [0..1] range
-	// theta from [0..PI] to [0..1] range
-	// phi from [-PI..PI] to [0..1] range
+	// Put cartesian in [-1..1] range first
 	_cartesian = (float3)(-1.0) + 2.0* _cartesian;
 	float r = length(_cartesian);
 	float theta, phi;
@@ -60,7 +57,7 @@ Raycaster(__global __read_only image2d_t cubeFront,
 	float traversed = 0.0;
 
 	// Sum colors
-	float stepSize = 0.01;
+	float stepSize = 0.005;
 	float3 samplePoint = cubeFrontColor.xyz;
 	float3 spherical;
 	float intensity = 0.0;
@@ -74,7 +71,7 @@ Raycaster(__global __read_only image2d_t cubeFront,
 	}
 
 	// Output
-	float4 color = 50.0  * stepSize * (float4)(intensity, intensity, intensity, 1.0);
+	float4 color = 60 * stepSize * (float4)(intensity, intensity, intensity, 1.0);
 
 	// Write to image
 	write_imagef(output, intCoords, color);
