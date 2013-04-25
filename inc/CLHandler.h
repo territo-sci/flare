@@ -5,6 +5,7 @@
 #include <map>
 #include <CL/cl.hpp>
 #include <VoxelData.h>
+#include <KernelConstants.h>
 
 namespace osp {
 
@@ -23,6 +24,7 @@ public:
 	bool CreateCommandQueue();
 	bool BindData(unsigned int _argNr, VoxelData<float> *_voxelData);
 	bool RunRaycaster(unsigned int _timestepOffset);
+	bool BindConstants(KernelConstants *kernelConstants_);
 private:
   CLHandler();
 	char * ReadSource(std::string _filename, int &_numChars) const;
@@ -47,6 +49,10 @@ private:
 
 	// Stores float data together with their kernel argument number
 	std::map<cl_uint, cl_mem> floatData_;
+
+  // Constants
+	cl_mem constants_;
+	
 };
 
 }

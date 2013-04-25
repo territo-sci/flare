@@ -1,3 +1,11 @@
+struct KernelConstants {
+	float stepSize;
+	float intensity;
+	int aDim;
+	int bDim;
+	int cDim;
+};
+
 // Turn normalized [0..1] coordinates into array index 
 int CoordsToIndex(float3 _coordinates, 
 								  int3 _dimensions) {
@@ -32,9 +40,12 @@ Raycaster(__global __read_only image2d_t cubeFront,
 				  __global __read_only image2d_t cubeBack,
 					__global __write_only image2d_t output,
 					__global __read_only float *voxelData,
+					__constant struct KernelConstants *constants,
 					int timestepOffset) {
 
-	int3 dimensions = (int3)(128, 128, 128);
+	int3 dimensions = (int3)(constants->aDim,
+	                         constants->bDim,
+													 constants->cDim);
 	
 	// Kernel should be launched in 2D with one work item per pixel
 	int idx = get_global_id(0);
@@ -57,21 +68,22 @@ Raycaster(__global __read_only image2d_t cubeFront,
 	float traversed = 0.0;
 
 	// Sum colors
-	float stepSize = 0.005;
+	float stepSize = constants->stepSize;
 	float3 samplePoint = cubeFrontColor.xyz;
 	float3 spherical;
-	float intensity = 0.0;
+	float sum = 0.0;
 	while (traversed < maxDistance) 
 	{
 		spherical = CartesianToSpherical(samplePoint);
 		int index = timestepOffset + CoordsToIndex(spherical, dimensions);
-		intensity += voxelData[index];
+		sum += voxelData[index];
 		samplePoint += direction * stepSize;
 		traversed += stepSize;
 	}
 
 	// Output
-	float4 color = 60 * stepSize * (float4)(intensity, intensity, intensity, 1.0);
+	float intensity = constants->intensity;
+	float4 color = intensity*stepSize*(float4)(sum, sum, sum, 1.0);
 
 	// Write to image
 	write_imagef(output, intCoords, color);

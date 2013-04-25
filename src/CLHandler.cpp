@@ -263,6 +263,8 @@ bool CLHandler::CreateProgram(std::string _filename) {
 
 bool CLHandler::BuildProgram() {
 
+  DEBUG("Building CL program...");
+
 	error_ = clBuildProgram(program_, (cl_uint)0, NULL, NULL, NULL, NULL);
 
 	if (error_ == CL_SUCCESS) {
@@ -330,26 +332,6 @@ bool CLHandler::CreateCommandQueue() {
 bool CLHandler::BindData(unsigned int _argNr, 
                          VoxelData<float> *_voxelData) { 
 
-	/*	
-	// TODO test data
-	unsigned int dim = 128;
-	float *testData = new float[dim*dim*dim];
-	for (unsigned int x=0; x<dim; x++) {
-		for (unsigned int y=0; y<dim; y++) {
-			for (unsigned int z=0; z<dim; z++) {
-				unsigned int idx = x+y*dim+z*dim*dim;
-				float xNorm = (float)x/127.f;
-				float yNorm = (float)y/127.f;
-				float zNorm = (float)z/127.f;
-				testData[idx] = sqrt(xNorm*xNorm+yNorm*yNorm+zNorm*zNorm)/1.74f;
-			}
-		}
-	}
-
-	INFO(testData[0]);
-	INFO(testData[128*128*128/2]);
-	INFO(testData[128*128*128-1]);
-	*/
 	cl_mem voxelData = clCreateBuffer(context_,
 	                                  CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
 																		_voxelData->NumVoxelsTotal()*sizeof(float),
@@ -368,7 +350,22 @@ bool CLHandler::BindData(unsigned int _argNr,
 	return true;
 }
 
-																			
+bool CLHandler::BindConstants(KernelConstants *_kernelConstants) {
+
+	constants_ = clCreateBuffer(context_,
+	                            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+															sizeof(KernelConstants),
+															_kernelConstants,
+															&error_);
+	if (error_ != CL_SUCCESS) {
+		ERROR("Failed to bind constants");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
+
+	return true;
+
+}
 
 bool CLHandler::RunRaycaster(unsigned int _timestepOffset) {
 	
@@ -419,13 +416,24 @@ bool CLHandler::RunRaycaster(unsigned int _timestepOffset) {
 		}
 	}
 
+	// Set up constants kernel argument
+	error_ = clSetKernelArg(kernel_,
+	                        4,
+													sizeof(cl_mem),
+													&constants_);
+	if (error_ != CL_SUCCESS) {
+		ERROR("Failed to set kernel argument 4");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
+
 	// Set up offset kernel argument
 	error_ = clSetKernelArg(kernel_,
-													4,
+												  5,
 													sizeof(unsigned int),
 													&_timestepOffset);
   if (error_ != CL_SUCCESS) {
-		ERROR("Failed to set kernel argument 4");
+		ERROR("Failed to set kernel argument 5");
 		ERROR(GetErrorString(error_));
 		return false;
 	}

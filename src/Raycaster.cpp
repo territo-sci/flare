@@ -41,6 +41,11 @@ Raycaster::Raycaster() : Renderer(),
 												 animationRate_(0.f),
 												 currentTimestep_(0) {
 
+  kernelConstants_.stepSize = 0.01f;
+	kernelConstants_.intensity = 60.f;
+	kernelConstants_.aDim = 128;
+	kernelConstants_.bDim = 128;
+	kernelConstants_.cDim = 128;
 }
 
 Raycaster::~Raycaster() {
@@ -365,6 +370,9 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
 
+  // Set kernel constants that might have changed 
+  if (!clHandler_->BindConstants(&kernelConstants_)) return false;
+
 	// Advance the animation if it's time
   if (timeElapsed_ > animationRate_) {
 		timeElapsed_ = (timeElapsed_-animationRate_); 
@@ -375,6 +383,7 @@ bool Raycaster::Render(float _timestep) {
 		}
   }
 
+  // Run kernel
   unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep_);
 	if (!clHandler_->RunRaycaster(timestepOffset)) return false;
 

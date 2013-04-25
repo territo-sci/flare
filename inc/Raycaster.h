@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <CL/cl.hpp>
 #include <VoxelData.h>
+#include <KernelConstants.h>
 
 namespace osp {
 
@@ -90,6 +91,8 @@ private:
 	float animationRate_;
 	// Animation timestep
 	unsigned int currentTimestep_;
+  // Kernel constants
+	KernelConstants kernelConstants_;
 };
 
 }
