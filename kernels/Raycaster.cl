@@ -1,3 +1,4 @@
+// Needs to mirror struct on host
 struct KernelConstants {
 	float stepSize;
 	float intensity;

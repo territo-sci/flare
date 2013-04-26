@@ -31,6 +31,10 @@ public:
   bool ReadShaderConfig(const std::string &_filename);
   bool HandleMouse();
   bool HandleKeyboard();
+	// Read kernel config from file and voxel data,
+	// update the constants that get sent to the kernel every frame
+	bool UpdateKernelConfig();
+	void SetKernelConfigFilename(const std::string &_filename);
 	void SetVoxelData(VoxelData<float> *_floatData);
   void SetCubeFrontTexture(Texture2D *_cubeFrontTexture);
   void SetCubeBackTexture(Texture2D *_cubeBackTexture);
@@ -93,6 +97,7 @@ private:
 	unsigned int currentTimestep_;
   // Kernel constants
 	KernelConstants kernelConstants_;
+	std::string kernelConfigFilename_;
 };
 
 }

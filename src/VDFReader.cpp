@@ -31,11 +31,11 @@ bool VDFReader::Read(std::string _filename) {
 				  sizeof(unsigned int));
 	in.read(reinterpret_cast<char*>(&(voxelData_->numTimesteps_)),
 	        sizeof(unsigned int));
-	in.read(reinterpret_cast<char*>(&(voxelData_->xDim_)),
+	in.read(reinterpret_cast<char*>(&(voxelData_->aDim_)),
 	        sizeof(unsigned int));
-	in.read(reinterpret_cast<char*>(&(voxelData_->yDim_)),
+	in.read(reinterpret_cast<char*>(&(voxelData_->bDim_)),
 	        sizeof(unsigned int));
-	in.read(reinterpret_cast<char*>(&(voxelData_->zDim_)),
+	in.read(reinterpret_cast<char*>(&(voxelData_->cDim_)),
 					sizeof(unsigned int));
 	unsigned int size = voxelData_->NumVoxelsTotal();
 	voxelData_->data_.resize(size);
@@ -44,9 +44,9 @@ bool VDFReader::Read(std::string _filename) {
 
   INFO("Read data dimensionality: " << voxelData_->dataDimensionality_);
 	INFO("Read data num timesteps: " << voxelData_->numTimesteps_);
-	INFO("Read x dimension: " << voxelData_->xDim_);
-	INFO("Read y dimension: " << voxelData_->yDim_);
-	INFO("Read z dimension: " << voxelData_->zDim_);
+	INFO("Read x dimension: " << voxelData_->aDim_);
+	INFO("Read y dimension: " << voxelData_->bDim_);
+	INFO("Read z dimension: " << voxelData_->cDim_);
 
 	return true;
 }

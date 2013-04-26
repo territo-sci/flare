@@ -16,29 +16,29 @@ public:
 	friend class VDFReader;
 	unsigned int NumTimesteps() const { return numTimesteps_; }
 	unsigned int DataDimensionality() const { return dataDimensionality_; }
-	unsigned int XDim() const { return xDim_; }
-	unsigned int YDim() const { return yDim_; }
-	unsigned int ZDim() const { return zDim_; }
-	unsigned int NumVoxelsPerTimestep() const { return xDim_*yDim_*zDim_; }
+	unsigned int ADim() const { return aDim_; }
+	unsigned int BDim() const { return bDim_; }
+	unsigned int CDim() const { return cDim_; }
+	unsigned int NumVoxelsPerTimestep() const { return aDim_*bDim_*cDim_; }
 	unsigned int NumVoxelsTotal() const { 
-		return xDim_*yDim_*zDim_*numTimesteps_;
+		return aDim_*bDim_*cDim_*numTimesteps_;
 	}
 	unsigned int TimestepOffset(unsigned int _timestep) {
-		return xDim_*yDim_*zDim_*_timestep;
+		return aDim_*bDim_*cDim_*_timestep;
 	}
-	T Data(unsigned int _x, unsigned int _y, unsigned int _z) const {
-		return data_.at(CoordsToIndex(_x, _y, _z));
+	T Data(unsigned int _a, unsigned int _b, unsigned int _c) const {
+		return data_.at(CoordsToIndex(_a, _b, _c));
 	}
 	T * DataPtr() { return &data_[0]; }
 private:
-	unsigned int CoordsToIndex(unsigned int _x,
-														 unsigned int _y,
-														 unsigned int _z) {
-		return _x + _y*zDim_ + _z*yDim_*zDim_;
+	unsigned int CoordsToIndex(unsigned int _a,
+														 unsigned int _b,
+														 unsigned int _c) {
+		return _a + _b*aDim_ + _c*aDim_*bDim_;
 	}
-	unsigned int xDim_;
-	unsigned int yDim_;
-	unsigned int zDim_;
+	unsigned int aDim_;
+	unsigned int bDim_;
+	unsigned int cDim_;
 	unsigned int numTimesteps_;
 	unsigned int dataDimensionality_;
 	std::vector<T> data_;

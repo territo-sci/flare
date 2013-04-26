@@ -5,10 +5,12 @@
 #include <Raycaster.h>
 #include <ShaderProgram.h>
 #include <VDFReader.h>
+#include <TransferFunction.h>
 #include <VoxelData.h>
 #include <string>
 #include <cstdlib>
 #include <vector>
+#include <iostream>
 
 using namespace osp;
 
@@ -54,6 +56,13 @@ int main() {
   // Create an output texture to write to
   Texture2D *quadTex = Texture2D::New(dimensions);
   quadTex->Init();
+	
+	// Create transfer functions
+	TransferFunction transferFunction;
+	transferFunction.SetInFilename("transferfunctions/test.txt");
+	transferFunction.ReadFile();
+	std::cout << transferFunction << std::endl;
+	transferFunction.ConstructTexture();
 
   // Create a raycaster and set it up
   Raycaster * raycaster = Raycaster::New();
@@ -70,6 +79,8 @@ int main() {
   raycaster->InitFramebuffers();
 	raycaster->SetVoxelData(floatData);
 	raycaster->SetAnimationRate(0.1f);
+	raycaster->SetKernelConfigFilename("config/kernelConstants.txt");
+	raycaster->UpdateKernelConfig();
   raycaster->InitCL();
 
   // Go!

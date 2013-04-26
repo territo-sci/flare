@@ -13,6 +13,7 @@ using namespace osp;
 
 Raycaster::Raycaster() : Renderer(),
                          configFilename_("NotSet"),
+												 kernelConfigFilename_("NotSet"),
                          cubeFrontFBO_(0),
                          cubeBackFBO_(0),
                          renderbufferObject_(0),
@@ -244,6 +245,34 @@ bool Raycaster::ReadShaderConfig(const std::string &_filename) {
   }
 }
 
+bool Raycaster::UpdateKernelConfig() {
+	std::ifstream in;
+	in.open(kernelConfigFilename_.c_str());
+	if (!in.is_open()) {
+		ERROR("Could not open kernel config file " << kernelConfigFilename_);
+		return false;
+	} else {
+		std::string variable;
+		float value;
+		while (!in.eof()) {
+			in >> variable;
+			in >> value;
+			if (variable == "stepSize") {
+				kernelConstants_.stepSize = value;
+			} else if (variable == "intensity") {
+				kernelConstants_.intensity = value;
+			} else {
+				ERROR("Invalid variable name: " << variable);
+				return false;
+			}
+		}
+	}
+	kernelConstants_.aDim = voxelData_->ADim();
+	kernelConstants_.bDim = voxelData_->BDim();
+	kernelConstants_.cDim = voxelData_->CDim();
+	return true;
+}
+
 bool Raycaster::UpdateMatrices() {
   model_ = glm::mat4(1.f);
   model_ = glm::translate(model_, glm::vec3(0.5f, 0.5f, 0.5f));
@@ -449,6 +478,7 @@ bool Raycaster::HandleKeyboard() {
   if (KeyPressedNoRepeat('R')) {
     if (!ReloadConfig()) return false;
     if (!ReloadShaders()) return false;
+		if (!UpdateKernelConfig()) return false;
   }
 
   if (KeyPressed('W')) zoom_ -= 0.1f;
@@ -507,3 +537,6 @@ void Raycaster::SetVoxelData(VoxelData<float> *_voxelData) {
 	voxelData_ = _voxelData;
 }
 
+void Raycaster::SetKernelConfigFilename(const std::string &_filename) {
+	kernelConfigFilename_ = _filename;
+}
