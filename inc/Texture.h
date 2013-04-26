@@ -16,7 +16,7 @@ public:
   // Return handle for OpenGL use
   unsigned int Handle() const;
   // Initialize, subclasses have to implement
-  virtual bool Init() = 0;
+  virtual bool Init(float * data) = 0;
   // Bind to a ShaderProgram
   virtual bool Bind(ShaderProgram * _shaderProgram,
                     std::string _uniformName,

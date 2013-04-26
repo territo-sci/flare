@@ -17,7 +17,7 @@ Texture2D * Texture2D::New(std::vector<unsigned int> _dim) {
   return new Texture2D(_dim);
 }
 
-bool Texture2D::Init() {
+bool Texture2D::Init(float *_data) {
   INFO("Initializing Texture2D");
 
   if (initialized_) {
@@ -34,15 +34,17 @@ bool Texture2D::Init() {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);
-  glTexImage2D(GL_TEXTURE_2D,       // target
-               0,                   // level
-               GL_RGBA,             // internal format
-               dim_[0],             // width
-               dim_[1],             // height
-               0,                   // border
-               GL_RGBA,             // format
-               GL_UNSIGNED_BYTE,    // type
-               0);                  // data
+	// TODO The data will always be 0 for now, until we need to init
+	// Texture2Ds with data.
+  glTexImage2D(GL_TEXTURE_2D,           // target
+               0,                       // level
+               GL_RGBA,                 // internal format
+               dim_[0],                 // width
+               dim_[1],                 // height
+               0,                       // border
+               GL_RGBA,                 // format
+               GL_UNSIGNED_BYTE,        // type
+               0);                      // data
   glBindTexture(GL_TEXTURE_2D, 0);
   initialized_ = true;
   return CheckGLError("Texture2D::Init()");

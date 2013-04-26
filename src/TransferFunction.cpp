@@ -7,6 +7,7 @@
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
 #include <math.h>
+#include <Texture1D.h>
 
 using namespace osp;
 
@@ -145,11 +146,12 @@ bool TransferFunction::ConstructTexture() {
 			}
 		}
 
-		// test
-		for (unsigned int i=0; i<width_; i++) {
-			DEBUG(i << " " << values[4*i]);
-		}
-
+	  // Create and fill the texture
+		std::vector<unsigned int> dim(1);
+		dim[0] = width_;
+	  texture_ = Texture1D::New(dim);
+		texture_->Init(values);
+		generatedTexture_ = true;	
 
 		delete[] values;
 	} else {

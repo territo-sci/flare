@@ -21,6 +21,7 @@ add_executable(FlareApp
                Renderer.cpp
                Raycaster.cpp
                Texture.cpp
+	       Texture1D.cpp
                Texture2D.cpp
                CLHandler.cpp
 	       MappingKey.cpp

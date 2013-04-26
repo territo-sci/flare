@@ -24,6 +24,7 @@ add_executable(FlareApp
                Texture2D.cpp
                CLHandler.cpp
 	       MappingKey.cpp
+               TransferFunction.cpp
 	       VDFReader.cpp
                ShaderProgram.cpp)
 

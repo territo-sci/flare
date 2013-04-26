@@ -1,5 +1,5 @@
 #include <GL/glew.h>
-#include <Texture2D.h>
+#include <Texture1D.h>
 #include <ShaderProgram.h>
 #include <Utils.h>
 
@@ -15,7 +15,7 @@ Texture1D * Texture1D::New(std::vector<unsigned int> _dim) {
 	return new Texture1D(_dim);
 }
 
-bool Texture1D::Init() {
+bool Texture1D::Init(float *_data) {
 	INFO("Initializing Texture1D");
 
 	if (initialized_) {
@@ -38,11 +38,16 @@ bool Texture1D::Init() {
 							 dim_[0],					 // width,
 							 0,								 // border
 							 GL_RGBA,					 // format
-							 GL_UNSIGNED_BYTE, // type
-							 0);
+							 GL_FLOAT,         // type
+							 _data);
 	glBindTexture(GL_TEXTURE_1D, 0);
 	initialized_ = true;
 	return CheckGLError("Texture1D::Init()");
 }
 
-
+bool Texture1D::Bind(ShaderProgram * _shaderProgram,
+                     std::string _uniformName,
+										 unsigned int _texUnit) const {
+  // TODO unused
+	return false;
+}
