@@ -58,11 +58,11 @@ int main() {
   quadTex->Init();
 	
 	// Create transfer functions
-	TransferFunction transferFunction;
-	transferFunction.SetInFilename("transferfunctions/test.txt");
-	transferFunction.ReadFile();
-	std::cout << transferFunction << std::endl;
-	transferFunction.ConstructTexture();
+  TransferFunction *transferFunction = TransferFunction::New();
+	transferFunction->SetInFilename("transferfunctions/test.txt");
+	transferFunction->ReadFile();
+	std::cout << *transferFunction << std::endl;
+	transferFunction->ConstructTexture();
 
   // Create a raycaster and set it up
   Raycaster * raycaster = Raycaster::New();
@@ -79,6 +79,7 @@ int main() {
   raycaster->InitFramebuffers();
 	raycaster->SetVoxelData(floatData);
 	raycaster->SetAnimationRate(0.1f);
+	raycaster->AddTransferFunction(transferFunction);
 	raycaster->SetKernelConfigFilename("config/kernelConstants.txt");
 	raycaster->UpdateKernelConfig();
   raycaster->InitCL();
@@ -90,6 +91,7 @@ int main() {
   // Clean up, like a good citizen
   delete cubeFrontTex;
   delete cubeBackTex;
+	//delete transferFunction;
   delete cubeShaderProgram;
   delete quadShaderProgram;
   delete manager;

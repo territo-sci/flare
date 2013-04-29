@@ -22,7 +22,7 @@ CLHandler * CLHandler::New() {
   }
 }
 
-CLHandler::CLHandler() {
+CLHandler::CLHandler() : error_(CL_SUCCESS) {
 }
 
 std::string CLHandler::GetErrorString(cl_int _error) {
@@ -327,6 +327,23 @@ bool CLHandler::CreateCommandQueue() {
 		ERROR(GetErrorString(error_));
 		return false;
 	}
+}
+
+bool CLHandler::BindFloatData(unsigned int _argNr,
+                              float *_floatData,
+															unsigned int _size) {
+	cl_mem floatData = clCreateBuffer(context_,
+	                                  CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
+																		_size*sizeof(float),
+																		_floatData,
+																		&error_);
+	if (error_ != CL_SUCCESS) {
+		ERROR("Failed to bind float data");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
+
+	floatData_.insert(std::make_pair((cl_uint)_argNr, floatData));
 }
 
 bool CLHandler::BindData(unsigned int _argNr, 

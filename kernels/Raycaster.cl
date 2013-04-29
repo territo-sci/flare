@@ -42,7 +42,9 @@ Raycaster(__global __read_only image2d_t cubeFront,
 					__global __write_only image2d_t output,
 					__global __read_only float *voxelData,
 					__constant struct KernelConstants *constants,
-					int timestepOffset) {
+					int timestepOffset,
+					__global __read_only float *tf) {
+
 
 	int3 dimensions = (int3)(constants->aDim,
 	                         constants->bDim,
@@ -55,7 +57,7 @@ Raycaster(__global __read_only image2d_t cubeFront,
 
 	// Make a sampler to enable reading
 	const sampler_t sampler = CLK_NORMALIZED_COORDS_FALSE;
-	
+		
 	// Read from textures
 	float4 cubeFrontColor = read_imagef(cubeFront, sampler, intCoords);
 	float4 cubeBackColor = read_imagef(cubeBack, sampler, intCoords);
@@ -72,19 +74,27 @@ Raycaster(__global __read_only image2d_t cubeFront,
 	float stepSize = constants->stepSize;
 	float3 samplePoint = cubeFrontColor.xyz;
 	float3 spherical;
-	float sum = 0.0;
+	float4 color = (float4)(0.0, 0.0, 0.0, 1.0); 
 	while (traversed < maxDistance) 
 	{
 		spherical = CartesianToSpherical(samplePoint);
 		int index = timestepOffset + CoordsToIndex(spherical, dimensions);
-		sum += voxelData[index];
+		// Get intensity from data
+		float i = voxelData[index];
+		// Get transfer function components
+	  float tfr = tf[(int)(i*512.0)*4 + 0];
+	  float tfg = tf[(int)(i*512.0)*4 + 1];
+	  float tfb = tf[(int)(i*512.0)*4 + 2];
+	  float tfa = tf[(int)(i*512.0)*4 + 3];
+		
+		color += (float4)(tfr, tfg, tfb, tfa);
 		samplePoint += direction * stepSize;
 		traversed += stepSize;
 	}
 
 	// Output
 	float intensity = constants->intensity;
-	float4 color = intensity*stepSize*(float4)(sum, sum, sum, 1.0);
+	color *= intensity*stepSize;
 
 	// Write to image
 	write_imagef(output, intCoords, color);

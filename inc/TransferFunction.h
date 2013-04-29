@@ -8,14 +8,12 @@
 
 namespace osp {
 
-class Texture1D;
+//class Texture1D;
 	
 class TransferFunction {
 public:
-	TransferFunction();
-	TransferFunction(const TransferFunction &_tf);
+	static TransferFunction * New();
 	~TransferFunction();
-	
 	enum Interpolation {
 		LINEAR = 0,
 	};
@@ -31,13 +29,20 @@ public:
 
 	// Accessors
 	unsigned int Width() const { return width_; }
-	Texture1D * Texture() { return texture_; }
+	//Texture1D * Texture() { return texture_; }
+	
+	// TODO temp
+	float * FloatData() { return floatData_; }
 
   // Operators
   TransferFunction& operator=(const TransferFunction &_tf);
 
 private:
-  Texture1D *texture_;
+	TransferFunction();
+	TransferFunction(const TransferFunction &_tf);
+	float *floatData_;
+	
+  //Texture1D *texture_;
 	unsigned int width_;
 	float lower_;
 	float upper_;

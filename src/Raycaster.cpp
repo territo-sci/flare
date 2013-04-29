@@ -8,6 +8,7 @@
 #include <ShaderProgram.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <CLHandler.h>
+#include <TransferFunction.h>
 
 using namespace osp;
 
@@ -245,6 +246,15 @@ bool Raycaster::ReadShaderConfig(const std::string &_filename) {
   }
 }
 
+bool Raycaster::ReloadTransferFunctions() {
+	std::vector<TransferFunction*>::iterator it;
+	for (it=transferFunctions_.begin(); it!=transferFunctions_.end(); it++) {
+		if (!(*it)->ReadFile()) return false;
+		if (!(*it)->ConstructTexture()) return false;
+	}
+	return true;
+}
+
 bool Raycaster::UpdateKernelConfig() {
 	std::ifstream in;
 	in.open(kernelConfigFilename_.c_str());
@@ -479,6 +489,7 @@ bool Raycaster::HandleKeyboard() {
     if (!ReloadConfig()) return false;
     if (!ReloadShaders()) return false;
 		if (!UpdateKernelConfig()) return false;
+		if (!ReloadTransferFunctions()) return false;
   }
 
   if (KeyPressed('W')) zoom_ -= 0.1f;
@@ -530,6 +541,9 @@ bool Raycaster::InitCL() {
 	if (!clHandler_->CreateKernel()) return false;
 	if (!clHandler_->CreateCommandQueue()) return false;
 	if (!clHandler_->BindData(3, voxelData_)) return false;
+	if (!clHandler_->BindFloatData(6, 
+		                             transferFunctions_[0]->FloatData(),
+																 transferFunctions_[0]->Width()*4))return false;
   return true;
 }
 
@@ -539,4 +553,9 @@ void Raycaster::SetVoxelData(VoxelData<float> *_voxelData) {
 
 void Raycaster::SetKernelConfigFilename(const std::string &_filename) {
 	kernelConfigFilename_ = _filename;
+}
+
+
+void Raycaster::AddTransferFunction(TransferFunction *_transferFunction) {
+	transferFunctions_.push_back(_transferFunction);
 }

@@ -3,6 +3,7 @@
 #include <Renderer.h>
 #include <map>
 #include <string>
+#include <vector>
 #include <glm/glm.hpp>
 #include <CL/cl.hpp>
 #include <VoxelData.h>
@@ -13,6 +14,7 @@ namespace osp {
 class ShaderProgram;
 class Texture2D;
 class CLHandler;
+class TransferFunction;
 
 class Raycaster : public Renderer {
 public:
@@ -21,6 +23,7 @@ public:
   virtual bool Render(float _timestep);
   bool ReloadShaders();
   bool ReloadConfig();
+	bool ReloadTransferFunctions();
   bool InitMatrices();
   bool InitCube();
   bool InitQuad();
@@ -44,6 +47,7 @@ public:
   void SetConfigFilename(std::string _configFilename);
   void SetKeyLastState(int, bool _pressed);
 	void SetAnimationRate(float _animationRate);
+	void AddTransferFunction(TransferFunction *_transferFunction);
   Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
   Texture2D * CubeBackTexture() const { return cubeBackTex_; }
   Texture2D * QuadTexture() const { return quadTex_; }
@@ -98,6 +102,8 @@ private:
   // Kernel constants
 	KernelConstants kernelConstants_;
 	std::string kernelConfigFilename_;
+	// Transfer functions
+	std::vector<TransferFunction*> transferFunctions_;
 };
 
 }

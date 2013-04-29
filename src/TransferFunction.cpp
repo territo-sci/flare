@@ -7,12 +7,16 @@
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
 #include <math.h>
-#include <Texture1D.h>
+//#include <Texture1D.h>
 
 using namespace osp;
 
+TransferFunction * TransferFunction::New() {
+	return new TransferFunction();
+}
+
 TransferFunction::TransferFunction() : 
-	texture_(NULL),
+	//texture_(NULL),
   width_(0),
 	lower_(0.f),
   upper_(1.f),
@@ -95,6 +99,8 @@ bool TransferFunction::ConstructTexture() {
 	if (interpolation_ == TransferFunction::LINEAR) {
 
 		// Float values for R, G, B and A channels
+		// TODO temp
+		if (floatData_) delete[] floatData;
 		float *values = new float[4*width_];
 		
 		unsigned int lowerIndex = (unsigned int)floorf(lower_*(float)width_);
@@ -132,13 +138,13 @@ bool TransferFunction::ConstructTexture() {
 					first = false;
 
 					// Interpolate linearly between prev and next mapping key		
-				  DEBUG("i: " << i);
-					DEBUG("pos: " << pos);
-					DEBUG("prev.Intensity(): " << prev.Intensity());
+				  //DEBUG("i: " << i);
+					//DEBUG("pos: " << pos);
+					//DEBUG("prev.Intensity(): " << prev.Intensity());
 					float dist = pos-prev.Intensity();
-					DEBUG("dist: " << dist);
+					//DEBUG("dist: " << dist);
 					float weight = dist/(next.Intensity()-prev.Intensity());
-					DEBUG("weight: " << weight);
+					//DEBUG("weight: " << weight);
 					values[4*i + channel] = ((float)prev.Channel(channel)*(1.f-weight)+ 
 					                        (float)next.Channel(channel)*weight)/255.0;
 
@@ -147,13 +153,13 @@ bool TransferFunction::ConstructTexture() {
 		}
 
 	  // Create and fill the texture
-		std::vector<unsigned int> dim(1);
-		dim[0] = width_;
-	  texture_ = Texture1D::New(dim);
-		texture_->Init(values);
-		generatedTexture_ = true;	
-
-		delete[] values;
+		//std::vector<unsigned int> dim(1);
+		//dim[0] = width_;
+	  //texture_ = Texture1D::New(dim);
+		//texture_->Init(values);
+		//generatedTexture_ = true;	
+		floatData_ = values;
+		//delete[] values;
 	} else {
 		ERROR("Invalid interpolation mode");
 		return false;

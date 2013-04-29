@@ -22,6 +22,9 @@ public:
 	bool BuildProgram();
 	bool CreateKernel();
 	bool CreateCommandQueue();
+	bool BindFloatData(unsigned int _argNr, 
+	                   float *_floatData, 
+	                   unsigned int _size);
 	bool BindData(unsigned int _argNr, VoxelData<float> *_voxelData);
 	bool RunRaycaster(unsigned int _timestepOffset);
 	bool BindConstants(KernelConstants *kernelConstants_);
