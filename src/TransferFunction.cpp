@@ -17,6 +17,7 @@ TransferFunction * TransferFunction::New() {
 
 TransferFunction::TransferFunction() : 
 	//texture_(NULL),
+	floatData_(NULL),
   width_(0),
 	lower_(0.f),
   upper_(1.f),
@@ -100,8 +101,9 @@ bool TransferFunction::ConstructTexture() {
 
 		// Float values for R, G, B and A channels
 		// TODO temp
-		//if (floatData_) delete[] floatData_;
-		float *values = new float[4*width_];
+		if (floatData_ == NULL) {
+			floatData_ = new float[4*width_];
+		}
 		
 		unsigned int lowerIndex = (unsigned int)floorf(lower_*(float)width_);
 		unsigned int upperIndex = (unsigned int)floorf(upper_*(float)width_); 
@@ -120,7 +122,7 @@ bool TransferFunction::ConstructTexture() {
 			for (unsigned int i=0; i<width_; i++) {
 
 				if (i <= lowerIndex || i > upperIndex) {
-					values[4*i + channel] = 0.f;
+					floatData_[4*i + channel] = 0.f;
 				} else {
 
 					// See if it's time to go to next pair of mapping keys
@@ -145,7 +147,7 @@ bool TransferFunction::ConstructTexture() {
 					//DEBUG("dist: " << dist);
 					float weight = dist/(next.Intensity()-prev.Intensity());
 					//DEBUG("weight: " << weight);
-					values[4*i + channel] = ((float)prev.Channel(channel)*(1.f-weight)+ 
+					floatData_[4*i + channel] = ((float)prev.Channel(channel)*(1.f-weight)+ 
 					                        (float)next.Channel(channel)*weight)/255.0;
 
 				}
@@ -158,7 +160,7 @@ bool TransferFunction::ConstructTexture() {
 	  //texture_ = Texture1D::New(dim);
 		//texture_->Init(values);
 		//generatedTexture_ = true;	
-		floatData_ = values;
+		
 		//delete[] values;
 	} else {
 		ERROR("Invalid interpolation mode");

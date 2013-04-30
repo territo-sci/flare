@@ -247,11 +247,16 @@ bool Raycaster::ReadShaderConfig(const std::string &_filename) {
 }
 
 bool Raycaster::ReloadTransferFunctions() {
-	std::vector<TransferFunction*>::iterator it;
-	for (it=transferFunctions_.begin(); it!=transferFunctions_.end(); it++) {
-		if (!(*it)->ReadFile()) return false;
-		if (!(*it)->ConstructTexture()) return false;
+	if (!transferFunctions_[0]->ReadFile()) return false;
+	INFO("Completed reading new TF file");
+	if (!transferFunctions_[0]->ConstructTexture()) return false;
+	INFO("Completed constructing new TF texture");
+	if (!clHandler_->BindFloatData(6, 
+																 transferFunctions_[0]->FloatData(),
+																 transferFunctions_[0]->Width()*4)) { 
+		return false;
 	}
+	INFO("Completed binding new TF float data");
 	return true;
 }
 
@@ -487,9 +492,13 @@ bool Raycaster::HandleMouse() {
 bool Raycaster::HandleKeyboard() {
   if (KeyPressedNoRepeat('R')) {
     if (!ReloadConfig()) return false;
+		INFO("Config reloaded");
     if (!ReloadShaders()) return false;
+		INFO("Shaders reloaded");
 		if (!UpdateKernelConfig()) return false;
+		INFO("Kernel config reloaded");
 		if (!ReloadTransferFunctions()) return false;
+		INFO("Transfer functions reloaded");
   }
 
   if (KeyPressed('W')) zoom_ -= 0.1f;

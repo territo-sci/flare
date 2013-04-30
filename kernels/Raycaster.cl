@@ -45,10 +45,11 @@ float Trilerp(__global __read_only float *_data,
 							int3 _dims,
 							int _timestepOffset) {
 
+  // TODO fix wrap issue
 	// Get coordinates in [0..dim-1] range
-	float r = (float)(_dims.x-1) * _spherical.x;
-	float t = (float)(_dims.y-1) * _spherical.y;
-	float p = (float)(_dims.z-1) * _spherical.z;
+	float r = (float)(_dims.x-2) * _spherical.x;
+	float t = (float)(_dims.y-2) * _spherical.y;
+	float p = (float)(_dims.z-2) * _spherical.z;
    
   // Lower values
 	int r0 = (int)floor(r);
@@ -144,7 +145,8 @@ Raycaster(__global __read_only image2d_t cubeFront,
 	float stepSize = constants->stepSize;
 	float3 samplePoint = cubeFrontColor.xyz;
 	float3 spherical;
-	float4 color = (float4)(0.0, 0.0, 0.0, 1.0);
+	float4 associatedColor;
+	float4 color = (float4)(0.0, 0.0, 0.0, 0.0);
 	 
 	while (traversed < maxDistance) {
 		spherical = CartesianToSpherical(samplePoint);
@@ -157,8 +159,11 @@ Raycaster(__global __read_only image2d_t cubeFront,
 	  float tfg = tf[(int)(i*511.0)*4 + 1];
 	  float tfb = tf[(int)(i*511.0)*4 + 2];
 	  float tfa = tf[(int)(i*511.0)*4 + 3];
+ 
+    // Front-to-back compositing
+		float4 tf = (float4)(tfr, tfg, tfb, tfa);
+		color += (1.0 - color.w)*tf;
 		
-		color += (float4)(tfr, tfg, tfb, tfa);
 	  //	color += (float4)(i, i, i, 1.0);
 		samplePoint += direction * stepSize;
 		traversed += stepSize;

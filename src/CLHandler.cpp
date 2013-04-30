@@ -343,6 +343,10 @@ bool CLHandler::BindFloatData(unsigned int _argNr,
 		return false;
 	}
 
+  if (floatData_.find((cl_uint)_argNr) != floatData_.end()) {
+		INFO("Found arg " << _argNr << ", erasing.");
+		floatData_.erase((cl_uint)_argNr);
+	}
 	floatData_.insert(std::make_pair((cl_uint)_argNr, floatData));
 }
 
