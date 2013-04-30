@@ -100,7 +100,7 @@ bool TransferFunction::ConstructTexture() {
 
 		// Float values for R, G, B and A channels
 		// TODO temp
-		if (floatData_) delete[] floatData;
+		//if (floatData_) delete[] floatData_;
 		float *values = new float[4*width_];
 		
 		unsigned int lowerIndex = (unsigned int)floorf(lower_*(float)width_);
