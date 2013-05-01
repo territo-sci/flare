@@ -4,6 +4,7 @@
 #include <CLHandler.h>
 #include <Texture2D.h>
 #include <VoxelData.h>
+#include <TransferFunction.h>
 #include <sstream>
 #include <fstream>
 #include <cmath>
@@ -204,22 +205,31 @@ bool CLHandler::CreateContext() {
   return true;
 }
 
-bool CLHandler::AddGLTexture(unsigned int _argNr,
+bool CLHandler::AddGLTexture(unsigned int _argIndex,
 														 Texture2D *_texture,
 														 bool _readOnly) {
+
+  if (GLTextures_.find((cl_uint)_argIndex) != GLTextures_.end()) {
+		INFO("Erasing texture at kernel argument " << _argIndex);
+		GLTextures_.erase((cl_uint)_argIndex);
+	}
+
 	cl_mem_flags flag = _readOnly ? CL_MEM_READ_ONLY : CL_MEM_WRITE_ONLY;
 	cl_mem texture = clCreateFromGLTexture2D(context_,
-																					 flag,
-																					 GL_TEXTURE_2D,
-																					 0,
-																					 _texture->Handle(),
-																					 &error_);
+												        					 flag,
+																        	 GL_TEXTURE_2D,
+																		    	 0,
+																	         _texture->Handle(),
+																	         &error_);
 	if (error_ != CL_SUCCESS) {
-		ERROR("Failed to add GL texture");
+		ERROR("Failed to add GL texture at argument index " << _argIndex);
 		ERROR(GetErrorString(error_));
 		return false;
 	}
-	GLTextures_.insert(std::make_pair((cl_uint)_argNr, texture));
+
+	INFO("Inserting kernel argument " << _argIndex);
+	GLTextures_.insert(std::make_pair((cl_uint)_argIndex, texture));
+
 	return true;
 }
 
@@ -329,7 +339,39 @@ bool CLHandler::CreateCommandQueue() {
 	}
 }
 
-bool CLHandler::BindFloatData(unsigned int _argNr,
+bool CLHandler::BindTransferFunction(unsigned int _argIndex, 
+                                     TransferFunction *_tf) {
+	
+	if (memKernelArgs_.find((cl_uint)_argIndex) != memKernelArgs_.end()) {
+		INFO("Erasing transfer function at kernel arg index " << _argIndex);
+		memKernelArgs_.erase((cl_uint)_argIndex);
+	}
+
+
+	INFO("Binding TF");
+	INFO(*_tf);
+
+	MemKernelArg mka;
+	mka.size_ = sizeof(cl_mem);
+	mka.value_ = clCreateBuffer(context_,
+	                           CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+														 _tf->Width()*4*sizeof(float),
+														 _tf->FloatData(),
+														 &error_);
+
+	if (error_ != CL_SUCCESS) {
+		ERROR("Failed to bind transfer function");
+		ERROR(GetErrorString(error_));
+		return false;
+	}
+
+	INFO("Inserting transfer function at kernel arg index " << _argIndex);
+	memKernelArgs_.insert(std::make_pair((cl_uint)_argIndex, mka));
+
+	return true;
+}
+	
+bool CLHandler::BindFloatData(unsigned int _argIndex,
                               float *_floatData,
 															unsigned int _size) {
 	cl_mem floatData = clCreateBuffer(context_,
@@ -343,14 +385,14 @@ bool CLHandler::BindFloatData(unsigned int _argNr,
 		return false;
 	}
 
-  if (floatData_.find((cl_uint)_argNr) != floatData_.end()) {
-		INFO("Found arg " << _argNr << ", erasing.");
-		floatData_.erase((cl_uint)_argNr);
+  if (floatData_.find((cl_uint)_argIndex) != floatData_.end()) {
+		INFO("Found arg " << _argIndex << ", erasing.");
+		floatData_.erase((cl_uint)_argIndex);
 	}
-	floatData_.insert(std::make_pair((cl_uint)_argNr, floatData));
+	floatData_.insert(std::make_pair((cl_uint)_argIndex, floatData));
 }
 
-bool CLHandler::BindData(unsigned int _argNr, 
+bool CLHandler::BindData(unsigned int _argIndex, 
                          VoxelData<float> *_voxelData) { 
 
 	cl_mem voxelData = clCreateBuffer(context_,
@@ -366,23 +408,35 @@ bool CLHandler::BindData(unsigned int _argNr,
 		return false;
 	}
 
-	floatData_.insert(std::make_pair((cl_uint)_argNr, voxelData));
+	floatData_.insert(std::make_pair((cl_uint)_argIndex, voxelData));
 
 	return true;
 }
 
-bool CLHandler::BindConstants(KernelConstants *_kernelConstants) {
+bool CLHandler::BindConstants(unsigned int _argIndex, 
+                              KernelConstants *_kernelConstants) {
 
-	constants_ = clCreateBuffer(context_,
+	if (memKernelArgs_.find((cl_uint)_argIndex) != memKernelArgs_.end()) {
+		INFO("Erasing constants at kernel arg index " << _argIndex);
+		memKernelArgs_.erase((cl_uint)_argIndex);
+	}
+
+  MemKernelArg mka;
+	mka.size_ = sizeof(cl_mem);
+	mka.value_ = clCreateBuffer(context_,
 	                            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
 															sizeof(KernelConstants),
 															_kernelConstants,
 															&error_);
+
 	if (error_ != CL_SUCCESS) {
-		ERROR("Failed to bind constants");
+		ERROR("Failed to bind constants to kernel arg index " << _argIndex);
 		ERROR(GetErrorString(error_));
 		return false;
 	}
+
+	INFO("Inserting kernel argument " << _argIndex);
+	memKernelArgs_.insert(std::make_pair((cl_uint)_argIndex, mka));
 
 	return true;
 
@@ -410,6 +464,23 @@ bool CLHandler::RunRaycaster(unsigned int _timestepOffset) {
 		}
 	}
 
+ 
+	// Set up kernel arguments of non-shared items
+	for (std::map<cl_uint, MemKernelArg>::iterator i = memKernelArgs_.begin();
+		   i != memKernelArgs_.end(); 
+			 i++) {
+		error_ = clSetKernelArg(kernel_,
+		                        i->first,
+														(i->second).size_,
+														&((i->second).value_));
+		if (error_ != CL_SUCCESS) {
+			ERROR("Failed to set kernel argument " << it->first);
+			ERROR(GetErrorString(error_));
+			return false;
+		}
+	}
+  
+  
 	// Set up kernel arguments for textures
 	for (it=GLTextures_.begin(); it!=GLTextures_.end(); it++) {
 		error_ = clSetKernelArg(kernel_,
@@ -422,6 +493,7 @@ bool CLHandler::RunRaycaster(unsigned int _timestepOffset) {
 			return false;
 		}
 	}
+
 	
 	// Set up kernel arguments for float data
 	std::map<cl_uint, cl_mem>::iterator fdit;
@@ -435,17 +507,6 @@ bool CLHandler::RunRaycaster(unsigned int _timestepOffset) {
 			ERROR(GetErrorString(error_));
 			return false;
 		}
-	}
-
-	// Set up constants kernel argument
-	error_ = clSetKernelArg(kernel_,
-	                        4,
-													sizeof(cl_mem),
-													&constants_);
-	if (error_ != CL_SUCCESS) {
-		ERROR("Failed to set kernel argument 4");
-		ERROR(GetErrorString(error_));
-		return false;
 	}
 
 	// Set up offset kernel argument

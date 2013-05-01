@@ -247,16 +247,11 @@ bool Raycaster::ReadShaderConfig(const std::string &_filename) {
 }
 
 bool Raycaster::ReloadTransferFunctions() {
+	INFO("Reloading transfer functions");
 	if (!transferFunctions_[0]->ReadFile()) return false;
-	INFO("Completed reading new TF file");
 	if (!transferFunctions_[0]->ConstructTexture()) return false;
-	INFO("Completed constructing new TF texture");
-	if (!clHandler_->BindFloatData(6, 
-																 transferFunctions_[0]->FloatData(),
-																 transferFunctions_[0]->Width()*4)) { 
+	if (!clHandler_->BindTransferFunction(6, transferFunctions_[0])) 
 		return false;
-	}
-	INFO("Completed binding new TF float data");
 	return true;
 }
 
@@ -415,7 +410,6 @@ bool Raycaster::Render(float _timestep) {
   glUseProgram(0);
 
   // Set kernel constants that might have changed 
-  if (!clHandler_->BindConstants(&kernelConstants_)) return false;
 
 	// Advance the animation if it's time
   if (timeElapsed_ > animationRate_) {
@@ -491,13 +485,20 @@ bool Raycaster::HandleMouse() {
 
 bool Raycaster::HandleKeyboard() {
   if (KeyPressedNoRepeat('R')) {
-    if (!ReloadConfig()) return false;
+    if (!ReloadConfig()) 
+			return false;
 		INFO("Config reloaded");
-    if (!ReloadShaders()) return false;
+    if (!ReloadShaders()) 
+			return false;
 		INFO("Shaders reloaded");
-		if (!UpdateKernelConfig()) return false;
+		if (!UpdateKernelConfig()) 
+			return false;
 		INFO("Kernel config reloaded");
-		if (!ReloadTransferFunctions()) return false;
+    if (!clHandler_->BindConstants(constantsArg_, &kernelConstants_)) 
+			return false;
+		INFO("Kernel constants reloaded");
+		if (!ReloadTransferFunctions()) 
+			return false;
 		INFO("Transfer functions reloaded");
   }
 
@@ -540,20 +541,32 @@ bool Raycaster::KeyLastState(int _key) const {
 }
 
 bool Raycaster::InitCL() {
-  if (!clHandler_->Init()) return false;
-  if (!clHandler_->CreateContext()) return false;
-	if (!clHandler_->AddGLTexture(0, cubeFrontTex_, true)) return false;
-	if (!clHandler_->AddGLTexture(1, cubeBackTex_, true)) return false;
-	if (!clHandler_->AddGLTexture(2, quadTex_, false)) return false;
-	if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) return false;
-	if (!clHandler_->BuildProgram()) return false;
-	if (!clHandler_->CreateKernel()) return false;
-	if (!clHandler_->CreateCommandQueue()) return false;
-	if (!clHandler_->BindData(3, voxelData_)) return false;
-	if (!clHandler_->BindFloatData(6, 
-		                             transferFunctions_[0]->FloatData(),
-																 transferFunctions_[0]->Width()*4))return false;
-  return true;
+  if (!clHandler_->Init()) 
+		return false;
+  if (!clHandler_->CreateContext()) 
+		return false;
+	if (!clHandler_->AddGLTexture(cubeFrontArg_, cubeFrontTex_, true)) 
+		return false;
+	if (!clHandler_->AddGLTexture(cubeBackArg_, cubeBackTex_, true)) 
+		return false;
+	if (!clHandler_->AddGLTexture(quadArg_, quadTex_, false)) 
+		return false;
+	if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) 
+		return false;
+	if (!clHandler_->BuildProgram()) 
+		return false;
+	if (!clHandler_->CreateKernel()) 
+		return false;
+	if (!clHandler_->CreateCommandQueue()) 
+		return false;
+	if (!clHandler_->BindData(voxelDataArg_, voxelData_)) 
+		return false;
+  if (!clHandler_->BindConstants(constantsArg_, &kernelConstants_)) 
+		return false;
+	if (!clHandler_->BindTransferFunction(transferFunctionArg_, 
+		                                    transferFunctions_[0]))
+		return false;
+	return true;
 }
 
 void Raycaster::SetVoxelData(VoxelData<float> *_voxelData) {
@@ -563,7 +576,6 @@ void Raycaster::SetVoxelData(VoxelData<float> *_voxelData) {
 void Raycaster::SetKernelConfigFilename(const std::string &_filename) {
 	kernelConfigFilename_ = _filename;
 }
-
 
 void Raycaster::AddTransferFunction(TransferFunction *_transferFunction) {
 	transferFunctions_.push_back(_transferFunction);

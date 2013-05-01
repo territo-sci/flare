@@ -104,6 +104,16 @@ private:
 	std::string kernelConfigFilename_;
 	// Transfer functions
 	std::vector<TransferFunction*> transferFunctions_;
+
+  // For the corresponding CL kernel
+	static const unsigned int cubeFrontArg_ = 0;
+	static const unsigned int cubeBackArg_ = 1;
+	static const unsigned int quadArg_ = 2;
+	static const unsigned int voxelDataArg_ = 3;
+	static const unsigned int constantsArg_ = 4;
+	static const unsigned int timestepOffsetArg_ = 5;
+	static const unsigned int transferFunctionArg_ = 6; 
+	
 };
 
 }

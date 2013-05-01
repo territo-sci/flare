@@ -10,24 +10,34 @@
 namespace osp {
 
 class Texture2D;
+class TransferFunction;
 
 class CLHandler {
 public:
   static CLHandler * New();
+	
+	struct MemKernelArg {
+		size_t size_;
+		cl_mem value_;
+	};
+
   bool Init();
   bool CreateContext();
-	bool AddGLTexture(unsigned int _argNr, Texture2D * _texture, bool _readOnly);
+	bool AddGLTexture(unsigned int _argIndex, Texture2D * _texture, bool _readOnly);
 
 	bool CreateProgram(std::string _filename);
 	bool BuildProgram();
 	bool CreateKernel();
 	bool CreateCommandQueue();
-	bool BindFloatData(unsigned int _argNr, 
+	bool BindTransferFunction(unsigned int _argIndex,
+	                          TransferFunction *_tf);
+	bool BindFloatData(unsigned int _argIndex, 
 	                   float *_floatData, 
 	                   unsigned int _size);
-	bool BindData(unsigned int _argNr, VoxelData<float> *_voxelData);
+	bool BindData(unsigned int _argIndex, VoxelData<float> *_voxelData);
 	bool RunRaycaster(unsigned int _timestepOffset);
-	bool BindConstants(KernelConstants *kernelConstants_);
+	bool BindConstants(unsigned int _argIndex, 
+	                   KernelConstants *kernelConstants_);
 private:
   CLHandler();
 	char * ReadSource(std::string _filename, int &_numChars) const;
@@ -43,6 +53,7 @@ private:
   cl_mem cubeFront_;
 	cl_mem cubeBack_;
   cl_mem output_;
+	cl_mem tfData_;
 	cl_program program_;
 	cl_kernel kernel_;
   static unsigned int instances_;
@@ -50,12 +61,14 @@ private:
 	// Stores textures together with their kernel argument number
 	std::map<cl_uint, cl_mem> GLTextures_;
 
-	// Stores float data together with their kernel argument number
-	std::map<cl_uint, cl_mem> floatData_;
+	// Stores non-shared (non-texture) memory buffers
+	std::map<cl_uint, MemKernelArg> memKernelArgs_;
 
-  // Constants
+
+	std::map<cl_uint, cl_mem> floatData_;
 	cl_mem constants_;
 	
+
 };
 
 }

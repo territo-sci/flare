@@ -78,7 +78,7 @@ int main() {
   raycaster->SetQuadShaderProgram(quadShaderProgram);
   raycaster->InitFramebuffers();
 	raycaster->SetVoxelData(floatData);
-	raycaster->SetAnimationRate(0.1f);
+	raycaster->SetAnimationRate(0.08f);
 	raycaster->AddTransferFunction(transferFunction);
 	raycaster->SetKernelConfigFilename("config/kernelConstants.txt");
 	raycaster->UpdateKernelConfig();
