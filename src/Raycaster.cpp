@@ -423,7 +423,9 @@ bool Raycaster::Render(float _timestep) {
 
   // Run kernel
   unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep_);
-	if (!clHandler_->RunRaycaster(timestepOffset)) return false;
+	if (!clHandler_->BindTimestepOffset(timestepOffsetArg_, timestepOffset))
+		return false;
+	if (!clHandler_->RunRaycaster()) return false;
 
   // Output 
 
@@ -545,11 +547,11 @@ bool Raycaster::InitCL() {
 		return false;
   if (!clHandler_->CreateContext()) 
 		return false;
-	if (!clHandler_->AddGLTexture(cubeFrontArg_, cubeFrontTex_, true)) 
+	if (!clHandler_->BindTexture2D(cubeFrontArg_, cubeFrontTex_, true)) 
 		return false;
-	if (!clHandler_->AddGLTexture(cubeBackArg_, cubeBackTex_, true)) 
+	if (!clHandler_->BindTexture2D(cubeBackArg_, cubeBackTex_, true)) 
 		return false;
-	if (!clHandler_->AddGLTexture(quadArg_, quadTex_, false)) 
+	if (!clHandler_->BindTexture2D(quadArg_, quadTex_, false)) 
 		return false;
 	if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) 
 		return false;
@@ -559,7 +561,7 @@ bool Raycaster::InitCL() {
 		return false;
 	if (!clHandler_->CreateCommandQueue()) 
 		return false;
-	if (!clHandler_->BindData(voxelDataArg_, voxelData_)) 
+	if (!clHandler_->BindVoxelData(voxelDataArg_, voxelData_)) 
 		return false;
   if (!clHandler_->BindConstants(constantsArg_, &kernelConstants_)) 
 		return false;

@@ -23,7 +23,7 @@ public:
 
   bool Init();
   bool CreateContext();
-	bool AddGLTexture(unsigned int _argIndex, Texture2D * _texture, bool _readOnly);
+	bool BindTexture2D(unsigned int _argIndex, Texture2D * _texture, bool _readOnly);
 
 	bool CreateProgram(std::string _filename);
 	bool BuildProgram();
@@ -31,13 +31,12 @@ public:
 	bool CreateCommandQueue();
 	bool BindTransferFunction(unsigned int _argIndex,
 	                          TransferFunction *_tf);
-	bool BindFloatData(unsigned int _argIndex, 
-	                   float *_floatData, 
-	                   unsigned int _size);
-	bool BindData(unsigned int _argIndex, VoxelData<float> *_voxelData);
-	bool RunRaycaster(unsigned int _timestepOffset);
+	bool BindVoxelData(unsigned int _argIndex, VoxelData<float> *_voxelData);
+	bool RunRaycaster();
 	bool BindConstants(unsigned int _argIndex, 
 	                   KernelConstants *kernelConstants_);
+	bool BindTimestepOffset(unsigned int _argIndex,
+	                        unsigned int _timestepOffset);
 private:
   CLHandler();
 	char * ReadSource(std::string _filename, int &_numChars) const;
@@ -50,10 +49,6 @@ private:
   char deviceName_[1024];
   cl_context context_;
   cl_command_queue commandQueue_;
-  cl_mem cubeFront_;
-	cl_mem cubeBack_;
-  cl_mem output_;
-	cl_mem tfData_;
 	cl_program program_;
 	cl_kernel kernel_;
   static unsigned int instances_;
@@ -61,13 +56,11 @@ private:
 	// Stores textures together with their kernel argument number
 	std::map<cl_uint, cl_mem> GLTextures_;
 
-	// Stores non-shared (non-texture) memory buffers
+	// Stores non-shared (non-texture) memory buffer arguments
 	std::map<cl_uint, MemKernelArg> memKernelArgs_;
 
-
-	std::map<cl_uint, cl_mem> floatData_;
-	cl_mem constants_;
-	
+	// Stores unsigned int kernel argument
+	std::map<cl_uint, unsigned int> uintArgs_;
 
 };
 

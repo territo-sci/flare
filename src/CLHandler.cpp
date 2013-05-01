@@ -205,7 +205,7 @@ bool CLHandler::CreateContext() {
   return true;
 }
 
-bool CLHandler::AddGLTexture(unsigned int _argIndex,
+bool CLHandler::BindTexture2D(unsigned int _argIndex,
 														 Texture2D *_texture,
 														 bool _readOnly) {
 
@@ -343,13 +343,8 @@ bool CLHandler::BindTransferFunction(unsigned int _argIndex,
                                      TransferFunction *_tf) {
 	
 	if (memKernelArgs_.find((cl_uint)_argIndex) != memKernelArgs_.end()) {
-		INFO("Erasing transfer function at kernel arg index " << _argIndex);
 		memKernelArgs_.erase((cl_uint)_argIndex);
 	}
-
-
-	INFO("Binding TF");
-	INFO(*_tf);
 
 	MemKernelArg mka;
 	mka.size_ = sizeof(cl_mem);
@@ -365,51 +360,32 @@ bool CLHandler::BindTransferFunction(unsigned int _argIndex,
 		return false;
 	}
 
-	INFO("Inserting transfer function at kernel arg index " << _argIndex);
 	memKernelArgs_.insert(std::make_pair((cl_uint)_argIndex, mka));
-
 	return true;
 }
+
+bool CLHandler::BindVoxelData(unsigned int _argIndex, 
+                              VoxelData<float> *_voxelData) { 
 	
-bool CLHandler::BindFloatData(unsigned int _argIndex,
-                              float *_floatData,
-															unsigned int _size) {
-	cl_mem floatData = clCreateBuffer(context_,
-	                                  CL_MEM_READ_ONLY|CL_MEM_COPY_HOST_PTR,
-																		_size*sizeof(float),
-																		_floatData,
-																		&error_);
+	if (memKernelArgs_.find((cl_uint)_argIndex) != memKernelArgs_.end()) {
+	  memKernelArgs_.erase((cl_uint)_argIndex);
+	}
+
+	MemKernelArg mka;
+	mka.size_ = sizeof(cl_mem);
+	mka.value_ = clCreateBuffer(context_,
+	                            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+															_voxelData->NumVoxelsTotal()*sizeof(float),
+													    _voxelData->DataPtr(),
+															&error_);
+
 	if (error_ != CL_SUCCESS) {
-		ERROR("Failed to bind float data");
+		ERROR("Failed to bind voxel data to arg index " << _argIndex);
 		ERROR(GetErrorString(error_));
 		return false;
 	}
 
-  if (floatData_.find((cl_uint)_argIndex) != floatData_.end()) {
-		INFO("Found arg " << _argIndex << ", erasing.");
-		floatData_.erase((cl_uint)_argIndex);
-	}
-	floatData_.insert(std::make_pair((cl_uint)_argIndex, floatData));
-}
-
-bool CLHandler::BindData(unsigned int _argIndex, 
-                         VoxelData<float> *_voxelData) { 
-
-	cl_mem voxelData = clCreateBuffer(context_,
-	                                  CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-																		_voxelData->NumVoxelsTotal()*sizeof(float),
-																    _voxelData->DataPtr(),
-																		&error_);
-	//delete testData;
-
-	if (error_ != CL_SUCCESS) {
-		ERROR("Failed to bind data");
-		ERROR(GetErrorString(error_));
-		return false;
-	}
-
-	floatData_.insert(std::make_pair((cl_uint)_argIndex, voxelData));
-
+	memKernelArgs_.insert(std::make_pair((cl_uint)_argIndex, mka));
 	return true;
 }
 
@@ -417,7 +393,6 @@ bool CLHandler::BindConstants(unsigned int _argIndex,
                               KernelConstants *_kernelConstants) {
 
 	if (memKernelArgs_.find((cl_uint)_argIndex) != memKernelArgs_.end()) {
-		INFO("Erasing constants at kernel arg index " << _argIndex);
 		memKernelArgs_.erase((cl_uint)_argIndex);
 	}
 
@@ -435,21 +410,30 @@ bool CLHandler::BindConstants(unsigned int _argIndex,
 		return false;
 	}
 
-	INFO("Inserting kernel argument " << _argIndex);
 	memKernelArgs_.insert(std::make_pair((cl_uint)_argIndex, mka));
-
 	return true;
-
 }
 
-bool CLHandler::RunRaycaster(unsigned int _timestepOffset) {
+bool CLHandler::BindTimestepOffset(unsigned int _argIndex,
+                                   unsigned int _timestepOffset) {
+
+	if (uintArgs_.find((cl_uint)_argIndex) != uintArgs_.end()) {
+		uintArgs_.erase((cl_uint)_argIndex);
+	}
+
+	uintArgs_.insert(std::make_pair((cl_uint)_argIndex, _timestepOffset));
+	return true;
+}
+
+bool CLHandler::RunRaycaster() {
 	
 	size_t globalSize[] = { 512, 512 };
 	size_t localSize[] = { 16, 16 };
 
 	// Let OpenCL take control of the shared GL objects
-	std::map<cl_uint, cl_mem>::iterator it;
-	for (it=GLTextures_.begin(); it!=GLTextures_.end(); it++) {
+	for (std::map<cl_uint, cl_mem>::iterator it = GLTextures_.begin(); 
+	     it != GLTextures_.end(); 
+			 it++) {
 		error_ = clEnqueueAcquireGLObjects(commandQueue_,
 																			 1,
 																			 &(it->second),
@@ -466,13 +450,13 @@ bool CLHandler::RunRaycaster(unsigned int _timestepOffset) {
 
  
 	// Set up kernel arguments of non-shared items
-	for (std::map<cl_uint, MemKernelArg>::iterator i = memKernelArgs_.begin();
-		   i != memKernelArgs_.end(); 
-			 i++) {
+	for (std::map<cl_uint, MemKernelArg>::iterator it = memKernelArgs_.begin();
+		   it != memKernelArgs_.end(); 
+			 it++) {
 		error_ = clSetKernelArg(kernel_,
-		                        i->first,
-														(i->second).size_,
-														&((i->second).value_));
+		                        it->first,
+														(it->second).size_,
+														&((it->second).value_));
 		if (error_ != CL_SUCCESS) {
 			ERROR("Failed to set kernel argument " << it->first);
 			ERROR(GetErrorString(error_));
@@ -482,7 +466,9 @@ bool CLHandler::RunRaycaster(unsigned int _timestepOffset) {
   
   
 	// Set up kernel arguments for textures
-	for (it=GLTextures_.begin(); it!=GLTextures_.end(); it++) {
+	for (std::map<cl_uint, cl_mem>::iterator it = GLTextures_.begin(); 
+	     it != GLTextures_.end(); 
+			 it++) {
 		error_ = clSetKernelArg(kernel_,
 														it->first,
 														sizeof(cl_mem),
@@ -494,30 +480,19 @@ bool CLHandler::RunRaycaster(unsigned int _timestepOffset) {
 		}
 	}
 
-	
-	// Set up kernel arguments for float data
-	std::map<cl_uint, cl_mem>::iterator fdit;
-	for (fdit=floatData_.begin(); fdit!=floatData_.end(); fdit++) {
+	// Set up unsigned integer kernel arguments
+  for (std::map<cl_uint, unsigned int>::iterator it = uintArgs_.begin();
+	     it != uintArgs_.end();
+			 it++) {
 		error_ = clSetKernelArg(kernel_,
-														fdit->first,
-													  sizeof(cl_mem),
-														&(fdit->second));
+		                        it->first,
+														sizeof(unsigned int),
+														&(it->second));
 		if (error_ != CL_SUCCESS) {
-			ERROR("Failed to set kernel argument " << fdit->first);
+			ERROR("Failed to set kernel argument " << it->first);
 			ERROR(GetErrorString(error_));
 			return false;
 		}
-	}
-
-	// Set up offset kernel argument
-	error_ = clSetKernelArg(kernel_,
-												  5,
-													sizeof(unsigned int),
-													&_timestepOffset);
-  if (error_ != CL_SUCCESS) {
-		ERROR("Failed to set kernel argument 5");
-		ERROR(GetErrorString(error_));
-		return false;
 	}
 
 	// Set up kernel execution
@@ -537,7 +512,9 @@ bool CLHandler::RunRaycaster(unsigned int _timestepOffset) {
 	}
 
 	// Release the shared GL objects
-	for (it=GLTextures_.begin(); it!=GLTextures_.end(); it++) {
+	for (std::map<cl_uint, cl_mem>::iterator it = GLTextures_.begin(); 
+	     it!=GLTextures_.end(); 
+			 it++) {
 		error_ = clEnqueueReleaseGLObjects(commandQueue_,
 																			 1,
 																			 &(it->second),
