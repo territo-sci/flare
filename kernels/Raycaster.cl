@@ -47,10 +47,10 @@ float Trilerp(__global __read_only float *_data,
 
   // TODO fix wrap issue
 	// Get coordinates in [0..dim-1] range
-	float r = (float)(_dims.x-2) * _spherical.x;
-	float t = (float)(_dims.y-2) * _spherical.y;
-	float p = (float)(_dims.z-2) * _spherical.z;
-   
+	float r = (float)(_dims.x-1) * _spherical.x;
+	float t = (float)(_dims.y-1) * _spherical.y;
+	float p = (float)(_dims.z-1) * _spherical.z;
+
   // Lower values
 	int r0 = (int)floor(r);
 	int t0 = (int)floor(t);
@@ -106,6 +106,28 @@ float3 CartesianToSpherical(float3 _cartesian) {
 	return (float3)(r, theta, phi);
 }
 
+float4 TransferFunction(__global __read_only float *_tf, float _i) {
+  // TODO remove 512 hard-coded value and change to 1D texture
+	int i0 = (int)floor(511.0*_i);
+	int i1 = (i0 < 511) ? i0+1 : i0;
+	float di = _i - floor(_i);
+	
+	float tfr0 = _tf[i0*4+0];
+	float tfr1 = _tf[i1*4+0];
+	float tfg0 = _tf[i0*4+1];
+	float tfg1 = _tf[i1*4+1];
+	float tfb0 = _tf[i0*4+2];
+	float tfb1 = _tf[i1*4+2];
+	float tfa0 = _tf[i0*4+3];
+	float tfa1 = _tf[i1*4+3];
+
+	float tfr = Lerp(tfr0, tfr1, di);
+	float tfg = Lerp(tfg0, tfg1, di);
+	float tfb = Lerp(tfb0, tfb1, di);
+	float tfa = Lerp(tfa0, tfa1, di);
+
+	return (float4)(tfr, tfg, tfb, tfa);
+}
 
 __kernel void
 Raycaster(__global __read_only image2d_t cubeFront,
@@ -114,7 +136,7 @@ Raycaster(__global __read_only image2d_t cubeFront,
 					__global __read_only float *_voxelData,
 					__constant struct KernelConstants *constants,
 					int timestepOffset,
-					__global __read_only float *tf) {
+					__global __read_only float *_tf) {
 
 
 	int3 dimensions = (int3)(constants->aDim,
@@ -150,18 +172,13 @@ Raycaster(__global __read_only image2d_t cubeFront,
 	 
 	while (traversed < maxDistance) {
 		spherical = CartesianToSpherical(samplePoint);
-		int index = timestepOffset + CoordsToIndex(spherical, dimensions);
+		//int index = timestepOffset + CoordsToIndex(spherical, dimensions);
 		// Get intensity from data
 		//float i = _voxelData[index];
 	  float i = Trilerp(_voxelData, spherical, dimensions, timestepOffset);
-		// Get transfer function components
-	  float tfr = tf[(int)(i*511.0)*4 + 0];
-	  float tfg = tf[(int)(i*511.0)*4 + 1];
-	  float tfb = tf[(int)(i*511.0)*4 + 2];
-	  float tfa = tf[(int)(i*511.0)*4 + 3];
  
     // Front-to-back compositing
-		float4 tf = (float4)(tfr, tfg, tfb, tfa);
+		float4 tf = TransferFunction(_tf, i);
 		color += (1.0 - color.w)*tf;
 		
 	  //	color += (float4)(i, i, i, 1.0);
