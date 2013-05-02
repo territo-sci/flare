@@ -11,6 +11,7 @@
 #include <cstdlib>
 #include <vector>
 #include <iostream>
+#include <Animator.h>
 
 using namespace osp;
 
@@ -64,6 +65,11 @@ int main() {
 	std::cout << *transferFunction << std::endl;
 	transferFunction->ConstructTexture();
 
+	// Create animator
+	Animator *animator = Animator::New();
+	animator->SetNumTimesteps(floatData->NumTimesteps());
+	animator->SetRefreshInterval(0.08f);
+
   // Create a raycaster and set it up
   Raycaster * raycaster = Raycaster::New();
   raycaster->SetWinWidth(width);
@@ -78,7 +84,8 @@ int main() {
   raycaster->SetQuadShaderProgram(quadShaderProgram);
   raycaster->InitFramebuffers();
 	raycaster->SetVoxelData(floatData);
-	raycaster->SetAnimationRate(0.08f);
+	raycaster->SetAnimator(animator);
+	//raycaster->SetAnimationRate(0.08f);
 	raycaster->AddTransferFunction(transferFunction);
 	raycaster->SetKernelConfigFilename("config/kernelConstants.txt");
 	raycaster->UpdateKernelConfig();

@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <CLHandler.h>
 #include <TransferFunction.h>
+#include <Animator.h>
 
 using namespace osp;
 
@@ -39,8 +40,9 @@ Raycaster::Raycaster() : Renderer(),
                          matricesInitialized_(false),
                          framebuffersInitialized_(false),
                          clHandler_(CLHandler::New()),
-												 timeElapsed_(0.f),
-												 animationRate_(0.f),
+												 //timeElapsed_(0.f),
+												 //animationRate_(0.f),
+												 animator_(NULL),
 												 currentTimestep_(0) {
 
   kernelConstants_.stepSize = 0.01f;
@@ -64,8 +66,12 @@ bool Raycaster::InitMatrices() {
   return true;
 }
 
-void Raycaster::SetAnimationRate(float _animationRate) {
-	animationRate_ = _animationRate;
+//void Raycaster::SetAnimationRate(float _animationRate) {
+//	animationRate_ = _animationRate;
+//}
+
+void Raycaster::SetAnimator(Animator *_animator) {
+	animator_ = _animator;
 }
 
 bool Raycaster::InitCube() {
@@ -325,7 +331,12 @@ void Raycaster::SetQuadShaderProgram(ShaderProgram *_quadShaderProgram) {
 
 bool Raycaster::Render(float _timestep) {
 
-	timeElapsed_ += _timestep;
+	//timeElapsed_ += _timestep;
+	if (animator_ != NULL) {
+	  animator_->Update(_timestep);
+	} else {
+		WARNING("Animator not set");
+	}
   
 	// Reset any errors
   glGetError();
@@ -412,6 +423,7 @@ bool Raycaster::Render(float _timestep) {
   // Set kernel constants that might have changed 
 
 	// Advance the animation if it's time
+	/*
   if (timeElapsed_ > animationRate_) {
 		timeElapsed_ = (timeElapsed_-animationRate_); 
 		if (currentTimestep_ < voxelData_->NumTimesteps()-1) {
@@ -420,9 +432,18 @@ bool Raycaster::Render(float _timestep) {
 			currentTimestep_ = 0;
 		}
   }
+  */
+  
+	unsigned int currentTimestep;
+	if (animator_ != NULL) {
+		currentTimestep = animator_->CurrentTimestep();
+	} else {
+		WARNING("Animator not set");
+		currentTimestep = 0;
+	}
 
   // Run kernel
-  unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep_);
+  unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
 	if (!clHandler_->BindTimestepOffset(timestepOffsetArg_, timestepOffset))
 		return false;
 	if (!clHandler_->RunRaycaster()) return false;
@@ -485,7 +506,9 @@ bool Raycaster::HandleMouse() {
   return true;
 }
 
+// Don't forget to add keys to look for in window manager
 bool Raycaster::HandleKeyboard() {
+
   if (KeyPressedNoRepeat('R')) {
     if (!ReloadConfig()) 
 			return false;
@@ -506,6 +529,9 @@ bool Raycaster::HandleKeyboard() {
 
   if (KeyPressed('W')) zoom_ -= 0.1f;
   if (KeyPressed('S')) zoom_ += 0.1f;
+	if (KeyPressedNoRepeat(32)) animator_->TogglePause();
+	if (KeyPressed('Z')) animator_->IncTimestep();
+	if (KeyPressed('X')) animator_->DecTimestep();
 
   return true;
 }

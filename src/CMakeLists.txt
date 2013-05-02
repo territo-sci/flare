@@ -21,12 +21,13 @@ add_executable(FlareApp
                Renderer.cpp
                Raycaster.cpp
                Texture.cpp
-	       Texture1D.cpp
+	             Texture1D.cpp
                Texture2D.cpp
                CLHandler.cpp
-	       MappingKey.cpp
+							 Animator.cpp
+	             MappingKey.cpp
                TransferFunction.cpp
-	       VDFReader.cpp
+	             VDFReader.cpp
                ShaderProgram.cpp)
 
 target_link_libraries(FlareApp

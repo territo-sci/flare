@@ -15,6 +15,7 @@ class ShaderProgram;
 class Texture2D;
 class CLHandler;
 class TransferFunction;
+class Animator;
 
 class Raycaster : public Renderer {
 public:
@@ -46,7 +47,7 @@ public:
   void SetQuadShaderProgram(ShaderProgram *_quadShaderProgram);
   void SetConfigFilename(std::string _configFilename);
   void SetKeyLastState(int, bool _pressed);
-	void SetAnimationRate(float _animationRate);
+	void SetAnimator(Animator *_animator);
 	void AddTransferFunction(TransferFunction *_transferFunction);
   Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
   Texture2D * CubeBackTexture() const { return cubeBackTex_; }
@@ -95,8 +96,9 @@ private:
 	// Data to render
 	VoxelData<float> *voxelData_;
 	// Time since last frame was rendered, used to control animation speed
-	float timeElapsed_;
-	float animationRate_;
+	//float timeElapsed_;
+	//float animationRate_;
+	Animator * animator_;
 	// Animation timestep
 	unsigned int currentTimestep_;
   // Kernel constants

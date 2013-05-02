@@ -96,6 +96,9 @@ bool WindowManager::StartLoop() {
   keysToCheck.push_back('R');
   keysToCheck.push_back('W');
   keysToCheck.push_back('S');
+	keysToCheck.push_back(32);
+	keysToCheck.push_back('Z');
+	keysToCheck.push_back('X');
 
   // Start the rendering loop
   while (true) {
