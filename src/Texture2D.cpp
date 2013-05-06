@@ -1,3 +1,8 @@
+/* 
+ * Author: Victor Sand (victor.sand@gmail.com)
+ *
+ */
+
 #include <GL/glew.h>
 #include <Texture2D.h>
 #include <ShaderProgram.h>

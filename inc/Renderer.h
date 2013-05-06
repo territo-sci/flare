@@ -1,6 +1,14 @@
 #ifndef RENDERER_H
 #define RENDERER_H
 
+/* 
+Author: Victor Sand (victor.sand@gmail.com)
+Renderer abstract class, Render() functions needs to be
+implemented by subclasses. 
+TODO No real use right now but to handle key and mouse state
+TODO Write better and manageable key state functionality
+*/
+
 #include <map>
 
 namespace osp {

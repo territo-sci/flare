@@ -1,6 +1,11 @@
 #ifndef TEXTURE1D_H
 #define TEXTURE1D_H
 
+/*
+Author: Victor Sand (victor.sand@gmail.com
+Wrapper for OpenGL 1D Texture
+*/
+
 #include <Texture.h>
 #include <vector>
 

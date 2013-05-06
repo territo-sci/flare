@@ -1,6 +1,14 @@
 #ifndef TRANSFERFUNCTION_H
 #define TRANSFERFUNCTION_H
 
+/* 
+Author: Victor Sand (victor.sand@gmail.com)
+Transfer function class that consists of a number of MappingKeys. When
+the mapping keys are added, the transfer function can be constructed by
+interpolating between the MappingKey values.
+TODO Use Texture1D for implementation when OpenCL 1.2 works
+*/
+
 #include <MappingKey.h>
 #include <set>
 #include <string>

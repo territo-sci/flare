@@ -1,11 +1,17 @@
+/*
+ * Author: Victor Sand (victor.sand@gmail.com)
+ *
+ */
+   
 #include <Texture.h>
 #include <Utils.h>
 
 using namespace osp;
 
-Texture::Texture(std::vector<unsigned int> _dim) : dim_(_dim),
-                                                   handle_(0),
-                                                   initialized_(false) {
+Texture::Texture(std::vector<unsigned int> _dim) 
+  : dim_(_dim),
+    handle_(0),
+    initialized_(false) {
 }
 
 unsigned int Texture::Dim(unsigned int _axis) const {
@@ -23,5 +29,4 @@ unsigned int Texture::Handle() const {
   return handle_;
 }
 
-Texture::~Texture() {
-}
+Texture::~Texture() { }

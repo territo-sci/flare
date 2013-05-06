@@ -9,6 +9,12 @@
 #include <fstream>
 #include <cmath>
 
+
+/* 
+ * Author: Victor Sand (victor.sand@gmail.com)
+ * 
+ */
+
 using namespace osp;
 
 unsigned int CLHandler::instances_ = 0;
@@ -147,11 +153,8 @@ bool CLHandler::Init() {
 	}
 
 	// Find devices
-	error_ = clGetDeviceIDs(platforms_[0], 
-													CL_DEVICE_TYPE_ALL,
-													sizeof(devices_),
-													devices_,
-													&numDevices_);
+	error_ = clGetDeviceIDs(platforms_[0], CL_DEVICE_TYPE_ALL, 
+													sizeof(devices_), devices_, &numDevices_);
 	if (error_ == CL_SUCCESS) {
 		INFO("Number of CL devices: " << numDevices_);
 	} else {
@@ -162,11 +165,8 @@ bool CLHandler::Init() {
 
 	// Loop over devices
 	for (unsigned int i=0; i<numDevices_; i++) {
-		error_ = clGetDeviceInfo(devices_[i],
-														 CL_DEVICE_NAME,
-														 sizeof(deviceName_),
-														 deviceName_,
-														 NULL);
+		error_ = clGetDeviceInfo(devices_[i], CL_DEVICE_NAME, sizeof(deviceName_),
+														 deviceName_, NULL);
 		if (error_ == CL_SUCCESS) {
 			INFO("Device " << i << " name: " << deviceName_);
 		} else {
@@ -187,13 +187,10 @@ bool CLHandler::CreateContext() {
     CL_GLX_DISPLAY_KHR, (cl_context_properties)glXGetCurrentDisplay(),
     CL_CONTEXT_PLATFORM, (cl_context_properties)platforms_[0],
     0};
-
-  context_ = clCreateContext(contextProperties,
-                             1,
-                             &devices_[0], // TODO only use one device now
-                             NULL,
-                             NULL,
-                             &error_);
+ 
+  // TODO Use more than one device
+  context_ = clCreateContext(contextProperties, 1, &devices_[0], NULL,
+                             NULL, &error_);
   if (error_ == CL_SUCCESS) {
     INFO("CL context set up properly");
   } else {
@@ -205,15 +202,15 @@ bool CLHandler::CreateContext() {
   return true;
 }
 
-bool CLHandler::BindTexture2D(unsigned int _argIndex,
-														 Texture2D *_texture,
-														 bool _readOnly) {
-
+bool CLHandler::BindTexture2D(unsigned int _argIndex, Texture2D *_texture, 
+                              bool _readOnly) {
+  
+	// Remove anything already associated with argument inded
   if (GLTextures_.find((cl_uint)_argIndex) != GLTextures_.end()) {
 		INFO("Erasing texture at kernel argument " << _argIndex);
 		GLTextures_.erase((cl_uint)_argIndex);
 	}
-
+ 
 	cl_mem_flags flag = _readOnly ? CL_MEM_READ_ONLY : CL_MEM_WRITE_ONLY;
 	cl_mem texture = clCreateFromGLTexture2D(context_,
 												        					 flag,
@@ -256,11 +253,8 @@ char * CLHandler::ReadSource(std::string _filename, int &_numChars) const {
 bool CLHandler::CreateProgram(std::string _filename) {
 	int numChars;
 	char * source = ReadSource(_filename, numChars);
-	program_ = clCreateProgramWithSource(context_,
-																			 1,
-																			 (const char**)&source,
-																			 (const size_t*)&numChars,
-																			 &error_);
+	program_ = clCreateProgramWithSource(context_, 1, (const char**)&source,
+																			 (const size_t*)&numChars, &error_);
 	if (error_ == CL_SUCCESS) {
 		INFO("Created CL program successfully");
 		return true;
@@ -287,21 +281,13 @@ bool CLHandler::BuildProgram() {
 		// Print build log
 		char * log;
 		size_t logSize = 0;
-		clGetProgramBuildInfo(program_,
-													devices_[0],
-													CL_PROGRAM_BUILD_LOG,
-													0,
-													NULL,
-													&logSize);
+		clGetProgramBuildInfo(program_, devices_[0], CL_PROGRAM_BUILD_LOG,
+													0, NULL, &logSize);
 		if (logSize > 0) {
 			INFO("Build log:");
 			log = new char[logSize+1];
-			clGetProgramBuildInfo(program_,
-														devices_[0],
-														CL_PROGRAM_BUILD_LOG,
-														logSize,
-														log,
-														NULL);
+			clGetProgramBuildInfo(program_, devices_[0], CL_PROGRAM_BUILD_LOG,
+														logSize, log, NULL);
 			log[logSize] = '\0';
 			INFO(log);
 			delete log;												
@@ -325,10 +311,7 @@ bool CLHandler::CreateKernel() {
 }
 
 bool CLHandler::CreateCommandQueue() {
-	commandQueue_ = clCreateCommandQueue(context_,
-																			 devices_[0],
-																			 0,
-																			 &error_);
+	commandQueue_ = clCreateCommandQueue(context_, devices_[0], 0, &error_);
 	if (error_ == CL_SUCCESS) {
 		INFO("Created CL command queue successfully");
 		return true;
@@ -341,7 +324,8 @@ bool CLHandler::CreateCommandQueue() {
 
 bool CLHandler::BindTransferFunction(unsigned int _argIndex, 
                                      TransferFunction *_tf) {
-	
+
+	// Remove old TF already bound to this argument index	
 	if (memKernelArgs_.find((cl_uint)_argIndex) != memKernelArgs_.end()) {
 		memKernelArgs_.erase((cl_uint)_argIndex);
 	}
@@ -367,6 +351,7 @@ bool CLHandler::BindTransferFunction(unsigned int _argIndex,
 bool CLHandler::BindVoxelData(unsigned int _argIndex, 
                               VoxelData<float> *_voxelData) { 
 	
+	// Remove old data already bound to this argument index
 	if (memKernelArgs_.find((cl_uint)_argIndex) != memKernelArgs_.end()) {
 	  memKernelArgs_.erase((cl_uint)_argIndex);
 	}
@@ -392,6 +377,7 @@ bool CLHandler::BindVoxelData(unsigned int _argIndex,
 bool CLHandler::BindConstants(unsigned int _argIndex, 
                               KernelConstants *_kernelConstants) {
 
+  // Delete any old data already bound to argument index
 	if (memKernelArgs_.find((cl_uint)_argIndex) != memKernelArgs_.end()) {
 		memKernelArgs_.erase((cl_uint)_argIndex);
 	}
@@ -417,6 +403,7 @@ bool CLHandler::BindConstants(unsigned int _argIndex,
 bool CLHandler::BindTimestepOffset(unsigned int _argIndex,
                                    unsigned int _timestepOffset) {
 
+  // Delete old data bound to argument index
 	if (uintArgs_.find((cl_uint)_argIndex) != uintArgs_.end()) {
 		uintArgs_.erase((cl_uint)_argIndex);
 	}
@@ -427,6 +414,7 @@ bool CLHandler::BindTimestepOffset(unsigned int _argIndex,
 
 bool CLHandler::RunRaycaster() {
 	
+	// TODO Don't hardcode
 	size_t globalSize[] = { 512, 512 };
 	size_t localSize[] = { 16, 16 };
 
@@ -434,12 +422,8 @@ bool CLHandler::RunRaycaster() {
 	for (std::map<cl_uint, cl_mem>::iterator it = GLTextures_.begin(); 
 	     it != GLTextures_.end(); 
 			 it++) {
-		error_ = clEnqueueAcquireGLObjects(commandQueue_,
-																			 1,
-																			 &(it->second),
-																			 0,
-																			 NULL,
-																			 NULL);
+		error_ = clEnqueueAcquireGLObjects(commandQueue_, 1, &(it->second),
+																			 0, NULL, NULL);
 		if (error_ != CL_SUCCESS) {
 			ERROR("Failed to enqueue GL object aqcuisition");
 			ERROR("Failing object: " << it->first);
@@ -496,15 +480,8 @@ bool CLHandler::RunRaycaster() {
 	}
 
 	// Set up kernel execution
-	error_ = clEnqueueNDRangeKernel(commandQueue_,
-																	kernel_, 
-																	2,
-																	NULL,
-																	globalSize,
-																	localSize, 
-																	0,
-																	NULL,
-																	NULL);
+	error_ = clEnqueueNDRangeKernel(commandQueue_, kernel_, 2, NULL, globalSize,
+																	localSize, 0, NULL, NULL);
 	if (error_ != CL_SUCCESS) {
 		ERROR("Failed to enqueue kernel");
 		ERROR(GetErrorString(error_));
@@ -515,12 +492,8 @@ bool CLHandler::RunRaycaster() {
 	for (std::map<cl_uint, cl_mem>::iterator it = GLTextures_.begin(); 
 	     it!=GLTextures_.end(); 
 			 it++) {
-		error_ = clEnqueueReleaseGLObjects(commandQueue_,
-																			 1,
-																			 &(it->second),
-																			 0,
-																			 NULL,
-																			 NULL);
+		error_ = clEnqueueReleaseGLObjects(commandQueue_, 1, &(it->second), 0,
+																			 NULL, NULL);
 		if (error_ != CL_SUCCESS) {
 			ERROR("Failed to release GL object");
 			ERROR("Failed object: " << it->first);

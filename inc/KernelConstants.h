@@ -1,6 +1,12 @@
 #ifndef KERNELCONSTANTS_H
 #define KERNELCONSTANTS_H
 
+
+/*
+Author: Victor Sand (victor.sand@gmail.com)
+Simple struct to gather constants used in kernel
+*/
+
 namespace osp {
 
 typedef struct {

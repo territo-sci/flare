@@ -1,3 +1,8 @@
+/* 
+ * Author: Victor Sand (victor.sand@gmail.com)
+ *
+ */
+
 // TODO abstraction of shader binder, maybe a templated ShaderBinder class?
 // or string values service
 // possibly make a common UniformType class to handle matrices, ints, floats
@@ -16,12 +21,12 @@ ShaderProgram * ShaderProgram::New() {
   return new ShaderProgram();
 }
 
-ShaderProgram::ShaderProgram() : vertexShaderSet_(false),
-                                 fragmentShaderSet_(false),
-                                 programHandle_(0),
-                                 vertexSource_(""),
-                                 fragmentSource_("") {
-
+ShaderProgram::ShaderProgram() 
+  : vertexShaderSet_(false),
+    fragmentShaderSet_(false),
+    programHandle_(0),
+    vertexSource_(""),
+    fragmentSource_("") {
 }
 
 

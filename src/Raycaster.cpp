@@ -11,40 +11,43 @@
 #include <TransferFunction.h>
 #include <Animator.h>
 
+/* 
+ * Author: Victor Sand (victor.sand@gmail.com)
+ * 
+ */
+
 using namespace osp;
 
-Raycaster::Raycaster() : Renderer(),
-                         configFilename_("NotSet"),
-												 kernelConfigFilename_("NotSet"),
-                         cubeFrontFBO_(0),
-                         cubeBackFBO_(0),
-                         renderbufferObject_(0),
-                         cubePosbufferObject_(0),
-                         quadPosbufferObject_(0),
-                         cubePositionAttrib_(0),
-                         quadPositionAttrib_(0),
-                         cubeShaderProgram_(NULL),
-                         quadShaderProgram_(NULL),
-                         cubeFrontTex_(NULL),
-                         cubeBackTex_(NULL),
-                         quadTex_(NULL),
-                         pitch_(-30.f),
-                         yaw_(0.f),
-                         roll_(30.f),
-                         zoom_(1.f),
-                         model_(glm::mat4()),
-                         view_(glm::mat4()),
-                         proj_(glm::mat4()),
-                         cubeInitialized_(false),
-                         quadInitialized_(false),
-                         matricesInitialized_(false),
-                         framebuffersInitialized_(false),
-                         clHandler_(CLHandler::New()),
-												 //timeElapsed_(0.f),
-												 //animationRate_(0.f),
-												 animator_(NULL),
-												 currentTimestep_(0) {
-
+Raycaster::Raycaster() 
+  : Renderer(),
+    configFilename_("NotSet"),
+    kernelConfigFilename_("NotSet"),
+    cubeFrontFBO_(0),
+    cubeBackFBO_(0),
+    renderbufferObject_(0),
+    cubePosbufferObject_(0),
+    quadPosbufferObject_(0),
+    cubePositionAttrib_(0),
+    quadPositionAttrib_(0),
+    cubeShaderProgram_(NULL),
+    quadShaderProgram_(NULL),
+    cubeFrontTex_(NULL),
+    cubeBackTex_(NULL),
+    quadTex_(NULL),
+    pitch_(-30.f),
+    yaw_(0.f),
+    roll_(30.f),
+    zoom_(1.f),
+    model_(glm::mat4()),
+    view_(glm::mat4()),
+    proj_(glm::mat4()),
+    cubeInitialized_(false),
+    quadInitialized_(false),
+    matricesInitialized_(false),
+    framebuffersInitialized_(false),
+    clHandler_(CLHandler::New()),
+		animator_(NULL),
+		currentTimestep_(0) {
   kernelConstants_.stepSize = 0.01f;
 	kernelConstants_.intensity = 60.f;
 	kernelConstants_.aDim = 128;
@@ -53,22 +56,20 @@ Raycaster::Raycaster() : Renderer(),
 }
 
 Raycaster::~Raycaster() {
+	if (clHandler_) delete clHandler_;
 }
 
 Raycaster * Raycaster::New() {
   return new Raycaster();
 }
 
+// TODO Move out hardcoded values
 bool Raycaster::InitMatrices() {
   float aspect = (float)winWidth_/(float)winHeight_;
   proj_ = glm::perspective(40.f, aspect, 0.1f, 100.f);
   matricesInitialized_ = true;
   return true;
 }
-
-//void Raycaster::SetAnimationRate(float _animationRate) {
-//	animationRate_ = _animationRate;
-//}
 
 void Raycaster::SetAnimator(Animator *_animator) {
 	animator_ = _animator;
@@ -341,7 +342,7 @@ bool Raycaster::Render(float _timestep) {
 	// Reset any errors
   glGetError();
 
-  // TODO move init checks maybe baby
+  // TODO move init checks and only run them once
   if (!matricesInitialized_) {
     ERROR("Rendering failed, matrices not initialized");
     return false;
@@ -420,20 +421,8 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
 
-  // Set kernel constants that might have changed 
+  // TODO Set kernel constants that might have changed 
 
-	// Advance the animation if it's time
-	/*
-  if (timeElapsed_ > animationRate_) {
-		timeElapsed_ = (timeElapsed_-animationRate_); 
-		if (currentTimestep_ < voxelData_->NumTimesteps()-1) {
-			currentTimestep_++;
-		} else {
-			currentTimestep_ = 0;
-		}
-  }
-  */
-  
 	unsigned int currentTimestep;
 	if (animator_ != NULL) {
 		currentTimestep = animator_->CurrentTimestep();
@@ -500,13 +489,14 @@ bool Raycaster::ReloadConfig() {
 
 bool Raycaster::HandleMouse() {
   if (leftMouseDown_) {
-    pitch_ += 0.2f*(float)(currentMouseX_ - lastMouseX_);
-    roll_ += 0.2f*(float)(currentMouseY_ - lastMouseY_);
+		pitch_ += 0.2f*(float)(currentMouseX_ - lastMouseX_);
+    roll_ += 0.2f*(float)(currentMouseY_ - lastMouseY_);	
   }
   return true;
 }
 
 // Don't forget to add keys to look for in window manager
+// TODO proper keyboard handling class
 bool Raycaster::HandleKeyboard() {
 
   if (KeyPressedNoRepeat('R')) {

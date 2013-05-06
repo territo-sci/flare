@@ -98,10 +98,11 @@ int main() {
   // Clean up, like a good citizen
   delete cubeFrontTex;
   delete cubeBackTex;
-	//delete transferFunction;
+	delete transferFunction;
   delete cubeShaderProgram;
   delete quadShaderProgram;
   delete manager;
+	delete animator;
 
   exit(0);
 }

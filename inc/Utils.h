@@ -1,6 +1,7 @@
 /*
- * Global helper functions and utilities
- */
+Auhtor: Victor Sand (victor.sand@gmail.com)
+Global helper functions and utilities
+*/
 
 #ifndef UTILS_H_
 #define UTILS_H_

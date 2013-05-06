@@ -1,6 +1,12 @@
 #ifndef VDFREADER_H
 #define VDFREADER_H
 
+/*
+ * Author: Victor Sand (victor.sand@gmail.com)
+ * Reads a .vdf file and populate VoxelData.
+ *
+ */
+
 #include <string>
 
 namespace osp {

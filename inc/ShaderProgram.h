@@ -1,6 +1,12 @@
 #ifndef SHADERPROGRAM_H_
 #define SHADERPROGRAM_H_
 
+
+/* 
+Author: Victor Sand (victor.sand@gmail.com)
+Wrapper for GLSL shaders
+*/
+
 #include <vector>
 #include <string>
 

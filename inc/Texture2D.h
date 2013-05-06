@@ -1,6 +1,11 @@
 #ifndef TEXTURE2D_H_
 #define TEXTURE2D_H_
 
+/* 
+Author: Victor Sand (victor.sand@gmail.com)
+Wrapper for OpenGL 2D Texture
+*/
+
 #include <Texture.h>
 #include <vector>
 

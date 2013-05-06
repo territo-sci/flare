@@ -1,3 +1,8 @@
+/*
+ * Author: Victor Sand (victor.sand@gmail.com)
+ *
+ */
+
 #include <TransferFunction.h>
 #include <iostream>
 #include <iomanip>

@@ -4,37 +4,32 @@
 
 using namespace osp;
 
-MappingKey::MappingKey() : intensity_(0.f),
-                           r_(0),
-													 g_(0),
-													 b_(0),
-													 a_(0) {}
+MappingKey::MappingKey() 
+  : intensity_(0.f),
+    r_(0),
+	  g_(0),
+		b_(0),
+		a_(0) {}
 
-MappingKey::MappingKey(const MappingKey &_mk) : intensity_(_mk.intensity_),
-                                                r_(_mk.r_),
-																								g_(_mk.g_),
-																								b_(_mk.b_),
-																								a_(_mk.a_) {}
+MappingKey::MappingKey(const MappingKey &_mk) 
+  : intensity_(_mk.intensity_),
+    r_(_mk.r_),
+		g_(_mk.g_),
+		b_(_mk.b_),
+		a_(_mk.a_) {}
 
-MappingKey::MappingKey(float _intensity,
-                       unsigned int _r,
-											 unsigned int _g,
-											 unsigned int _b,
-											 unsigned int _a) 
-                       :
-											 intensity_(_intensity),
-											 r_(_r),
-											 g_(_g),
-											 b_(_b),
-											 a_(_a) {}
+MappingKey::MappingKey(float _intensity, unsigned int _r, unsigned int _g,
+											 unsigned int _b, unsigned int _a) 
+  : intensity_(_intensity),
+	  r_(_r),
+		g_(_g),
+	  b_(_b),
+		a_(_a) {}
 
 MappingKey::~MappingKey() {}
 
-void MappingKey::SetValues(float _intensity,
-                           unsigned int _r,
-													 unsigned int _g,
-													 unsigned int _b,
-													 unsigned int _a) {
+void MappingKey::SetValues(float _intensity, unsigned int _r, unsigned int _g,
+													 unsigned int _b, unsigned int _a) {
 	intensity_ = _intensity;
 	r_ = _r;
 	g_ = _g;

@@ -1,5 +1,13 @@
 #ifndef RAYCASTER_H
 #define RAYCASTER_H
+
+/*
+Author: Victor Sand (victor.sand@gmail.com)
+Mammoth workhorse class that ties all parts of the raycaster application
+together. Manages state, render calls and a lot of initializations.
+TODO: Iteratively break away parts from it into other classes.
+*/
+
 #include <Renderer.h>
 #include <map>
 #include <string>
@@ -22,22 +30,46 @@ public:
   static Raycaster * New();
   virtual ~Raycaster();
   virtual bool Render(float _timestep);
+
+	// Reload GLSL shaders
   bool ReloadShaders();
+	// Reload constant configuration file
   bool ReloadConfig();
+	// Reload transfer function file
 	bool ReloadTransferFunctions();
+	// Initialize model, view and projection matrices.
+	// TODO Move hardcoded init values to config file
   bool InitMatrices();
+	// Initialize the color cube used for raycasting.
+	// TODO Make cube class.
   bool InitCube();
+	// Init the quad used for output texture rendering
   bool InitQuad();
+	// Run all of CLHandlers initialization functions
   bool InitCL();
+	// Set up buffers for the different rendering stages
   bool InitFramebuffers();
+	// Update matrices with current view parameters
   bool UpdateMatrices();
+	// Bind transformation matrices to a ShaderProgram
   bool BindTransformationMatrices(ShaderProgram *_program);
+	// Read shader config from file
   bool ReadShaderConfig(const std::string &_filename);
   bool HandleMouse();
   bool HandleKeyboard();
 	// Read kernel config from file and voxel data,
 	// update the constants that get sent to the kernel every frame
 	bool UpdateKernelConfig();
+  // For keyboard handling, retrieve the last known state of a key
+	bool KeyLastState(int _key) const;
+	// Add a transfer function to the transfer function list
+	// TODO Actually support and make use of multiple TFs
+	void AddTransferFunction(TransferFunction *_transferFunction);
+
+	Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
+  Texture2D * CubeBackTexture() const { return cubeBackTex_; }
+  Texture2D * QuadTexture() const { return quadTex_; }
+
 	void SetKernelConfigFilename(const std::string &_filename);
 	void SetVoxelData(VoxelData<float> *_floatData);
   void SetCubeFrontTexture(Texture2D *_cubeFrontTexture);
@@ -48,11 +80,7 @@ public:
   void SetConfigFilename(std::string _configFilename);
   void SetKeyLastState(int, bool _pressed);
 	void SetAnimator(Animator *_animator);
-	void AddTransferFunction(TransferFunction *_transferFunction);
-  Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
-  Texture2D * CubeBackTexture() const { return cubeBackTex_; }
-  Texture2D * QuadTexture() const { return quadTex_; }
-  bool KeyLastState(int _key) const;
+
 private:
   Raycaster();
   std::string configFilename_;

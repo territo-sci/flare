@@ -1,6 +1,13 @@
 #ifndef MAPPINGKEY_H
 #define MAPPINGKEY_H
 
+
+/* 
+Author: Victor Sand (victor.sand@gmail.com)
+Mapping key used in transfer function. A key includes an intensity
+for which the key is active, and RGBA values for that specific intensity.
+*/
+
 #include <iostream>
 
 namespace osp {
@@ -9,17 +16,10 @@ class MappingKey {
 public:
     MappingKey();
 		MappingKey(const MappingKey &_mappingKey);
-		MappingKey(float _intensity,
-		           unsigned int _r,
-							 unsigned int _g,
-							 unsigned int _b,
-							 unsigned int _a);
+		MappingKey(float _intensity, unsigned int _r, unsigned int _g,
+							 unsigned int _b, unsigned int _a);
 		~MappingKey();
-		void SetValues(float _intensity,
-		               unsigned int _r,
-									 unsigned int _g,
-									 unsigned int _b,
-									 unsigned int _a);
+
 		float Intensity() const { return intensity_; }
 		unsigned int R() const { return r_; }
 		unsigned int G() const { return g_; }
@@ -37,6 +37,10 @@ public:
 				 return a_;
 			}
 		}
+
+		void SetValues(float _intensity, unsigned int _r, unsigned int _g,
+									 unsigned int _b, unsigned int _a);
+		
 		// Comparsion by intensity for sorting purposes
 		bool operator<(const MappingKey &_mappingKey) const;        
     MappingKey & operator=(const MappingKey &_mappingKey);
@@ -49,7 +53,6 @@ private:
 		unsigned int a_;
 };
 		
-
 }
     
 std::ostream& operator<<(std::ostream &os,

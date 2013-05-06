@@ -1,6 +1,16 @@
 #ifndef VOXELDATA_H
 #define VOXELDATA_H
 
+/*
+ * Auhtor: Victor Sand (victor.sand@gmail.com)
+ * Template class to represent voxel data, its dimensions, 
+ * data dimensionality, number of timesteps and so on.
+ * Currently only used with float, has not been tested 
+ * on other types of data.
+ *
+ */
+
+
 #include <vector>
 
 namespace osp {
@@ -14,6 +24,7 @@ public:
 	VoxelData() {}
 	~VoxelData() {}
 	friend class VDFReader;
+
 	unsigned int NumTimesteps() const { return numTimesteps_; }
 	unsigned int DataDimensionality() const { return dataDimensionality_; }
 	unsigned int ADim() const { return aDim_; }
@@ -30,10 +41,12 @@ public:
 		return data_.at(CoordsToIndex(_a, _b, _c));
 	}
 	T * DataPtr() { return &data_[0]; }
+
 private:
-	unsigned int CoordsToIndex(unsigned int _a,
-														 unsigned int _b,
-														 unsigned int _c) {
+  // Convert coordinates to a flattened index.
+  // TODO support other orderings
+	unsigned int CoordsToIndex(unsigned int _a, unsigned int _b,
+	                           unsigned int _c) {
 		return _a + _b*aDim_ + _c*aDim_*bDim_;
 	}
 	unsigned int aDim_;

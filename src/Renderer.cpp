@@ -1,17 +1,22 @@
-#include <Renderer.h>
+/*
+ * Author: Victor Sand (victor.sand@gmail.com)
+ *
+ */
 
+#include <Renderer.h>
 #include <utility>
 
 using namespace osp;
 
-Renderer::Renderer() : winWidth_(0), 
-                       winHeight_(0),
-                       currentMouseX_(0),
-                       currentMouseY_(0),
-                       lastMouseX_(0),
-                       lastMouseY_(0),
-                       leftMouseDown_(false),
-                       rightMouseDown_(false) {
+Renderer::Renderer() 
+  : winWidth_(0), 
+    winHeight_(0),
+    currentMouseX_(0),
+    currentMouseY_(0),
+    lastMouseX_(0),
+    lastMouseY_(0),
+    leftMouseDown_(false),
+    rightMouseDown_(false) {
 }
 
 Renderer::~Renderer() {
