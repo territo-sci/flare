@@ -31,47 +31,47 @@ public:
   virtual ~Raycaster();
   virtual bool Render(float _timestep);
 
-	// Reload GLSL shaders
+  // Reload GLSL shaders
   bool ReloadShaders();
-	// Reload constant configuration file
+  // Reload constant configuration file
   bool ReloadConfig();
-	// Reload transfer function file
-	bool ReloadTransferFunctions();
-	// Initialize model, view and projection matrices.
-	// TODO Move hardcoded init values to config file
+  // Reload transfer function file
+  bool ReloadTransferFunctions();
+  // Initialize model, view and projection matrices.
+  // TODO Move hardcoded init values to config file
   bool InitMatrices();
-	// Initialize the color cube used for raycasting.
-	// TODO Make cube class.
+  // Initialize the color cube used for raycasting.
+  // TODO Make cube class.
   bool InitCube();
-	// Init the quad used for output texture rendering
+  // Init the quad used for output texture rendering
   bool InitQuad();
-	// Run all of CLHandlers initialization functions
+  // Run all of CLHandlers initialization functions
   bool InitCL();
-	// Set up buffers for the different rendering stages
+  // Set up buffers for the different rendering stages
   bool InitFramebuffers();
-	// Update matrices with current view parameters
+  // Update matrices with current view parameters
   bool UpdateMatrices();
-	// Bind transformation matrices to a ShaderProgram
+  // Bind transformation matrices to a ShaderProgram
   bool BindTransformationMatrices(ShaderProgram *_program);
-	// Read shader config from file
+  // Read shader config from file
   bool ReadShaderConfig(const std::string &_filename);
   bool HandleMouse();
   bool HandleKeyboard();
-	// Read kernel config from file and voxel data,
-	// update the constants that get sent to the kernel every frame
-	bool UpdateKernelConfig();
+  // Read kernel config from file and voxel data,
+  // update the constants that get sent to the kernel every frame
+  bool UpdateKernelConfig();
   // For keyboard handling, retrieve the last known state of a key
-	bool KeyLastState(int _key) const;
-	// Add a transfer function to the transfer function list
-	// TODO Actually support and make use of multiple TFs
-	void AddTransferFunction(TransferFunction *_transferFunction);
+  bool KeyLastState(int _key) const;
+  // Add a transfer function to the transfer function list
+  // TODO Actually support and make use of multiple TFs
+  void AddTransferFunction(TransferFunction *_transferFunction);
 
-	Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
+  Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
   Texture2D * CubeBackTexture() const { return cubeBackTex_; }
   Texture2D * QuadTexture() const { return quadTex_; }
 
-	void SetKernelConfigFilename(const std::string &_filename);
-	void SetVoxelData(VoxelData<float> *_floatData);
+  void SetKernelConfigFilename(const std::string &_filename);
+  void SetVoxelData(VoxelData<float> *_floatData);
   void SetCubeFrontTexture(Texture2D *_cubeFrontTexture);
   void SetCubeBackTexture(Texture2D *_cubeBackTexture);
   void SetQuadTexture(Texture2D *_quadTexture);
@@ -79,7 +79,7 @@ public:
   void SetQuadShaderProgram(ShaderProgram *_quadShaderProgram);
   void SetConfigFilename(std::string _configFilename);
   void SetKeyLastState(int, bool _pressed);
-	void SetAnimator(Animator *_animator);
+  void SetAnimator(Animator *_animator);
 
 private:
   Raycaster();
@@ -121,29 +121,29 @@ private:
   // Helper for pressing button without repeat
   bool KeyPressedNoRepeat(int _key);
   CLHandler *clHandler_;
-	// Data to render
-	VoxelData<float> *voxelData_;
-	// Time since last frame was rendered, used to control animation speed
-	//float timeElapsed_;
-	//float animationRate_;
-	Animator * animator_;
-	// Animation timestep
-	unsigned int currentTimestep_;
+  // Data to render
+  VoxelData<float> *voxelData_;
+  // Time since last frame was rendered, used to control animation speed
+  //float timeElapsed_;
+  //float animationRate_;
+  Animator * animator_;
+  // Animation timestep
+  unsigned int currentTimestep_;
   // Kernel constants
-	KernelConstants kernelConstants_;
-	std::string kernelConfigFilename_;
-	// Transfer functions
-	std::vector<TransferFunction*> transferFunctions_;
+  KernelConstants kernelConstants_;
+  std::string kernelConfigFilename_;
+  // Transfer functions
+  std::vector<TransferFunction*> transferFunctions_;
 
   // For the corresponding CL kernel
-	static const unsigned int cubeFrontArg_ = 0;
-	static const unsigned int cubeBackArg_ = 1;
-	static const unsigned int quadArg_ = 2;
-	static const unsigned int voxelDataArg_ = 3;
-	static const unsigned int constantsArg_ = 4;
-	static const unsigned int timestepOffsetArg_ = 5;
-	static const unsigned int transferFunctionArg_ = 6; 
-	
+  static const unsigned int cubeFrontArg_ = 0;
+  static const unsigned int cubeBackArg_ = 1;
+  static const unsigned int quadArg_ = 2;
+  static const unsigned int voxelDataArg_ = 3;
+  static const unsigned int constantsArg_ = 4;
+  static const unsigned int timestepOffsetArg_ = 5;
+  static const unsigned int transferFunctionArg_ = 6; 
+  
 };
 
 }

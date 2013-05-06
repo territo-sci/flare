@@ -1,3 +1,8 @@
+/* 
+ * Author: Victor Sand (victor.sand@gmail.com)
+ * 
+ */
+
 #include <GL/glew.h>
 #include <GL/glfw.h>
 #include <GL/glx.h>
@@ -10,11 +15,6 @@
 #include <CLHandler.h>
 #include <TransferFunction.h>
 #include <Animator.h>
-
-/* 
- * Author: Victor Sand (victor.sand@gmail.com)
- * 
- */
 
 using namespace osp;
 
@@ -46,17 +46,17 @@ Raycaster::Raycaster()
     matricesInitialized_(false),
     framebuffersInitialized_(false),
     clHandler_(CLHandler::New()),
-		animator_(NULL),
-		currentTimestep_(0) {
+    animator_(NULL),
+    currentTimestep_(0) {
   kernelConstants_.stepSize = 0.01f;
-	kernelConstants_.intensity = 60.f;
-	kernelConstants_.aDim = 128;
-	kernelConstants_.bDim = 128;
-	kernelConstants_.cDim = 128;
+  kernelConstants_.intensity = 60.f;
+  kernelConstants_.aDim = 128;
+  kernelConstants_.bDim = 128;
+  kernelConstants_.cDim = 128;
 }
 
 Raycaster::~Raycaster() {
-	if (clHandler_) delete clHandler_;
+  if (clHandler_) delete clHandler_;
 }
 
 Raycaster * Raycaster::New() {
@@ -72,7 +72,7 @@ bool Raycaster::InitMatrices() {
 }
 
 void Raycaster::SetAnimator(Animator *_animator) {
-	animator_ = _animator;
+  animator_ = _animator;
 }
 
 bool Raycaster::InitCube() {
@@ -254,40 +254,40 @@ bool Raycaster::ReadShaderConfig(const std::string &_filename) {
 }
 
 bool Raycaster::ReloadTransferFunctions() {
-	INFO("Reloading transfer functions");
-	if (!transferFunctions_[0]->ReadFile()) return false;
-	if (!transferFunctions_[0]->ConstructTexture()) return false;
-	if (!clHandler_->BindTransferFunction(6, transferFunctions_[0])) 
-		return false;
-	return true;
+  INFO("Reloading transfer functions");
+  if (!transferFunctions_[0]->ReadFile()) return false;
+  if (!transferFunctions_[0]->ConstructTexture()) return false;
+  if (!clHandler_->BindTransferFunction(6, transferFunctions_[0])) 
+    return false;
+  return true;
 }
 
 bool Raycaster::UpdateKernelConfig() {
-	std::ifstream in;
-	in.open(kernelConfigFilename_.c_str());
-	if (!in.is_open()) {
-		ERROR("Could not open kernel config file " << kernelConfigFilename_);
-		return false;
-	} else {
-		std::string variable;
-		float value;
-		while (!in.eof()) {
-			in >> variable;
-			in >> value;
-			if (variable == "stepSize") {
-				kernelConstants_.stepSize = value;
-			} else if (variable == "intensity") {
-				kernelConstants_.intensity = value;
-			} else {
-				ERROR("Invalid variable name: " << variable);
-				return false;
-			}
-		}
-	}
-	kernelConstants_.aDim = voxelData_->ADim();
-	kernelConstants_.bDim = voxelData_->BDim();
-	kernelConstants_.cDim = voxelData_->CDim();
-	return true;
+  std::ifstream in;
+  in.open(kernelConfigFilename_.c_str());
+  if (!in.is_open()) {
+    ERROR("Could not open kernel config file " << kernelConfigFilename_);
+    return false;
+  } else {
+    std::string variable;
+    float value;
+    while (!in.eof()) {
+      in >> variable;
+      in >> value;
+      if (variable == "stepSize") {
+        kernelConstants_.stepSize = value;
+      } else if (variable == "intensity") {
+        kernelConstants_.intensity = value;
+      } else {
+        ERROR("Invalid variable name: " << variable);
+        return false;
+      }
+    }
+  }
+  kernelConstants_.aDim = voxelData_->ADim();
+  kernelConstants_.bDim = voxelData_->BDim();
+  kernelConstants_.cDim = voxelData_->CDim();
+  return true;
 }
 
 bool Raycaster::UpdateMatrices() {
@@ -332,14 +332,14 @@ void Raycaster::SetQuadShaderProgram(ShaderProgram *_quadShaderProgram) {
 
 bool Raycaster::Render(float _timestep) {
 
-	//timeElapsed_ += _timestep;
-	if (animator_ != NULL) {
-	  animator_->Update(_timestep);
-	} else {
-		WARNING("Animator not set");
-	}
+  //timeElapsed_ += _timestep;
+  if (animator_ != NULL) {
+    animator_->Update(_timestep);
+  } else {
+    WARNING("Animator not set");
+  }
   
-	// Reset any errors
+  // Reset any errors
   glGetError();
 
   // TODO move init checks and only run them once
@@ -423,19 +423,19 @@ bool Raycaster::Render(float _timestep) {
 
   // TODO Set kernel constants that might have changed 
 
-	unsigned int currentTimestep;
-	if (animator_ != NULL) {
-		currentTimestep = animator_->CurrentTimestep();
-	} else {
-		WARNING("Animator not set");
-		currentTimestep = 0;
-	}
+  unsigned int currentTimestep;
+  if (animator_ != NULL) {
+    currentTimestep = animator_->CurrentTimestep();
+  } else {
+    WARNING("Animator not set");
+    currentTimestep = 0;
+  }
 
   // Run kernel
   unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
-	if (!clHandler_->BindTimestepOffset(timestepOffsetArg_, timestepOffset))
-		return false;
-	if (!clHandler_->RunRaycaster()) return false;
+  if (!clHandler_->BindTimestepOffset(timestepOffsetArg_, timestepOffset))
+    return false;
+  if (!clHandler_->RunRaycaster()) return false;
 
   // Output 
 
@@ -489,8 +489,8 @@ bool Raycaster::ReloadConfig() {
 
 bool Raycaster::HandleMouse() {
   if (leftMouseDown_) {
-		pitch_ += 0.2f*(float)(currentMouseX_ - lastMouseX_);
-    roll_ += 0.2f*(float)(currentMouseY_ - lastMouseY_);	
+    pitch_ += 0.2f*(float)(currentMouseX_ - lastMouseX_);
+    roll_ += 0.2f*(float)(currentMouseY_ - lastMouseY_);  
   }
   return true;
 }
@@ -501,27 +501,27 @@ bool Raycaster::HandleKeyboard() {
 
   if (KeyPressedNoRepeat('R')) {
     if (!ReloadConfig()) 
-			return false;
-		INFO("Config reloaded");
+      return false;
+    INFO("Config reloaded");
     if (!ReloadShaders()) 
-			return false;
-		INFO("Shaders reloaded");
-		if (!UpdateKernelConfig()) 
-			return false;
-		INFO("Kernel config reloaded");
+      return false;
+    INFO("Shaders reloaded");
+    if (!UpdateKernelConfig()) 
+      return false;
+    INFO("Kernel config reloaded");
     if (!clHandler_->BindConstants(constantsArg_, &kernelConstants_)) 
-			return false;
-		INFO("Kernel constants reloaded");
-		if (!ReloadTransferFunctions()) 
-			return false;
-		INFO("Transfer functions reloaded");
+      return false;
+    INFO("Kernel constants reloaded");
+    if (!ReloadTransferFunctions()) 
+      return false;
+    INFO("Transfer functions reloaded");
   }
 
   if (KeyPressed('W')) zoom_ -= 0.1f;
   if (KeyPressed('S')) zoom_ += 0.1f;
-	if (KeyPressedNoRepeat(32)) animator_->TogglePause();
-	if (KeyPressed('Z')) animator_->IncTimestep();
-	if (KeyPressed('X')) animator_->DecTimestep();
+  if (KeyPressedNoRepeat(32)) animator_->TogglePause();
+  if (KeyPressed('Z')) animator_->IncTimestep();
+  if (KeyPressed('X')) animator_->DecTimestep();
 
   return true;
 }
@@ -560,41 +560,41 @@ bool Raycaster::KeyLastState(int _key) const {
 
 bool Raycaster::InitCL() {
   if (!clHandler_->Init()) 
-		return false;
+    return false;
   if (!clHandler_->CreateContext()) 
-		return false;
-	if (!clHandler_->BindTexture2D(cubeFrontArg_, cubeFrontTex_, true)) 
-		return false;
-	if (!clHandler_->BindTexture2D(cubeBackArg_, cubeBackTex_, true)) 
-		return false;
-	if (!clHandler_->BindTexture2D(quadArg_, quadTex_, false)) 
-		return false;
-	if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) 
-		return false;
-	if (!clHandler_->BuildProgram()) 
-		return false;
-	if (!clHandler_->CreateKernel()) 
-		return false;
-	if (!clHandler_->CreateCommandQueue()) 
-		return false;
-	if (!clHandler_->BindVoxelData(voxelDataArg_, voxelData_)) 
-		return false;
+    return false;
+  if (!clHandler_->BindTexture2D(cubeFrontArg_, cubeFrontTex_, true)) 
+    return false;
+  if (!clHandler_->BindTexture2D(cubeBackArg_, cubeBackTex_, true)) 
+    return false;
+  if (!clHandler_->BindTexture2D(quadArg_, quadTex_, false)) 
+    return false;
+  if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) 
+    return false;
+  if (!clHandler_->BuildProgram()) 
+    return false;
+  if (!clHandler_->CreateKernel()) 
+    return false;
+  if (!clHandler_->CreateCommandQueue()) 
+    return false;
+  if (!clHandler_->BindVoxelData(voxelDataArg_, voxelData_)) 
+    return false;
   if (!clHandler_->BindConstants(constantsArg_, &kernelConstants_)) 
-		return false;
-	if (!clHandler_->BindTransferFunction(transferFunctionArg_, 
-		                                    transferFunctions_[0]))
-		return false;
-	return true;
+    return false;
+  if (!clHandler_->BindTransferFunction(transferFunctionArg_, 
+                                        transferFunctions_[0]))
+    return false;
+  return true;
 }
 
 void Raycaster::SetVoxelData(VoxelData<float> *_voxelData) {
-	voxelData_ = _voxelData;
+  voxelData_ = _voxelData;
 }
 
 void Raycaster::SetKernelConfigFilename(const std::string &_filename) {
-	kernelConfigFilename_ = _filename;
+  kernelConfigFilename_ = _filename;
 }
 
 void Raycaster::AddTransferFunction(TransferFunction *_transferFunction) {
-	transferFunctions_.push_back(_transferFunction);
+  transferFunctions_.push_back(_transferFunction);
 }
