@@ -22,6 +22,7 @@ Note that this is very much work in progress.
 namespace osp {
 
 class Texture2D;
+class Texture3D;
 class TransferFunction;
 
 class CLHandler {

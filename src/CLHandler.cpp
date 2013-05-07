@@ -8,6 +8,7 @@
 #include <Utils.h>
 #include <CLHandler.h>
 #include <Texture2D.h>
+#include <Texture3D.h>
 #include <VoxelData.h>
 #include <TransferFunction.h>
 #include <sstream>
@@ -204,7 +205,7 @@ bool CLHandler::CreateContext() {
 bool CLHandler::BindTexture2D(unsigned int _argIndex, Texture2D *_texture, 
                               bool _readOnly) {
   
-  // Remove anything already associated with argument inded
+  // Remove anything already associated with argument index
   if (GLTextures_.find((cl_uint)_argIndex) != GLTextures_.end()) {
     INFO("Erasing texture at kernel argument " << _argIndex);
     GLTextures_.erase((cl_uint)_argIndex);
@@ -223,6 +224,32 @@ bool CLHandler::BindTexture2D(unsigned int _argIndex, Texture2D *_texture,
     return false;
   }
 
+  INFO("Inserting kernel argument " << _argIndex);
+  GLTextures_.insert(std::make_pair((cl_uint)_argIndex, texture));
+
+  return true;
+}
+
+
+bool CLHandler::AddTexture3D(unsigned int _argIndex, Texture3D *_texture,
+                             bool _readOnly) {
+
+  // Remove anything already associated with argument index
+  if (GLTextures_.find((cl_uint)_argIndex) != GLTextures_.end()) {
+    INFO("Erasing texture at kernel argument " << _argIndex);
+    GLTextures_.erase((cl_uint)_argIndex);
+  }
+
+  cl_mem_flags flag = _readOnly ? CL_MEM_READ_ONLY : CL_MEM_WRITE_ONLY;
+  cl_mem texture = clCreateFromGLTexture3D(context_, flag, GL_TEXTURE_3D,
+                                           0, _texture->Handle(), &error_);
+
+  if (error_ != CL_SUCCESS) {
+    ERROR("Failed to create cl_mem object for argument index " << _argIndex);
+    ERROR(GetErrorString(error_));
+    return false;
+  }
+  
   INFO("Inserting kernel argument " << _argIndex);
   GLTextures_.insert(std::make_pair((cl_uint)_argIndex, texture));
 

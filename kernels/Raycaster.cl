@@ -195,11 +195,11 @@ Raycaster(__global __read_only image2d_t _cubeFront,
   }
 
   // Output
-  float intensity = constants->intensity;
+  float intensity = _constants->intensity;
   color *= intensity*stepSize;
 
   // Write to image
-  write_imagef(output, intCoords, color);
+  write_imagef(_output, intCoords, color);
   
 }
 

@@ -21,6 +21,7 @@ namespace osp {
 
 class ShaderProgram;
 class Texture2D;
+class Texture3D;
 class CLHandler;
 class TransferFunction;
 class Animator;
@@ -66,6 +67,9 @@ public:
   // TODO Actually support and make use of multiple TFs
   void AddTransferFunction(TransferFunction *_transferFunction);
 
+  // TODO move 
+  bool PopulateVolumeTexture();
+
   Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
   Texture2D * CubeBackTexture() const { return cubeBackTex_; }
   Texture2D * QuadTexture() const { return quadTex_; }
@@ -75,6 +79,7 @@ public:
   void SetCubeFrontTexture(Texture2D *_cubeFrontTexture);
   void SetCubeBackTexture(Texture2D *_cubeBackTexture);
   void SetQuadTexture(Texture2D *_quadTexture);
+  void SetVolumeTexture(Texture3D *_volumeTexture);
   void SetCubeShaderProgram(ShaderProgram *_cubeShaderProgram);
   void SetQuadShaderProgram(ShaderProgram *_quadShaderProgram);
   void SetConfigFilename(std::string _configFilename);
@@ -99,6 +104,7 @@ private:
   Texture2D *cubeFrontTex_;
   Texture2D *cubeBackTex_;
   Texture2D *quadTex_;
+  Texture3D *volumeTex_;
   // View params
   float pitch_;
   float yaw_;

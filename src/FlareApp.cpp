@@ -89,7 +89,8 @@ int main() {
   raycaster->AddTransferFunction(transferFunction);
   raycaster->SetKernelConfigFilename("config/kernelConstants.txt");
   raycaster->UpdateKernelConfig();
-  raycaster->InitCL();
+  if (!raycaster->PopulateVolumeTexture()) exit(1);
+  if (!raycaster->InitCL()) exit(1);
 
   // Go!
   manager->SetRenderer(raycaster);
@@ -103,6 +104,7 @@ int main() {
   delete quadShaderProgram;
   delete manager;
   delete animator;
+  delete raycaster;
 
   exit(0);
 }

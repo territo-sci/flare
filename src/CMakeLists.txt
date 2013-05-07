@@ -23,6 +23,7 @@ add_executable(FlareApp
                Texture.cpp
 	             Texture1D.cpp
                Texture2D.cpp
+               Texture3D.cpp
                CLHandler.cpp
 							 Animator.cpp
 	             MappingKey.cpp

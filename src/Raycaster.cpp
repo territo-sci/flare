@@ -9,12 +9,14 @@
 #include <fstream>
 #include <Raycaster.h>
 #include <Texture2D.h>
+#include <Texture3D.h>
 #include <Utils.h>
 #include <ShaderProgram.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <CLHandler.h>
 #include <TransferFunction.h>
 #include <Animator.h>
+#include <vector>
 
 using namespace osp;
 
@@ -33,6 +35,7 @@ Raycaster::Raycaster()
     quadShaderProgram_(NULL),
     cubeFrontTex_(NULL),
     cubeBackTex_(NULL),
+    volumeTex_(NULL),
     quadTex_(NULL),
     pitch_(-30.f),
     yaw_(0.f),
@@ -57,6 +60,7 @@ Raycaster::Raycaster()
 
 Raycaster::~Raycaster() {
   if (clHandler_) delete clHandler_;
+  if (volumeTex_) delete volumeTex_;
 }
 
 Raycaster * Raycaster::New() {
@@ -73,6 +77,31 @@ bool Raycaster::InitMatrices() {
 
 void Raycaster::SetAnimator(Animator *_animator) {
   animator_ = _animator;
+}
+
+bool Raycaster::PopulateVolumeTexture() {
+
+  if (animator_ == NULL) {
+    ERROR("Animator not set");
+    return false;
+  }
+
+  if (voxelData_ == NULL) {
+    ERROR("Voxel data not set");
+    return false;
+  }
+  
+  std::vector<unsigned int> dim;
+  dim.push_back(voxelData_->ADim());
+  dim.push_back(voxelData_->BDim());
+  dim.push_back(voxelData_->CDim());
+  volumeTex_ = Texture3D::New(dim);
+  if (!volumeTex_->Init(voxelData_->DataPtr())) {
+    return false;
+  }
+
+  return true;
+
 }
 
 bool Raycaster::InitCube() {
@@ -322,6 +351,11 @@ void Raycaster::SetQuadTexture(Texture2D *_quadTexture) {
   quadTex_ = _quadTexture;
 }
 
+void Raycaster::SetVolumeTexture(Texture3D *_volumeTexture) {
+  volumeTex_ = _volumeTexture;
+
+}
+
 void Raycaster::SetCubeShaderProgram(ShaderProgram *_cubeShaderProgram) {
   cubeShaderProgram_ = _cubeShaderProgram;
 }
@@ -569,6 +603,8 @@ bool Raycaster::InitCL() {
     return false;
   if (!clHandler_->BindTexture2D(quadArg_, quadTex_, false)) 
     return false;
+  if (!clHandler_->AddTexture3D(voxelDataArg_, volumeTex_, true))
+    return false;
   if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) 
     return false;
   if (!clHandler_->BuildProgram()) 
@@ -577,8 +613,7 @@ bool Raycaster::InitCL() {
     return false;
   if (!clHandler_->CreateCommandQueue()) 
     return false;
-  if (!clHandler_->BindVoxelData(voxelDataArg_, voxelData_)) 
-    return false;
+ // if (!clHandler_->BindVoxelData(voxelDataArg_, voxelData_)) 
   if (!clHandler_->BindConstants(constantsArg_, &kernelConstants_)) 
     return false;
   if (!clHandler_->BindTransferFunction(transferFunctionArg_, 

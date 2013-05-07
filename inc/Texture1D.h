@@ -15,11 +15,11 @@ class ShaderProgram;
 
 class Texture1D : public Texture {
 public:
-	static Texture1D * New(std::vector<unsigned int> _dim);
-	virtual bool Init(float *_data);
-	virtual bool Bind(ShaderProgram *_shaderProgram,
-	                  std::string _uniformName,
-										unsigned int _texUnit) const;
+  static Texture1D * New(std::vector<unsigned int> _dim);
+  virtual bool Init(float *_data);
+  virtual bool Bind(ShaderProgram *_shaderProgram,
+                    std::string _uniformName,
+                    unsigned int _texUnit) const;
 private:
   Texture1D(std::vector<unsigned int> dim_);
 };
