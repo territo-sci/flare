@@ -41,6 +41,7 @@ public:
     return data_.at(CoordsToIndex(_a, _b, _c));
   }
   T * DataPtr() { return &data_[0]; }
+  T * DataPtr(unsigned int _offset) { return &data_[_offset]; }
 
 private:
   // Convert coordinates to a flattened index.

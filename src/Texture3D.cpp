@@ -48,6 +48,27 @@ bool Texture3D::Init(float *_data) {
   return true;
 }
 
+// For testing purposes
+bool Texture3D::Update(float *_data) {
+  glGetError();
+  glBindTexture(GL_TEXTURE_3D, handle_);
+  
+  glTexSubImage3D(GL_TEXTURE_3D,    // target
+                  0,                // level
+                  0,                // xoffset
+                  0,                // yoffset
+                  0,                // zoffset
+                  dim_[0],          // width
+                  dim_[1],          // height
+                  dim_[2],          // depth
+                  GL_RED,           // format
+                  GL_FLOAT,         // type
+                  static_cast<GLvoid*>(_data));               // data
+
+  glBindTexture(GL_TEXTURE_3D, 0);
+  return (CheckGLError("Texture3D::Update(float*)") == GL_NO_ERROR);
+}
+
 bool Texture3D::Update(PixelBuffer *_pixelBuffer) {
   
   // Reset any errors

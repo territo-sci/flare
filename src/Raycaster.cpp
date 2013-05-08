@@ -475,13 +475,14 @@ bool Raycaster::Render(float _timestep) {
 
   // Point to the right place in the data
   unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
-  //float *frameData = &(voxelData_->DataPtr()[timestepOffset]);
+  float *frameData = voxelData_->DataPtr(timestepOffset);
   
   // Fill the pixel buffer
- // pixelBuffers_[0]->Update(frameData);
+  pixelBuffers_[0]->Update(frameData);
   
   // Populate the texture
-  //volumeTex_->Update(pixelBuffers_[0]); 
+  //volumeTex_->Update(frameData); 
+  volumeTex_->Update(pixelBuffers_[0]);
 
   // Run raycaster
   if (!clHandler_->BindTimestepOffset(timestepOffsetArg_, timestepOffset))

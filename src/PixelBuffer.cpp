@@ -60,20 +60,20 @@ bool PixelBuffer::Update(float *_data) {
   // call glBufferData with NULL argument to discard previous data in the PBO
   // and glMapBuffer will return immediately. 
   glBufferData(GL_PIXEL_UNPACK_BUFFER, numFloats_*sizeof(float),
-               NULL, GL_STREAM_DRAW);
+              NULL, GL_STREAM_DRAW);
 
   // Map the PBO into CPU controller memory
-  GLubyte * mappedPtr = static_cast<GLubyte*>(
+  float * floatPtr = reinterpret_cast<float*>(
     glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY));
 
-  if (mappedPtr == NULL) {
+  if (floatPtr == NULL) {
     ERROR("Mapped host pointer is NULL");
     return false;
   }
    
-  DEBUG("Copying voxel data");
-  std::copy(_data, _data+numFloats_, mappedPtr); 
-  DEBUG("Completed copying voxel data");
+  //DEBUG("Copying voxel data");
+  std::copy(_data, _data+numFloats_, floatPtr); 
+  //DEBUG("Completed copying voxel data");
 
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);

@@ -63,6 +63,8 @@ bool Texture2D::Bind(ShaderProgram * _shaderProgram,
     return false;
   }
 
+  glGetError();
+
   glUseProgram(_shaderProgram->Handle());
   glActiveTexture(GL_TEXTURE0 + _texUnit);
   glEnable(GL_TEXTURE_2D);
@@ -78,7 +80,7 @@ bool Texture2D::Bind(ShaderProgram * _shaderProgram,
   glUniform1i(location, _texUnit);
   glBindTexture(GL_TEXTURE_2D, handle_);
   glUseProgram(0);
-  CheckGLError("Texture2D::Bind()");
+  CheckGLError("Texture2D::Bind() " + _uniformName);
 
   return true;
 }
