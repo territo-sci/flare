@@ -24,7 +24,7 @@ public:
   // Bind to a ShaderProgram
   virtual bool Bind(ShaderProgram * _shaderProgram,
                     std::string _uniformName,
-                    unsigned int _texUnit) const = 0;
+                    unsigned int _texUnit);
   virtual ~Texture();
 
 protected:

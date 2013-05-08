@@ -42,7 +42,7 @@ public:
   // Create a cl_mem object from a Texture2D, and add it to the list of
   // textures. Textures can be read-only or not. 
   // TODO change name to "Add"
-  bool BindTexture2D(unsigned int _argIndex, Texture2D * _texture, 
+  bool AddTexture2D(unsigned int _argIndex, Texture2D * _texture, 
                      bool _readOnly);
   
   bool AddTexture3D(unsigned int _argIndex, Texture3D *_texture,

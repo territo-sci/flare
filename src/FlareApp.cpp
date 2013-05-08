@@ -75,8 +75,8 @@ int main() {
   raycaster->SetWinWidth(width);
   raycaster->SetWinHeight(height);
   raycaster->InitMatrices();
-  raycaster->InitCube();
-  raycaster->InitQuad();
+  if (!raycaster->InitCube()) exit(1);
+  if (!raycaster->InitQuad()) exit(1);
   raycaster->SetCubeFrontTexture(cubeFrontTex);
   raycaster->SetCubeBackTexture(cubeBackTex);
   raycaster->SetQuadTexture(quadTex);
@@ -84,6 +84,7 @@ int main() {
   raycaster->SetQuadShaderProgram(quadShaderProgram);
   raycaster->InitFramebuffers();
   raycaster->SetVoxelData(floatData);
+  if (!raycaster->InitPixelBuffers()) exit(1);
   raycaster->SetAnimator(animator);
   //raycaster->SetAnimationRate(0.08f);
   raycaster->AddTransferFunction(transferFunction);
@@ -94,7 +95,7 @@ int main() {
 
   // Go!
   manager->SetRenderer(raycaster);
-  manager->StartLoop();
+  if (!manager->StartLoop()) exit(1);
 
   // Clean up, like a good citizen
   delete cubeFrontTex;

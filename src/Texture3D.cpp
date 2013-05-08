@@ -6,7 +6,7 @@
 #include <GL/glew.h>
 #include <Texture3D.h>
 #include <Utils.h>
-
+#include <PixelBuffer.h>
 
 using namespace osp;
 
@@ -46,4 +46,39 @@ bool Texture3D::Init(float *_data) {
 
   CheckGLError("Texture3D::Init()");
   return true;
+}
+
+bool Texture3D::Update(PixelBuffer *_pixelBuffer) {
+  
+  // Reset any errors
+  glGetError();
+
+  if (!initialized_) {
+    ERROR("Texture not initialized");
+    return false;
+  }
+  
+  glBindTexture(GL_TEXTURE_3D, handle_);
+  // TODO init check?
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _pixelBuffer->Handle());
+
+  // When a non-zero pixel unpack buffer is bound, the last argument 
+  // (data) is treated as an offset into the data.
+  glTexSubImage3D(GL_TEXTURE_3D,    // target
+                  0,                // level
+                  0,                // xoffset
+                  0,                // yoffset
+                  0,                // zoffset
+                  dim_[0],          // width
+                  dim_[1],          // height
+                  dim_[2],          // depth
+                  GL_RED,           // format
+                  GL_FLOAT,         // type
+                  0);               // data
+  
+  
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+  glBindTexture(GL_TEXTURE_3D, 0);
+
+  return (CheckGLError("Texture3D::Update(PixelBuffer*)") == GL_NO_ERROR);
 }

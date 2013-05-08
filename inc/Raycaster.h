@@ -22,6 +22,7 @@ namespace osp {
 class ShaderProgram;
 class Texture2D;
 class Texture3D;
+class PixelBuffer;
 class CLHandler;
 class TransferFunction;
 class Animator;
@@ -50,6 +51,8 @@ public:
   bool InitCL();
   // Set up buffers for the different rendering stages
   bool InitFramebuffers();
+  // Set up two pixel buffers for texture streaming
+  bool InitPixelBuffers();
   // Update matrices with current view parameters
   bool UpdateMatrices();
   // Bind transformation matrices to a ShaderProgram
@@ -145,10 +148,13 @@ private:
   static const unsigned int cubeFrontArg_ = 0;
   static const unsigned int cubeBackArg_ = 1;
   static const unsigned int quadArg_ = 2;
-  static const unsigned int voxelDataArg_ = 3;
+  static const unsigned int voxelVolumeArg_ = 3;
   static const unsigned int constantsArg_ = 4;
   static const unsigned int timestepOffsetArg_ = 5;
   static const unsigned int transferFunctionArg_ = 6; 
+
+  // For texture streaming
+  std::vector<PixelBuffer*> pixelBuffers_;
   
 };
 

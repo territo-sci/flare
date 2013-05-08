@@ -10,6 +10,7 @@
 #include <Raycaster.h>
 #include <Texture2D.h>
 #include <Texture3D.h>
+#include <PixelBuffer.h>
 #include <Utils.h>
 #include <ShaderProgram.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -51,6 +52,7 @@ Raycaster::Raycaster()
     clHandler_(CLHandler::New()),
     animator_(NULL),
     currentTimestep_(0) {
+
   kernelConstants_.stepSize = 0.01f;
   kernelConstants_.intensity = 60.f;
   kernelConstants_.aDim = 128;
@@ -61,6 +63,12 @@ Raycaster::Raycaster()
 Raycaster::~Raycaster() {
   if (clHandler_) delete clHandler_;
   if (volumeTex_) delete volumeTex_;
+  for (std::vector<PixelBuffer*>::iterator it = pixelBuffers_.begin();
+      it != pixelBuffers_.end(); it++) {
+    if (*it != NULL) {
+      delete *it;
+    }
+  }
 }
 
 Raycaster * Raycaster::New() {
@@ -465,13 +473,23 @@ bool Raycaster::Render(float _timestep) {
     currentTimestep = 0;
   }
 
-  // Run kernel
+  // Point to the right place in the data
   unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
+  //float *frameData = &(voxelData_->DataPtr()[timestepOffset]);
+  
+  // Fill the pixel buffer
+ // pixelBuffers_[0]->Update(frameData);
+  
+  // Populate the texture
+  //volumeTex_->Update(pixelBuffers_[0]); 
+
+  // Run raycaster
   if (!clHandler_->BindTimestepOffset(timestepOffsetArg_, timestepOffset))
     return false;
   if (!clHandler_->RunRaycaster()) return false;
 
   // Output 
+
 
   // Render to screen using quad
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
@@ -592,18 +610,35 @@ bool Raycaster::KeyLastState(int _key) const {
   }
 }
 
+bool Raycaster::InitPixelBuffers() {
+  
+  if (voxelData_ == NULL) {
+    ERROR("Must init voxelData before pixel buffers");
+    return false;
+  }
+
+  pixelBuffers_.resize(2);
+  pixelBuffers_[0] = PixelBuffer::New(voxelData_->NumVoxelsPerTimestep());
+  pixelBuffers_[0]->Init();
+  pixelBuffers_[1] = PixelBuffer::New(voxelData_->NumVoxelsPerTimestep());
+  pixelBuffers_[1]->Init();
+
+  return true;
+
+}
+
 bool Raycaster::InitCL() {
   if (!clHandler_->Init()) 
     return false;
   if (!clHandler_->CreateContext()) 
     return false;
-  if (!clHandler_->BindTexture2D(cubeFrontArg_, cubeFrontTex_, true)) 
+  if (!clHandler_->AddTexture2D(cubeFrontArg_, cubeFrontTex_, true)) 
     return false;
-  if (!clHandler_->BindTexture2D(cubeBackArg_, cubeBackTex_, true)) 
+  if (!clHandler_->AddTexture2D(cubeBackArg_, cubeBackTex_, true)) 
     return false;
-  if (!clHandler_->BindTexture2D(quadArg_, quadTex_, false)) 
+  if (!clHandler_->AddTexture2D(quadArg_, quadTex_, false)) 
     return false;
-  if (!clHandler_->AddTexture3D(voxelDataArg_, volumeTex_, true))
+  if (!clHandler_->AddTexture3D(voxelVolumeArg_, volumeTex_, true))
     return false;
   if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) 
     return false;
@@ -613,7 +648,7 @@ bool Raycaster::InitCL() {
     return false;
   if (!clHandler_->CreateCommandQueue()) 
     return false;
- // if (!clHandler_->BindVoxelData(voxelDataArg_, voxelData_)) 
+ // if (!clHandler_->BindVoxelData(voxelVolumeArg_, voxelData_)) 
   if (!clHandler_->BindConstants(constantsArg_, &kernelConstants_)) 
     return false;
   if (!clHandler_->BindTransferFunction(transferFunctionArg_, 

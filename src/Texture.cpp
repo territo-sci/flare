@@ -22,6 +22,12 @@ unsigned int Texture::Dim(unsigned int _axis) const {
   return dim_[_axis];
 }
 
+bool Texture::Bind(ShaderProgram *_shaderProgram, std::string _uniformName,
+                   unsigned int _texUnit) {
+  WARNING("Call to default implementation of Texture::Bind");
+  return true;
+}
+
 unsigned int Texture::Handle() const {
   if (handle_ == 0) {
     WARNING("Texture handle is zero");

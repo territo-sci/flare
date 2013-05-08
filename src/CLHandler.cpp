@@ -202,7 +202,7 @@ bool CLHandler::CreateContext() {
   return true;
 }
 
-bool CLHandler::BindTexture2D(unsigned int _argIndex, Texture2D *_texture, 
+bool CLHandler::AddTexture2D(unsigned int _argIndex, Texture2D *_texture, 
                               bool _readOnly) {
   
   // Remove anything already associated with argument index
