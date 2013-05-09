@@ -59,8 +59,8 @@ bool PixelBuffer::Update(float *_data) {
   // To avoid glMapBuffer to stall if the GPU is working with this buffer,
   // call glBufferData with NULL argument to discard previous data in the PBO
   // and glMapBuffer will return immediately. 
-  glBufferData(GL_PIXEL_UNPACK_BUFFER, numFloats_*sizeof(float),
-              NULL, GL_STREAM_DRAW);
+  //glBufferData(GL_PIXEL_UNPACK_BUFFER, numFloats_*sizeof(float),
+    //           NULL, GL_STREAM_DRAW);
 
   // Map the PBO into CPU controller memory
   float * floatPtr = reinterpret_cast<float*>(

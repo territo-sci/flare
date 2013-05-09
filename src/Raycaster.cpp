@@ -22,8 +22,6 @@
 
 using namespace osp;
 
-
-
 Raycaster::Raycaster() 
   : Renderer(),
     configFilename_("NotSet"),
@@ -483,7 +481,7 @@ bool Raycaster::Render(float _timestep) {
   // Measure the time it takes between starting to update the timestep
   // data until the kernel has run
   { 
-  boost::timer::auto_cpu_timer t(5, "%w total\n");
+  //boost::timer::auto_cpu_timer t(5, "%w total\n");
 
   if (!pingPong_) {
 
@@ -506,24 +504,26 @@ bool Raycaster::Render(float _timestep) {
     unsigned int index = currentTimestep % 2;
     unsigned int nextIndex = 1-index;
 
-    // Populate the texture with the current data
+    // PBO to texture
     { 
-    boost::timer::auto_cpu_timer s0(5, "%w asynch DMA\n");
+    //boost::timer::auto_cpu_timer s0(5, "%w asynch DMA\n");
     volumeTex_->Update(pixelBuffers_[index]);
     }
 
+    // App to PBO
+    { 
+    //boost::timer::auto_cpu_timer s2(5, "%w texture data transfer\n");
+    pixelBuffers_[nextIndex]->Update(frameData);
+    }
+
+
+    // Draw
     {
-    boost::timer::auto_cpu_timer s1(5, "%w asynch kernel run\n");
+    //boost::timer::auto_cpu_timer s1(5, "%w asynch kernel run\n");
     // Run raycaster
     if (!clHandler_->RunRaycaster()) return false;
     }
 
-    // Last two call should return immediately, so start filling the next 
-    // timestep while the GPU is busy transferring PBO to texture memory
-    { 
-    boost::timer::auto_cpu_timer s2(5, "%w texture data transfer\n");
-    pixelBuffers_[nextIndex]->Update(frameData);
-    }
      
   }
 
