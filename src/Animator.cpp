@@ -10,6 +10,7 @@ Animator * Animator::New() {
 Animator::Animator() 
   : numTimesteps_(0),
     currentTimestep_(0),
+    fpsMode_(false),
     paused_(false),
     elapsedTime_(0.f),
     refreshInterval_(0.f) {
@@ -26,6 +27,11 @@ void Animator::SetRefreshInterval(float _refreshInterval) {
 void Animator::Update(float _elapsedTime) {
 
   if (paused_) return;
+ 
+  if (fpsMode_) {
+    IncTimestep();
+    return;
+  }
 
   // Add time to the time that might have been left from last update
   elapsedTime_ += _elapsedTime;
@@ -33,13 +39,13 @@ void Animator::Update(float _elapsedTime) {
   // Update as many times as needed
   while (elapsedTime_ > refreshInterval_) {
     elapsedTime_ -= refreshInterval_;
-    if (currentTimestep_ < numTimesteps_-1) {
-      currentTimestep_++;
-    } else {
-      currentTimestep_ = 0;
-    }
+    IncTimestep();
   }
 
+}
+
+void Animator::ToggleFPSMode() {
+  fpsMode_ = !fpsMode_;
 }
 
 void Animator::TogglePause() {

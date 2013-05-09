@@ -18,8 +18,11 @@
 #include <TransferFunction.h>
 #include <Animator.h>
 #include <vector>
+#include <boost/timer/timer.hpp>
 
 using namespace osp;
+
+
 
 Raycaster::Raycaster() 
   : Renderer(),
@@ -49,6 +52,7 @@ Raycaster::Raycaster()
     quadInitialized_(false),
     matricesInitialized_(false),
     framebuffersInitialized_(false),
+    pingPong_(true),
     clHandler_(CLHandler::New()),
     animator_(NULL),
     currentTimestep_(0) {
@@ -473,24 +477,60 @@ bool Raycaster::Render(float _timestep) {
     currentTimestep = 0;
   }
 
-  // Point to the right place in the data
+  
   unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
-  float *frameData = voxelData_->DataPtr(timestepOffset);
   
-  // Fill the pixel buffer
-  pixelBuffers_[0]->Update(frameData);
-  
-  // Populate the texture
-  //volumeTex_->Update(frameData); 
-  volumeTex_->Update(pixelBuffers_[0]);
+  // Measure the time it takes between starting to update the timestep
+  // data until the kernel has run
+  { 
+  boost::timer::auto_cpu_timer t(5, "%w total\n");
 
-  // Run raycaster
-  if (!clHandler_->BindTimestepOffset(timestepOffsetArg_, timestepOffset))
-    return false;
-  if (!clHandler_->RunRaycaster()) return false;
+  if (!pingPong_) {
+
+    float *frameData = voxelData_->DataPtr(timestepOffset);
+
+    // Fill the pixel buffer
+    pixelBuffers_[0]->Update(frameData);
+  
+    // Populate the texture
+    volumeTex_->Update(pixelBuffers_[0]);
+
+    // Run raycaster
+    if (!clHandler_->RunRaycaster()) return false;
+
+  } else {
+
+    float *frameData = voxelData_->DataPtr(timestepOffset+1);
+
+    // Even timesteps to pixel buffer 0, odd to buffer 1
+    unsigned int index = currentTimestep % 2;
+    unsigned int nextIndex = 1-index;
+
+    // Populate the texture with the current data
+    { 
+    boost::timer::auto_cpu_timer s0(5, "%w asynch DMA\n");
+    volumeTex_->Update(pixelBuffers_[index]);
+    }
+
+    {
+    boost::timer::auto_cpu_timer s1(5, "%w asynch kernel run\n");
+    // Run raycaster
+    if (!clHandler_->RunRaycaster()) return false;
+    }
+
+    // Last two call should return immediately, so start filling the next 
+    // timestep while the GPU is busy transferring PBO to texture memory
+    { 
+    boost::timer::auto_cpu_timer s2(5, "%w texture data transfer\n");
+    pixelBuffers_[nextIndex]->Update(frameData);
+    }
+     
+  }
+
+
+  } // End timer scope
 
   // Output 
-
 
   // Render to screen using quad
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
@@ -573,8 +613,10 @@ bool Raycaster::HandleKeyboard() {
   if (KeyPressed('W')) zoom_ -= 0.1f;
   if (KeyPressed('S')) zoom_ += 0.1f;
   if (KeyPressedNoRepeat(32)) animator_->TogglePause();
+  if (KeyPressedNoRepeat('F')) animator_->ToggleFPSMode();
   if (KeyPressed('Z')) animator_->IncTimestep();
   if (KeyPressed('X')) animator_->DecTimestep();
+  if (KeyPressedNoRepeat('P')) TogglePingPong();
 
   return true;
 }
@@ -611,6 +653,10 @@ bool Raycaster::KeyLastState(int _key) const {
   }
 }
 
+bool Raycaster::TogglePingPong() {
+  pingPong_ = !pingPong_;
+}
+
 bool Raycaster::InitPixelBuffers() {
   
   if (voxelData_ == NULL) {
@@ -621,8 +667,10 @@ bool Raycaster::InitPixelBuffers() {
   pixelBuffers_.resize(2);
   pixelBuffers_[0] = PixelBuffer::New(voxelData_->NumVoxelsPerTimestep());
   pixelBuffers_[0]->Init();
+  pixelBuffers_[0]->Update(voxelData_->DataPtr(0));
   pixelBuffers_[1] = PixelBuffer::New(voxelData_->NumVoxelsPerTimestep());
   pixelBuffers_[1]->Init();
+  pixelBuffers_[1]->Update(voxelData_->DataPtr(1));
 
   return true;
 

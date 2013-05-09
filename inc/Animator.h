@@ -2,9 +2,10 @@
 #define ANIMATOR_H
 
 /*
-Author: Victor Sand (victor.sand@gmail.com) 
-Encapsulates animation logic 
-*/
+ * Author: Victor Sand (victor.sand@gmail.com) 
+ * Encapsulates animation logic 
+ *
+ */
 
 namespace osp {
 
@@ -16,7 +17,9 @@ public:
   void Update(float _elapsedTime);
   // Pauses if unpaused, unpauses if paused
   void TogglePause();
-  
+  // If FPS mode is on, don't wait. Update every timestep.
+  void ToggleFPSMode();
+
   unsigned int CurrentTimestep() const { return currentTimestep_; }
 
   void SetCurrentTimestep(unsigned int _timestep);
@@ -28,11 +31,12 @@ public:
 private:
   Animator();
   Animator(const Animator&) { }
-
+  
   // Number of timesteps before looping occurs
   unsigned int numTimesteps_;
   // Current timestep, the output of the Animator
   unsigned int currentTimestep_;
+  bool fpsMode_;
   bool paused_;
   // Keeps track of elapsed time between timestep updates 
   float elapsedTime_;

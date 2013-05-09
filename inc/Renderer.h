@@ -23,6 +23,7 @@ public:
   void SetWinHeight(unsigned int _winHeight);
   void SetMousePosition(float _mouseX, float _mouseY);
   void SetMousePressed(bool _leftPressed, bool _rightPressed);
+  float FPS() const;
 protected:
   Renderer();
   // Window

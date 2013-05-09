@@ -22,6 +22,7 @@ Renderer::Renderer()
 Renderer::~Renderer() {
 }
 
+
 void Renderer::SetWinWidth(unsigned int _winWidth) {
   winWidth_ = _winWidth;
 }

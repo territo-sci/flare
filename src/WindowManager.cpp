@@ -4,22 +4,19 @@
 #include <Renderer.h>
 #include <Utils.h>
 #include <vector>
+#include <sstream>
+#include <iomanip>
+#include <boost/lexical_cast.hpp>
 
 using namespace osp;
 
-WindowManager::WindowManager(unsigned int _width,
-                             unsigned int _height,
+WindowManager::WindowManager(unsigned int _width, unsigned int _height,
                              std::string _title)
-                             :
-                             width_(_width),
-                             height_(_height),
-                             title_(_title),
-                             windowOpen_(false),
-                             renderer_(NULL) { 
+ : width_(_width), height_(_height), title_(_title), windowOpen_(false),
+   renderer_(NULL) { 
 }    
 
-WindowManager * WindowManager::New(unsigned int _width,
-                                   unsigned int _height,
+WindowManager * WindowManager::New(unsigned int _width, unsigned int _height,
                                    std::string _title) {
   return new WindowManager(_width, _height, _title);
 }
@@ -96,9 +93,18 @@ bool WindowManager::StartLoop() {
   keysToCheck.push_back('R');
   keysToCheck.push_back('W');
   keysToCheck.push_back('S');
+  keysToCheck.push_back('F');
   keysToCheck.push_back(32);
   keysToCheck.push_back('Z');
   keysToCheck.push_back('X');
+  keysToCheck.push_back('P');
+
+  unsigned int numFrames = 0;
+  float lastTime = 0.f;
+  float elapsedTime = 0.f;
+  float accTime = 0.f;
+  // TODO config file
+  unsigned int fpsDisplayInterval = 30;
 
   // Start the rendering loop
   while (true) {
@@ -121,18 +127,31 @@ bool WindowManager::StartLoop() {
     renderer_->SetMousePosition((float)xMouse, (float)yMouse);
 
     bool leftButton = glfwGetMouseButton(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-    bool rightButton = glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT)== GLFW_PRESS;
+    bool rightButton = glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT)==GLFW_PRESS;
     renderer_->SetMousePressed(leftButton, rightButton);
 
     // Update time
     oldTime = currentTime;
     currentTime = glfwGetTime();
+    elapsedTime = currentTime - oldTime;
+    accTime += elapsedTime;
 
     // Draw timestep
-    if (!Draw(currentTime - oldTime)) {
+    if (!Draw(elapsedTime)) {
       INFO("Rendering terminated, exiting");
       Close();
       return false;
+    }
+    
+    numFrames++;
+    if (numFrames == fpsDisplayInterval) {
+      float fps = static_cast<float>(numFrames)/accTime;
+      std::stringstream ss;
+      ss << title_ << " " << std::fixed  
+         << std::setprecision(1) << fps << " FPS";
+      glfwSetWindowTitle(ss.str().c_str());
+      numFrames = 0;
+      accTime = 0.f;
     }
 
     CheckGLError("End of loop");
@@ -140,6 +159,8 @@ bool WindowManager::StartLoop() {
 
   return true;
 } 
+
+
 
 bool WindowManager::Close() {
   glfwTerminate();

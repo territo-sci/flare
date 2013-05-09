@@ -35,6 +35,7 @@ private:
 
   unsigned int width_;
   unsigned int height_;
+  float fps_;
   std::string title_;
   Renderer *renderer_;
 };

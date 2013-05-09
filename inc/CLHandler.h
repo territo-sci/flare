@@ -69,9 +69,7 @@ public:
   // Add a KernelConstants structure to the list of cl_mem kernel arguments
   bool BindConstants(unsigned int _argIndex, 
                      KernelConstants *kernelConstants_);
-  // Add the timestep offset to the list of cl_mem kernel arguments
-  bool BindTimestepOffset(unsigned int _argIndex,
-                          unsigned int _timestepOffset);
+
 private:
   CLHandler();
 
@@ -102,8 +100,6 @@ private:
   // Stores non-shared (non-texture) memory buffer arguments
   std::map<cl_uint, MemKernelArg> memKernelArgs_;
 
-  // Stores unsigned int kernel argument
-  std::map<cl_uint, unsigned int> uintArgs_;
 
 };
 

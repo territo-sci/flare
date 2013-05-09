@@ -426,18 +426,6 @@ bool CLHandler::BindConstants(unsigned int _argIndex,
   return true;
 }
 
-bool CLHandler::BindTimestepOffset(unsigned int _argIndex,
-                                   unsigned int _timestepOffset) {
-
-  // Delete old data bound to argument index
-  if (uintArgs_.find((cl_uint)_argIndex) != uintArgs_.end()) {
-    uintArgs_.erase((cl_uint)_argIndex);
-  }
-
-  uintArgs_.insert(std::make_pair((cl_uint)_argIndex, _timestepOffset));
-  return true;
-}
-
 bool CLHandler::RunRaycaster() {
   
   // TODO Don't hardcode
@@ -491,6 +479,7 @@ bool CLHandler::RunRaycaster() {
   }
 
   // Set up unsigned integer kernel arguments
+  /*
   for (std::map<cl_uint, unsigned int>::iterator it = uintArgs_.begin();
        it != uintArgs_.end();
        it++) {
@@ -504,6 +493,7 @@ bool CLHandler::RunRaycaster() {
       return false;
     }
   }
+  */
 
   // Set up kernel execution
   error_ = clEnqueueNDRangeKernel(commandQueue_, kernel_, 2, NULL, globalSize,

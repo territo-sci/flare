@@ -136,7 +136,6 @@ Raycaster(__global __read_only image2d_t _cubeFront,
           __global __write_only image2d_t _output,
           __global __read_only image3d_t _voxelData,
           __constant struct KernelConstants *_constants,
-          int _timestepOffset,
           __global __read_only float *_tf) {
 
 

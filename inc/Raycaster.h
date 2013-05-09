@@ -70,8 +70,11 @@ public:
   // TODO Actually support and make use of multiple TFs
   void AddTransferFunction(TransferFunction *_transferFunction);
 
-  // TODO move 
+  // TODO remove 
   bool PopulateVolumeTexture();
+
+  // Toggle the use of DMA texture streaming
+  bool TogglePingPong();
 
   Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
   Texture2D * CubeBackTexture() const { return cubeBackTex_; }
@@ -125,6 +128,7 @@ private:
   bool quadInitialized_;
   bool matricesInitialized_;
   bool framebuffersInitialized_;
+  bool pingPong_; // texture streaming
   // Extra keyboard state to prevent key repeat
   std::map<int, bool> keysLastState_; 
   // Helper for pressing button without repeat
@@ -150,12 +154,12 @@ private:
   static const unsigned int quadArg_ = 2;
   static const unsigned int voxelVolumeArg_ = 3;
   static const unsigned int constantsArg_ = 4;
-  static const unsigned int timestepOffsetArg_ = 5;
-  static const unsigned int transferFunctionArg_ = 6; 
+  static const unsigned int transferFunctionArg_ = 5; 
 
   // For texture streaming
   std::vector<PixelBuffer*> pixelBuffers_;
   
+
 };
 
 }
