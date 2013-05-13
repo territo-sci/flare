@@ -65,7 +65,7 @@ int main() {
   std::cout << *transferFunction << std::endl;
   transferFunction->ConstructTexture();
 
-  // Create animator
+  //Create animator
   Animator *animator = Animator::New();
   animator->SetNumTimesteps(floatData->NumTimesteps());
   animator->SetRefreshInterval(0.07f);

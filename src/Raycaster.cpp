@@ -19,6 +19,7 @@
 #include <Animator.h>
 #include <vector>
 #include <boost/timer/timer.hpp>
+#include <pthread.h>
 
 using namespace osp;
 
@@ -475,14 +476,20 @@ bool Raycaster::Render(float _timestep) {
     currentTimestep = 0;
   }
 
-  
+  // Use a separate thread for dowloading data to PBO
+  pthread_t downloadThread;
+  int downloadThreadReturn;
+
   unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
+  // Even timesteps to pixel buffer 0, odd to buffer 1
+  unsigned int index = currentTimestep % 2;
+  unsigned int nextIndex = 1-index;
   
   // Measure the time it takes between starting to update the timestep
   // data until the kernel has run
   { 
   //boost::timer::auto_cpu_timer t(5, "%w total\n");
-
+    
   if (!pingPong_) {
 
     float *frameData = voxelData_->DataPtr(timestepOffset);
@@ -500,22 +507,34 @@ bool Raycaster::Render(float _timestep) {
 
     float *frameData = voxelData_->DataPtr(timestepOffset+1);
 
-    // Even timesteps to pixel buffer 0, odd to buffer 1
-    unsigned int index = currentTimestep % 2;
-    unsigned int nextIndex = 1-index;
 
     // PBO to texture
     { 
     //boost::timer::auto_cpu_timer s0(5, "%w asynch DMA\n");
     volumeTex_->Update(pixelBuffers_[index]);
     }
+  
+    // Map the PBO data pointer from main thread, and let a separate
+    // thread the data copy
 
+    pixelBuffers_[nextIndex]->MapPointer();
+
+    //DownloadThreadData *dtd;
+    //dtd->frameData_ = frameData;
+    //dtd->pixelBuffer_ = pixelBuffers_[nextIndex];
+//    downloadThreadReturn = pthread_create(&downloadThread, NULL,
+  //                                        DownloadThreadFunc,
+    //                                      reinterpret_cast<void*>(dtd));
+    
     // App to PBO
     { 
     //boost::timer::auto_cpu_timer s2(5, "%w texture data transfer\n");
-    pixelBuffers_[nextIndex]->Update(frameData);
+    //pixelBuffers_[nextIndex]->Update(frameData);
     }
 
+    pixelBuffers_[nextIndex]->Update(frameData);
+    //pthread_join(downloadThread, NULL);
+    pixelBuffers_[nextIndex]->UnmapPointer();
 
     // Draw
     {
@@ -523,7 +542,6 @@ bool Raycaster::Render(float _timestep) {
     // Run raycaster
     if (!clHandler_->RunRaycaster()) return false;
     }
-
      
   }
 
@@ -558,9 +576,20 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
 
+  // Sync rendering and PBO threads before next frame
+  if (pingPong_) { 
+  }
+
   // Window manager takes care of swapping buffers
 
   return true;
+}
+
+void * Raycaster::DownloadThreadFunc(void *_downloadThreadData) {
+  DownloadThreadData *dtd = reinterpret_cast<DownloadThreadData*>(
+                            _downloadThreadData);
+  dtd->pixelBuffer_->Update(dtd->frameData_);
+  pthread_exit(NULL);
 }
 
 bool Raycaster::ReloadShaders() {
@@ -666,11 +695,11 @@ bool Raycaster::InitPixelBuffers() {
 
   pixelBuffers_.resize(2);
   pixelBuffers_[0] = PixelBuffer::New(voxelData_->NumVoxelsPerTimestep());
-  pixelBuffers_[0]->Init();
-  pixelBuffers_[0]->Update(voxelData_->DataPtr(0));
+  pixelBuffers_[0]->Init(voxelData_->DataPtr(0));
+  //pixelBuffers_[0]->Update(voxelData_->DataPtr(0));
   pixelBuffers_[1] = PixelBuffer::New(voxelData_->NumVoxelsPerTimestep());
-  pixelBuffers_[1]->Init();
-  pixelBuffers_[1]->Update(voxelData_->DataPtr(1));
+  pixelBuffers_[1]->Init(voxelData_->DataPtr(1));
+  //pixelBuffers_[1]->Update(voxelData_->DataPtr(1));
 
   return true;
 

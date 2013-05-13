@@ -29,15 +29,15 @@ add_executable(FlareApp
                Renderer.cpp
                Raycaster.cpp
                Texture.cpp
-	       Texture1D.cpp
+               Texture1D.cpp
                Texture2D.cpp
                Texture3D.cpp
                PixelBuffer.cpp
                CLHandler.cpp
-	       Animator.cpp
-	       MappingKey.cpp
+               Animator.cpp
+               MappingKey.cpp
                TransferFunction.cpp
-	       VDFReader.cpp
+               VDFReader.cpp
                ShaderProgram.cpp)
 
 target_link_libraries(FlareApp
@@ -45,5 +45,6 @@ target_link_libraries(FlareApp
                       ${GLFW_LIBRARY}
                       ${OPENGL_LIBRARY}
                       ${OPENCL_LIBRARIES}
-                      ${Boost_LIBRARIES})
+                      ${Boost_LIBRARIES}
+              	      pthread)
 

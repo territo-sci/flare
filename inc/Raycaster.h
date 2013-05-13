@@ -95,6 +95,16 @@ public:
 private:
   Raycaster();
   std::string configFilename_;
+  
+  // Struct for data download thread
+  struct DownloadThreadData {
+    float *frameData_;
+    PixelBuffer *pixelBuffer_;
+  };
+   
+  // Download thread callback
+  static void * DownloadThreadFunc(void *_downloadThreadData); 
+    
   // Buffer object handles
   unsigned int cubeFrontFBO_;
   unsigned int cubeBackFBO_;
