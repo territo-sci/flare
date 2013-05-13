@@ -1,2 +1,2 @@
-intensity 170.0
-stepSize 0.006
+intensity 200.0
+stepSize 0.002

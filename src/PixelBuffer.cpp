@@ -6,6 +6,7 @@
 #include <PixelBuffer.h>
 #include <Utils.h>
 #include <algorithm>
+#include <boost/timer/timer.hpp>
 
  using namespace osp;
 
@@ -59,6 +60,12 @@ bool PixelBuffer::MapPointer() {
   }
 
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, handle_);
+  
+  // To avoid glMapBuffer to stall if the GPU is working with this buffer,
+  // call glBufferData with NULL argument to discard previous data in the PBO
+  // and glMapBuffer will return immediately. 
+  glBufferData(GL_PIXEL_UNPACK_BUFFER, numFloats_*sizeof(float),
+               NULL, GL_STREAM_DRAW);
 
   // Map the PBO into CPU controller memory
   mappedPointer_ = reinterpret_cast<float*>(
