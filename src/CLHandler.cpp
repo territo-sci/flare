@@ -8,7 +8,7 @@
 #include <Utils.h>
 #include <CLHandler.h>
 #include <Texture2D.h>
-#include <Texture3D.h>
+//#include <Texture3D.h>
 #include <VoxelData.h>
 #include <TransferFunction.h>
 #include <sstream>
@@ -29,10 +29,15 @@ CLHandler * CLHandler::New() {
   }
 }
 
-CLHandler::CLHandler() : error_(CL_SUCCESS) {
+CLHandler::CLHandler() 
+  : error_(CL_SUCCESS), 
+    mappedMemory_(NULL),
+    memoryMapped_(false),
+    numPlatforms_(0),
+    numDevices_(0) {
 }
 
-std::string CLHandler::GetErrorString(cl_int _error) {
+std::string CLHandler::ErrorString(cl_int _error) {
   switch (_error) {
     case CL_SUCCESS:
       return "CL_SUCCESS";
@@ -136,6 +141,61 @@ std::string CLHandler::GetErrorString(cl_int _error) {
   }
 }
 
+
+bool CLHandler::CheckSuccess(cl_int _error, std::string _location) {
+  if (_error == CL_SUCCESS) {
+    return true;
+  } else {
+    ERROR(_location);
+    ERROR(ErrorString(_error));
+    return false;
+  }
+}
+
+bool CLHandler::InitPlatform() {
+  error_ = clGetPlatformIDs(32, platforms_, &numPlatforms_);
+  if (error_ == CL_SUCCESS) {
+    INFO("Number of CL platforms: " << numPlatforms_);
+  } else {
+    CheckSuccess(error_, "InitPlatform()");
+    return false;
+  }
+  // TODO
+  if (numPlatforms_ > 1) {
+    WARNING("More than one platform found, this is unsupported");
+  }
+  return true;
+}
+
+bool CLHandler::InitDevices() {
+  if (numPlatforms_ < 1) {
+    ERROR("Number of platforms is < 1");
+    return false;
+  }
+
+  // Find devices
+  error_ = clGetDeviceIDs(platforms_[0], CL_DEVICE_TYPE_ALL,
+                          sizeof(devices_), devices_, &numDevices_);
+  if (CheckSuccess(error_, "InitDevices()")) {
+    INFO("Number of CL devices: " << numDevices_);
+  } else {
+    return false;
+  }
+
+  // Loop over found devices and print info
+  for (unsigned int i=0; i<numDevices_; i++) {
+    error_ = clGetDeviceInfo(devices_[i], CL_DEVICE_NAME, 
+                             sizeof(deviceName_), deviceName_, NULL);
+    if (CheckSuccess(error_, "InitDevices()")) {
+      INFO("Device " << i << " name: " << deviceName_);
+    } else {
+      return false;
+    }
+  }
+
+  return true;
+}
+/*
 bool CLHandler::Init() {
   // Find platform(s)
   error_ = clGetPlatformIDs(32, platforms_, &numPlatforms_);
@@ -143,7 +203,7 @@ bool CLHandler::Init() {
     INFO("Number of CL platforms: " << numPlatforms_);
   } else {
     ERROR("Failed to get CL platforms");
-    ERROR(GetErrorString(error_));
+    ERROR(ErrorString(error_));
     return false;
   }
 
@@ -159,7 +219,7 @@ bool CLHandler::Init() {
     INFO("Number of CL devices: " << numDevices_);
   } else {
     ERROR("Failed to get CL devices");
-    ERROR(GetErrorString(error_));
+    ERROR(ErrorString(error_));
     return false;
   }
 
@@ -171,15 +231,26 @@ bool CLHandler::Init() {
       INFO("Device " << i << " name: " << deviceName_);
     } else {
       ERROR("Failed to get device name");
-      ERROR(GetErrorString(error_));
+      ERROR(ErrorString(error_));
       return false;
     }
   }
 
   return true;
 }
+*/
 
 bool CLHandler::CreateContext() {
+
+  if (numPlatforms_ < 1) {
+    ERROR("Number of platforms < 1, can't create context");
+    return false;
+  }
+
+  if (numDevices_ < 1) {
+    ERROR("Number of devices < 1, can't create context");
+    return false;
+  }
 
   // Create an OpenCL context with a reference to an OpenGL context
   cl_context_properties contextProperties[] = {
@@ -191,53 +262,20 @@ bool CLHandler::CreateContext() {
   // TODO Use more than one device
   context_ = clCreateContext(contextProperties, 1, &devices_[0], NULL,
                              NULL, &error_);
-  if (error_ == CL_SUCCESS) {
-    INFO("CL context set up properly");
-  } else {
-    ERROR("Failed to set up CL context");
-    ERROR(GetErrorString(error_));
-    return false;
-  }
 
-  return true;
-}
-
-bool CLHandler::AddTexture2D(unsigned int _argIndex, Texture2D *_texture, 
-                              bool _readOnly) {
-  
-  // Remove anything already associated with argument index
-  if (GLTextures_.find((cl_uint)_argIndex) != GLTextures_.end()) {
-    INFO("Erasing texture at kernel argument " << _argIndex);
-    GLTextures_.erase((cl_uint)_argIndex);
-  }
- 
-  cl_mem_flags flag = _readOnly ? CL_MEM_READ_ONLY : CL_MEM_WRITE_ONLY;
-  cl_mem texture = clCreateFromGLTexture2D(context_,
-                                           flag,
-                                           GL_TEXTURE_2D,
-                                           0,
-                                           _texture->Handle(),
-                                           &error_);
-  if (error_ != CL_SUCCESS) {
-    ERROR("Failed to add GL texture at argument index " << _argIndex);
-    ERROR(GetErrorString(error_));
-    return false;
-  }
-
-  INFO("Inserting kernel argument " << _argIndex);
-  GLTextures_.insert(std::make_pair((cl_uint)_argIndex, texture));
-
-  return true;
+  return CheckSuccess(error_, "CreateContext()");
 }
 
 
-bool CLHandler::AddTexture3D(unsigned int _argIndex, Texture3D *_texture,
+
+/*
+bool CLHandler::AddTexture3D(unsigned int _argNr, Texture3D *_texture,
                              bool _readOnly) {
 
   // Remove anything already associated with argument index
-  if (GLTextures_.find((cl_uint)_argIndex) != GLTextures_.end()) {
-    INFO("Erasing texture at kernel argument " << _argIndex);
-    GLTextures_.erase((cl_uint)_argIndex);
+  if (GLTextures_.find((cl_uint)_argNr) != GLTextures_.end()) {
+    INFO("Erasing texture at kernel argument " << _argNr);
+    GLTextures_.erase((cl_uint)_argNr);
   }
 
   cl_mem_flags flag = _readOnly ? CL_MEM_READ_ONLY : CL_MEM_WRITE_ONLY;
@@ -245,16 +283,17 @@ bool CLHandler::AddTexture3D(unsigned int _argIndex, Texture3D *_texture,
                                            0, _texture->Handle(), &error_);
 
   if (error_ != CL_SUCCESS) {
-    ERROR("Failed to create cl_mem object for argument index " << _argIndex);
-    ERROR(GetErrorString(error_));
+    ERROR("Failed to create cl_mem object for argument index " << _argNr);
+    ERROR(ErrorString(error_));
     return false;
   }
   
-  INFO("Inserting kernel argument " << _argIndex);
-  GLTextures_.insert(std::make_pair((cl_uint)_argIndex, texture));
+  INFO("Inserting kernel argument " << _argNr);
+  GLTextures_.insert(std::make_pair((cl_uint)_argNr, texture));
 
   return true;
 }
+*/
 
 char * CLHandler::ReadSource(std::string _filename, int &_numChars) const {
   FILE *in;
@@ -276,33 +315,22 @@ char * CLHandler::ReadSource(std::string _filename, int &_numChars) const {
   return content;
 }
 
+
 bool CLHandler::CreateProgram(std::string _filename) {
   int numChars;
   char * source = ReadSource(_filename, numChars);
   program_ = clCreateProgramWithSource(context_, 1, (const char**)&source,
                                        (const size_t*)&numChars, &error_);
-  if (error_ == CL_SUCCESS) {
-    INFO("Created CL program successfully");
-    return true;
-  } else {
-    ERROR("Failed to create CL program");
-    ERROR(GetErrorString(error_));
-    return false;
-  }
+  return CheckSuccess(error_, "CreateProgram()");
 }
 
+
 bool CLHandler::BuildProgram() {
-
-  DEBUG("Building CL program...");
-
   error_ = clBuildProgram(program_, (cl_uint)0, NULL, NULL, NULL, NULL);
 
-  if (error_ == CL_SUCCESS) {
-    INFO("Built CL program successfully");
+  if (CheckSuccess(error_, "BuildProgram()")) {
     return true;
   } else {
-    ERROR("Failed to build CL program");
-    ERROR(GetErrorString(error_));
 
     // Print build log
     char * log;
@@ -324,105 +352,126 @@ bool CLHandler::BuildProgram() {
 }
 
 bool CLHandler::CreateKernel() {
-
   kernel_ = clCreateKernel(program_, "Raycaster", &error_);
-  if (error_ == CL_SUCCESS) {
-    INFO("Created CL kernel successfully");
-    return true;
-  } else {
-    ERROR("Failed to create CL kernel");
-    ERROR(GetErrorString(error_));
-    return false;
-  }
+  return CheckSuccess(error_, "CreateKernel()");
 }
 
 bool CLHandler::CreateCommandQueue() {
   commandQueue_ = clCreateCommandQueue(context_, devices_[0], 0, &error_);
-  if (error_ == CL_SUCCESS) {
-    INFO("Created CL command queue successfully");
-    return true;
-  } else {
-    ERROR("Failed to create CL command queue");
-    ERROR(GetErrorString(error_));
-    return false;
-  }
+  return CheckSuccess(error_, "CreateCommandQueue");
 }
 
-bool CLHandler::BindTransferFunction(unsigned int _argIndex, 
+bool CLHandler::AddTexture2D(unsigned int _argNr, Texture2D *_texture, 
+                             Permissions _permissions) {
+  
+  // Remove anything already associated with argument index
+  if (OGLTextures_.find((cl_uint)_argNr) != OGLTextures_.end()) {
+    OGLTextures_.erase((cl_uint)_argNr);
+  }
+ 
+  cl_mem_flags flag;
+  switch (_permissions) {
+    case READ_ONLY:
+      flag = CL_MEM_READ_ONLY;
+      break;
+    case WRITE_ONLY:
+      flag = CL_MEM_WRITE_ONLY;
+      break;
+    case READ_WRITE:
+      flag = CL_MEM_READ_WRITE;
+      break;
+    default:
+      ERROR("Unknown permission type");
+      return false;
+  }
+
+  cl_mem texture = clCreateFromGLTexture2D(context_, flag, GL_TEXTURE_2D,
+                                           0, _texture->Handle(), &error_);
+
+  if (!CheckSuccess(error_, "AddTexture2D()")) {
+    ERROR("Failed to add GL texture at argument index " << _argNr);
+    return false;
+  }
+
+  OGLTextures_.insert(std::make_pair((cl_uint)_argNr, texture));
+
+  return true;
+}
+bool CLHandler::AddTransferFunction(unsigned int _argNr, 
                                      TransferFunction *_tf) {
 
   // Remove old TF already bound to this argument index 
-  if (memKernelArgs_.find((cl_uint)_argIndex) != memKernelArgs_.end()) {
-    memKernelArgs_.erase((cl_uint)_argIndex);
+  if (memKernelArgs_.find((cl_uint)_argNr) != memKernelArgs_.end()) {
+    memKernelArgs_.erase((cl_uint)_argNr);
   }
 
   MemKernelArg mka;
   mka.size_ = sizeof(cl_mem);
-  mka.value_ = clCreateBuffer(context_,
+  mka.mem_ = clCreateBuffer(context_,
                              CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                              _tf->Width()*4*sizeof(float),
                              _tf->FloatData(),
                              &error_);
 
-  if (error_ != CL_SUCCESS) {
-    ERROR("Failed to bind transfer function");
-    ERROR(GetErrorString(error_));
+  if (!CheckSuccess(error_, "AddTransferFunction()")) {
+    ERROR("Failed to bind transfer functions to arg nr " << _argNr);
     return false;
   }
 
-  memKernelArgs_.insert(std::make_pair((cl_uint)_argIndex, mka));
+  memKernelArgs_.insert(std::make_pair((cl_uint)_argNr, mka));
   return true;
 }
 
-bool CLHandler::BindVoxelData(unsigned int _argIndex, 
+/*
+bool CLHandler::BindVoxelData(unsigned int _argNr, 
                               VoxelData<float> *_voxelData) { 
   
   // Remove old data already bound to this argument index
-  if (memKernelArgs_.find((cl_uint)_argIndex) != memKernelArgs_.end()) {
-    memKernelArgs_.erase((cl_uint)_argIndex);
+  if (memKernelArgs_.find((cl_uint)_argNr) != memKernelArgs_.end()) {
+    memKernelArgs_.erase((cl_uint)_argNr);
   }
 
   MemKernelArg mka;
   mka.size_ = sizeof(cl_mem);
-  mka.value_ = clCreateBuffer(context_,
+  mka.mem_ = clCreateBuffer(context_,
                               CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                               _voxelData->NumVoxelsTotal()*sizeof(float),
                               _voxelData->DataPtr(),
                               &error_);
 
   if (error_ != CL_SUCCESS) {
-    ERROR("Failed to bind voxel data to arg index " << _argIndex);
-    ERROR(GetErrorString(error_));
+    ERROR("Failed to bind voxel data to arg index " << _argNr);
+    ERROR(ErrorString(error_));
     return false;
   }
 
-  memKernelArgs_.insert(std::make_pair((cl_uint)_argIndex, mka));
+  memKernelArgs_.insert(std::make_pair((cl_uint)_argNr, mka));
   return true;
 }
+*/
 
-bool CLHandler::BindConstants(unsigned int _argIndex, 
+bool CLHandler::AddConstants(unsigned int _argNr, 
                               KernelConstants *_kernelConstants) {
 
   // Delete any old data already bound to argument index
-  if (memKernelArgs_.find((cl_uint)_argIndex) != memKernelArgs_.end()) {
-    memKernelArgs_.erase((cl_uint)_argIndex);
+  if (memKernelArgs_.find((cl_uint)_argNr) != memKernelArgs_.end()) {
+    memKernelArgs_.erase((cl_uint)_argNr);
   }
 
   MemKernelArg mka;
   mka.size_ = sizeof(cl_mem);
-  mka.value_ = clCreateBuffer(context_,
+  mka.mem_ = clCreateBuffer(context_,
                               CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
                               sizeof(KernelConstants),
                               _kernelConstants,
                               &error_);
 
-  if (error_ != CL_SUCCESS) {
-    ERROR("Failed to bind constants to kernel arg index " << _argIndex);
-    ERROR(GetErrorString(error_));
+  if (!CheckSuccess(error_, "BindConstants()")) {
+    ERROR("Failed to bind constants to kernel arg nr " << _argNr);
     return false;
   }
 
-  memKernelArgs_.insert(std::make_pair((cl_uint)_argIndex, mka));
+  memKernelArgs_.insert(std::make_pair((cl_uint)_argNr, mka));
   return true;
 }
 
@@ -433,50 +482,55 @@ bool CLHandler::RunRaycaster() {
   size_t localSize[] = { 16, 16 };
 
   // Let OpenCL take control of the shared GL objects
-  for (std::map<cl_uint, cl_mem>::iterator it = GLTextures_.begin(); 
-       it != GLTextures_.end(); 
-       it++) {
+  for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin(); 
+       it != OGLTextures_.end(); it++) {
     error_ = clEnqueueAcquireGLObjects(commandQueue_, 1, &(it->second),
                                        0, NULL, NULL);
     if (error_ != CL_SUCCESS) {
       ERROR("Failed to enqueue GL object aqcuisition");
       ERROR("Failing object: " << it->first);
-      ERROR(GetErrorString(error_));
+      ERROR(ErrorString(error_));
       return false;
     }
   }
 
- 
   // Set up kernel arguments of non-shared items
   for (std::map<cl_uint, MemKernelArg>::iterator it = memKernelArgs_.begin();
-       it != memKernelArgs_.end(); 
-       it++) {
+       it != memKernelArgs_.end(); it++) {
     error_ = clSetKernelArg(kernel_,
                             it->first,
                             (it->second).size_,
-                            &((it->second).value_));
+                            &((it->second).mem_));
     if (error_ != CL_SUCCESS) {
       ERROR("Failed to set kernel argument " << it->first);
-      ERROR(GetErrorString(error_));
+      ERROR(ErrorString(error_));
       return false;
     }
   }
   
   
   // Set up kernel arguments for textures
-  for (std::map<cl_uint, cl_mem>::iterator it = GLTextures_.begin(); 
-       it != GLTextures_.end(); 
-       it++) {
+  for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin(); 
+       it != OGLTextures_.end(); it++) {
     error_ = clSetKernelArg(kernel_,
                             it->first,
                             sizeof(cl_mem),
                             &(it->second));
     if (error_ != CL_SUCCESS) {
       ERROR("Failed to set kernel argument " << it->first);
-      ERROR(GetErrorString(error_));
+      ERROR(ErrorString(error_));
       return false;
     }
   }
+
+  // Set up kernel argument for the active voxel data buffer
+  error_ = clSetKernelArg(kernel_, 
+                          voxelDataArgNr_, 
+                          pinnedMemory_[activeIndex_].size_,
+                          &(pinnedMemory_[activeIndex_].mem_));
+  if (!CheckSuccess(error_, "Kernel argument for voxel data buffer")) {
+    return false;
+  } 
 
   // Set up unsigned integer kernel arguments
   /*
@@ -489,7 +543,7 @@ bool CLHandler::RunRaycaster() {
                             &(it->second));
     if (error_ != CL_SUCCESS) {
       ERROR("Failed to set kernel argument " << it->first);
-      ERROR(GetErrorString(error_));
+      ERROR(ErrorString(error_));
       return false;
     }
   }
@@ -500,24 +554,119 @@ bool CLHandler::RunRaycaster() {
                                   localSize, 0, NULL, NULL);
   if (error_ != CL_SUCCESS) {
     ERROR("Failed to enqueue kernel");
-    ERROR(GetErrorString(error_));
+    ERROR(ErrorString(error_));
     return false;
   }
 
   // Release the shared GL objects
-  for (std::map<cl_uint, cl_mem>::iterator it = GLTextures_.begin(); 
-       it!=GLTextures_.end(); 
-       it++) {
+  for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin(); 
+       it != OGLTextures_.end(); it++) {
     error_ = clEnqueueReleaseGLObjects(commandQueue_, 1, &(it->second), 0,
                                        NULL, NULL);
     if (error_ != CL_SUCCESS) {
       ERROR("Failed to release GL object");
       ERROR("Failed object: " << it->first);
-      ERROR(GetErrorString(error_));
+      ERROR(ErrorString(error_));
       return false;
     }
   }
   
   return true;
 }
+
+
+bool CLHandler::InitPinnedMemory(unsigned int _argNr, 
+                                 VoxelData<float> *_voxelData) {
+  voxelDataArgNr_ = _argNr;
+  pinnedMemory_.resize(2);
+  for (std::vector<MemKernelArg>::iterator it = pinnedMemory_.begin();
+       it != pinnedMemory_.end(); it++) {
+    it->mem_ = clCreateBuffer(context_, 
+                              CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
+                              _voxelData->NumVoxelsPerTimestep()*sizeof(float),
+                              NULL, &error_);
+    it->size_ = sizeof(float)*_voxelData->NumVoxelsPerTimestep();
+    if (!CheckSuccess(error_, "InitPinnedMemory()")) {
+      return false;
+    }
+  }
+  // Copy first frame to EVEN buffer
+  if (!MapPinnedMemory(EVEN, 
+                       _voxelData->NumVoxelsPerTimestep()*sizeof(float))) 
+    return false;
+  if (!VoxelDataToMappedMemory(_voxelData, 0)) return false;
+  if (!UnmapPinnedMemory(EVEN)) return false;
+  return true;
+}
+
+
+/*
+bool CLHandler::InitHostBuffers(unsigned int _bufferSize) {
+  
+  // TODO remove one step
+  pinnedMemory_.resize(2);
+  for (std::vector<cl_mem>::iterator it = pinnedMemory_.begin();
+       it != pinnedMemory_.end(); it++) {
+    *it = clCreateBuffer(context_, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
+                         _bufferSize, NULL, &error_);
+    if (error_ != CL_SUCCESS) {
+      ERROR("Failed to create pinned memory");
+      ERROR(ErrorString(error_));
+      return false;
+    }
+  }
+  return true;
+}
+*/
+
+bool CLHandler::MapPinnedMemory(MemoryIndex _memoryIndex, unsigned int _size) {
+
+  if (mappedMemory_) {
+    ERROR("MapPinnedMemory(): Memory already mapped");
+    return false;
+  }
+
+  mappedMemory_ = reinterpret_cast<float*>(
+                    clEnqueueMapBuffer(commandQueue_,
+                                       pinnedMemory_[_memoryIndex].mem_,
+                                       CL_TRUE, // TODO blocking now
+                                       CL_MAP_WRITE,
+                                       0,
+                                       _size,
+                                       0,
+                                       NULL,
+                                       NULL,
+                                       &error_));
+
+  return CheckSuccess(error_, "MapBufferToPinnedMemory()");
+}
+
+bool CLHandler::UnmapPinnedMemory(MemoryIndex _memoryIndex) {
+  if (!mappedMemory_) {
+    ERROR("UnmapPinnedMemory(): Memory is not mapped");
+    return false;
+  }
+
+  error_ = clEnqueueUnmapMemObject(commandQueue_, 
+                                   pinnedMemory_[_memoryIndex].mem_,
+                                   reinterpret_cast<float*>(mappedMemory_),
+                                   0, NULL, NULL);
+  mappedMemory_ = NULL;
+  return CheckSuccess(error_, "UnmapPinnedMemory()");
+}
+
+bool CLHandler::VoxelDataToMappedMemory(VoxelData<float> *_voxelData,
+                                        unsigned int _timestep) {
+  if (!mappedMemory_) {
+    ERROR("VoxelDataToMappedMemory(): Memory is not mapped");
+    return false;
+  }
+  unsigned int offset = _voxelData->TimestepOffset(_timestep);
+  float * data = _voxelData->DataPtr(offset);
+  unsigned int size = _voxelData->NumVoxelsPerTimestep();
+  std::copy(data, data+size, mappedMemory_);
+  return true;
+}
+
+
                                      

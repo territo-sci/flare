@@ -297,7 +297,7 @@ bool Raycaster::ReloadTransferFunctions() {
   INFO("Reloading transfer functions");
   if (!transferFunctions_[0]->ReadFile()) return false;
   if (!transferFunctions_[0]->ConstructTexture()) return false;
-  if (!clHandler_->BindTransferFunction(transferFunctionArg_, 
+  if (!clHandler_->AddTransferFunction(transferFunctionArg_, 
                                         transferFunctions_[0])) 
     return false;
   return true;
@@ -486,10 +486,10 @@ bool Raycaster::Render(float _timestep) {
   unsigned int index = currentTimestep % 2;
   unsigned int nextIndex = 1-index;
   
-  // Measure the time it takes between starting to update the timestep
-  // data until rendering is complete
-    
   float *frameData = voxelData_->DataPtr(timestepOffset);
+  unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
+
+  /*
   if (!pingPong_) {
 
     // Fill the pixel buffer
@@ -518,6 +518,12 @@ bool Raycaster::Render(float _timestep) {
   }
 
   // Run raycaster
+  */
+
+  if (!clHandler_->MapPinnedMemory(CLHandler::EVEN, frameSize)) return false;
+  if (!clHandler_->VoxelDataToMappedMemory(voxelData_, 
+                                           currentTimestep)) return false;
+  if (!clHandler_->UnmapPinnedMemory(CLHandler::EVEN)) return false;
 
   if (!clHandler_->RunRaycaster()) return false;
 
@@ -603,7 +609,7 @@ bool Raycaster::HandleKeyboard() {
     if (!UpdateKernelConfig()) 
       return false;
     INFO("Kernel config reloaded");
-    if (!clHandler_->BindConstants(constantsArg_, &kernelConstants_)) 
+    if (!clHandler_->AddConstants(constantsArg_, &kernelConstants_)) 
       return false;
     INFO("Kernel constants reloaded");
     if (!ReloadTransferFunctions()) 
@@ -681,18 +687,22 @@ bool Raycaster::InitPixelBuffers() {
 }
 
 bool Raycaster::InitCL() {
-  if (!clHandler_->Init()) 
+  if (!clHandler_->InitPlatform()) 
+    return false;
+  if (!clHandler_->InitDevices()) 
     return false;
   if (!clHandler_->CreateContext()) 
     return false;
-  if (!clHandler_->AddTexture2D(cubeFrontArg_, cubeFrontTex_, true)) 
+  if (!clHandler_->AddTexture2D(cubeFrontArg_, cubeFrontTex_, 
+                                CLHandler::READ_ONLY)) 
     return false;
-  if (!clHandler_->AddTexture2D(cubeBackArg_, cubeBackTex_, true)) 
+  if (!clHandler_->AddTexture2D(cubeBackArg_, cubeBackTex_, 
+                                CLHandler::READ_ONLY)) 
     return false;
-  if (!clHandler_->AddTexture2D(quadArg_, quadTex_, false)) 
+  if (!clHandler_->AddTexture2D(quadArg_, quadTex_, CLHandler::WRITE_ONLY)) 
     return false;
-  if (!clHandler_->AddTexture3D(voxelVolumeArg_, volumeTex_, true))
-    return false;
+  //if (!clHandler_->AddTexture3D(voxelVolumeArg_, volumeTex_, true))
+  //  return false;
   if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) 
     return false;
   if (!clHandler_->BuildProgram()) 
@@ -701,11 +711,13 @@ bool Raycaster::InitCL() {
     return false;
   if (!clHandler_->CreateCommandQueue()) 
     return false;
- // if (!clHandler_->BindVoxelData(voxelVolumeArg_, voxelData_)) 
-  if (!clHandler_->BindConstants(constantsArg_, &kernelConstants_)) 
+  if (!clHandler_->InitPinnedMemory(voxelVolumeArg_, voxelData_))
     return false;
-  if (!clHandler_->BindTransferFunction(transferFunctionArg_, 
-                                        transferFunctions_[0]))
+ // if (!clHandler_->BindVoxelData(voxelVolumeArg_, voxelData_)) 
+  if (!clHandler_->AddConstants(constantsArg_, &kernelConstants_)) 
+    return false;
+  if (!clHandler_->AddTransferFunction(transferFunctionArg_, 
+                                       transferFunctions_[0]))
     return false;
   return true;
 }
