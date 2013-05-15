@@ -29,21 +29,19 @@ float Lerp(float _v0, float _v1, float _d) {
 // Sample a volume given spherical integer coordinates
 float Sample(__global __read_only float *_data,
              int3 _coords,
-             int3 _dims,
-             int _timestepOffset) {
+             int3 _dims) {
 
   int r = (_coords.x < _dims.x) ? _coords.x : _dims.x-1;
   int t = (_coords.y < _dims.y) ? _coords.y : _dims.y-1;
   int p = (_coords.z < _dims.z) ? _coords.z : _dims.z-1;
-  int idx = _timestepOffset + r + t*_dims.x + p*_dims.x*_dims.y;
+  int idx = r + t*_dims.x + p*_dims.x*_dims.y;
   return _data[idx];
 }
 
 // Trilinear interpolation and sampling
 float Trilerp(__global __read_only float *_data,
               float3 _spherical,
-              int3 _dims,
-              int _timestepOffset) {
+              int3 _dims) {
 
   // TODO fix wrap issue
   // Get coordinates in [0..dim-1] range
@@ -67,14 +65,14 @@ float Trilerp(__global __read_only float *_data,
   float dp = p - floor(p);
 
   // Sample corners
-  float v000 = Sample(_data, (int3)(r0, t0, p0), _dims, _timestepOffset);
-  float v100 = Sample(_data, (int3)(r1, t0, p0), _dims, _timestepOffset);
-  float v010 = Sample(_data, (int3)(r0, t1, p0), _dims, _timestepOffset);
-  float v110 = Sample(_data, (int3)(r1, t1, p0), _dims, _timestepOffset);
-  float v001 = Sample(_data, (int3)(r0, t0, p1), _dims, _timestepOffset);
-  float v101 = Sample(_data, (int3)(r1, t0, p1), _dims, _timestepOffset);
-  float v011 = Sample(_data, (int3)(r0, t1, p1), _dims, _timestepOffset);
-  float v111 = Sample(_data, (int3)(r1, t1, p1), _dims, _timestepOffset);
+  float v000 = Sample(_data, (int3)(r0, t0, p0), _dims);
+  float v100 = Sample(_data, (int3)(r1, t0, p0), _dims);
+  float v010 = Sample(_data, (int3)(r0, t1, p0), _dims);
+  float v110 = Sample(_data, (int3)(r1, t1, p0), _dims);
+  float v001 = Sample(_data, (int3)(r0, t0, p1), _dims);
+  float v101 = Sample(_data, (int3)(r1, t0, p1), _dims);
+  float v011 = Sample(_data, (int3)(r0, t1, p1), _dims);
+  float v111 = Sample(_data, (int3)(r1, t1, p1), _dims);
 
   // Interpolate
   float v00 = Lerp(v000, v100, dr);
@@ -91,7 +89,7 @@ float Trilerp(__global __read_only float *_data,
 
 // Turn normalized [0..1] cartesian coordinates 
 // to normalized spherical [0..1] coordinates
-float4 CartesianToSpherical(float3 _cartesian) {
+float3 CartesianToSpherical(float3 _cartesian) {
   // Put cartesian in [-1..1] range first
   _cartesian = (float3)(-1.0) + 2.0* _cartesian;
   float r = length(_cartesian);
@@ -104,7 +102,7 @@ float4 CartesianToSpherical(float3 _cartesian) {
   }
   r = r / sqrt(3.0);
   // Sampler ignores w component
-  return (float4)(r, theta, phi, 0.0);
+  return (float3)(r, theta, phi);
 }
 
 float4 TransferFunction(__global __read_only float *_tf, float _i) {
@@ -134,7 +132,7 @@ __kernel void
 Raycaster(__global __read_only image2d_t _cubeFront,
           __global __read_only image2d_t _cubeBack,
           __global __write_only image2d_t _output,
-          __global __read_only image3d_t _voxelData,
+          __global __read_only float * _voxelData,
           __constant struct KernelConstants *_constants,
           __global __read_only float *_tf) {
 
@@ -169,7 +167,7 @@ Raycaster(__global __read_only image2d_t _cubeFront,
   // Sum colors
   float stepSize = _constants->stepSize;
   float3 samplePoint = cubeFrontColor.xyz;
-  float4 spherical;
+  float3 spherical;
   float4 associatedColor;
   float4 color = (float4)(0.0, 0.0, 0.0, 0.0);
    
@@ -179,10 +177,10 @@ Raycaster(__global __read_only image2d_t _cubeFront,
     //int index = timestepOffset + CoordsToIndex(spherical, dimensions);
     // Get intensity from data
     //float i = _voxelData[index];
-    //float i = Trilerp(_voxelData, spherical, dimensions, timestepOffset);
+    float i = Trilerp(_voxelData, spherical, dimensions);
     
     // Texture stores intensity in R channel
-    float i = read_imagef(_voxelData, volumeSampler, spherical).x;
+    //float i = read_imagef(_voxelData, volumeSampler, spherical).x;
 
     // Front-to-back compositing
     float4 tf = TransferFunction(_tf, i);

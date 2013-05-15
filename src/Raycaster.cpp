@@ -51,10 +51,11 @@ Raycaster::Raycaster()
     quadInitialized_(false),
     matricesInitialized_(false),
     framebuffersInitialized_(false),
-    pingPong_(true),
+    pingPongIndex_(true),
     clHandler_(CLHandler::New()),
     animator_(NULL),
-    currentTimestep_(0) {
+    pingPong_(0),
+    lastTimestep_(1) {
 
   kernelConstants_.stepSize = 0.01f;
   kernelConstants_.intensity = 60.f;
@@ -470,24 +471,54 @@ bool Raycaster::Render(float _timestep) {
   // TODO Set kernel constants that might have changed 
 
   unsigned int currentTimestep;
+  unsigned int nextTimestep;
   if (animator_ != NULL) {
     currentTimestep = animator_->CurrentTimestep();
+    nextTimestep = animator_->NextTimestep();
   } else {
     WARNING("Animator not set");
     currentTimestep = 0;
+    nextTimestep = 1;
+  }
+
+  bool timeToUpdate = (currentTimestep != lastTimestep_);
+  if (timeToUpdate) {
+    pingPongIndex_ = 1-pingPongIndex_;
+    lastTimestep_ = currentTimestep;
   }
 
   // Use a separate thread for dowloading data to PBO
-  pthread_t downloadThread;
-  int downloadThreadReturn;
+  // pthread_t downloadThread;
+  //int downloadThreadReturn;
 
-  unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
-  // Even timesteps to pixel buffer 0, odd to buffer 1
-  unsigned int index = currentTimestep % 2;
-  unsigned int nextIndex = 1-index;
+  if (timeToUpdate) {
+
+    unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
+    // Even timesteps to pixel buffer 0, odd to buffer 1
+    CLHandler::MemoryIndex index = (CLHandler::MemoryIndex)(pingPongIndex_);
+    CLHandler::MemoryIndex nextIndex = 
+      (CLHandler::MemoryIndex)(1-pingPongIndex_);
   
-  float *frameData = voxelData_->DataPtr(timestepOffset);
-  unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
+    float *frameData = voxelData_->DataPtr(timestepOffset);
+    unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
+
+    // Unmap (and thereby start transfer of) the preloaded pinned memory
+    if (!clHandler_->UnmapPinnedMemory(index)) return false;
+
+    // While GPU now is working with transfer, map the next frame 
+    if (!clHandler_->MapPinnedMemory(nextIndex, frameSize)) return false;
+
+    // Run kernel and copy memory to pinned memory simultaneously
+
+  }
+
+  if (!clHandler_->RunRaycaster()) return false;
+
+  if (timeToUpdate) {
+    if (!clHandler_->VoxelDataToMappedMemory(voxelData_, nextTimestep)) {
+     return false;
+    }
+  }
 
   /*
   if (!pingPong_) {
@@ -520,13 +551,6 @@ bool Raycaster::Render(float _timestep) {
   // Run raycaster
   */
 
-  if (!clHandler_->MapPinnedMemory(CLHandler::EVEN, frameSize)) return false;
-  if (!clHandler_->VoxelDataToMappedMemory(voxelData_, 
-                                           currentTimestep)) return false;
-  if (!clHandler_->UnmapPinnedMemory(CLHandler::EVEN)) return false;
-
-  if (!clHandler_->RunRaycaster()) return false;
-
   // Render to screen using quad
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
 
@@ -554,10 +578,10 @@ bool Raycaster::Render(float _timestep) {
   glUseProgram(0);
 
   // Sync rendering and PBO download threads before next frame
-  if (pingPong_) { 
-    pthread_join(downloadThread, NULL);
-    pixelBuffers_[nextIndex]->UnmapPointer();
-  }
+  //if (pingPong_) { 
+  //  pthread_join(downloadThread, NULL);
+  //  pixelBuffers_[nextIndex]->UnmapPointer();
+ // }
  
   // Window manager takes care of swapping buffers
   return true;

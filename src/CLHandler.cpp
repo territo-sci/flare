@@ -37,6 +37,30 @@ CLHandler::CLHandler()
     numDevices_(0) {
 }
 
+CLHandler::~CLHandler() {
+  clReleaseKernel(kernel_);
+  clReleaseProgram(program_);
+  clReleaseCommandQueue(commandQueue_);
+  clReleaseContext(context_);
+
+  for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin();
+       it != OGLTextures_.end(); it++) {
+    clReleaseMemObject(it->second);
+  }
+
+  for (std::map<cl_uint, MemKernelArg>::iterator it = memKernelArgs_.begin();
+       it != memKernelArgs_.end(); it++) {
+    clReleaseMemObject(it->second.mem_);
+  }
+
+  for (std::vector<MemKernelArg>::iterator it = pinnedMemory_.begin();
+       it != pinnedMemory_.end(); it++) {
+    clReleaseMemObject(it->mem_);
+  }
+
+  if (mappedMemory_) delete mappedMemory_;
+}
+
 std::string CLHandler::ErrorString(cl_int _error) {
   switch (_error) {
     case CL_SUCCESS:
@@ -321,6 +345,7 @@ bool CLHandler::CreateProgram(std::string _filename) {
   char * source = ReadSource(_filename, numChars);
   program_ = clCreateProgramWithSource(context_, 1, (const char**)&source,
                                        (const size_t*)&numChars, &error_);
+  delete source;
   return CheckSuccess(error_, "CreateProgram()");
 }
 
@@ -477,6 +502,11 @@ bool CLHandler::AddConstants(unsigned int _argNr,
 
 bool CLHandler::RunRaycaster() {
   
+  if (pinnedMemory_.size() != 2) {
+    ERROR("Pinned memory size != 2");
+    return false;
+  }
+
   // TODO Don't hardcode
   size_t globalSize[] = { 512, 512 };
   size_t localSize[] = { 16, 16 };
@@ -585,7 +615,7 @@ bool CLHandler::InitPinnedMemory(unsigned int _argNr,
                               CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
                               _voxelData->NumVoxelsPerTimestep()*sizeof(float),
                               NULL, &error_);
-    it->size_ = sizeof(float)*_voxelData->NumVoxelsPerTimestep();
+    it->size_ = sizeof(cl_mem);//sizeof(float)*_voxelData->NumVoxelsPerTimestep();
     if (!CheckSuccess(error_, "InitPinnedMemory()")) {
       return false;
     }
@@ -595,7 +625,7 @@ bool CLHandler::InitPinnedMemory(unsigned int _argNr,
                        _voxelData->NumVoxelsPerTimestep()*sizeof(float))) 
     return false;
   if (!VoxelDataToMappedMemory(_voxelData, 0)) return false;
-  if (!UnmapPinnedMemory(EVEN)) return false;
+  //if (!UnmapPinnedMemory(EVEN)) return false;
   return true;
 }
 

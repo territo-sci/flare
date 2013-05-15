@@ -48,6 +48,8 @@ bool VDFReader::Read(std::string _filename) {
   INFO("Read y dimension: " << voxelData_->bDim_);
   INFO("Read z dimension: " << voxelData_->cDim_);
 
+  in.close();
+
   return true;
 }
 

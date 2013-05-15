@@ -150,8 +150,10 @@ private:
   //float timeElapsed_;
   //float animationRate_;
   Animator * animator_;
-  // Animation timestep
-  unsigned int currentTimestep_;
+  // Used to see if it is time to update frames 
+  unsigned int lastTimestep_;
+  // Used for ping pong memory buffering
+  unsigned int pingPongIndex_;
   // Kernel constants
   KernelConstants kernelConstants_;
   std::string kernelConfigFilename_;

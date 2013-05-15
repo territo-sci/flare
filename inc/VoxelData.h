@@ -22,7 +22,9 @@ class VoxelData {
 public:
   static VoxelData * New() { return new VoxelData<T>; }
   VoxelData() {}
-  ~VoxelData() {}
+  ~VoxelData() {
+    data_.clear();
+  }
   friend class VDFReader;
 
   unsigned int NumTimesteps() const { return numTimesteps_; }

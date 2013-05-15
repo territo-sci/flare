@@ -21,6 +21,9 @@ public:
   void ToggleFPSMode();
 
   unsigned int CurrentTimestep() const { return currentTimestep_; }
+  unsigned int NextTimestep() const { 
+    return currentTimestep_ < numTimesteps_-1 ? currentTimestep_+1 : 0;
+  }
 
   void SetCurrentTimestep(unsigned int _timestep);
   void SetRefreshInterval(float _refreshInterval);

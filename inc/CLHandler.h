@@ -22,6 +22,8 @@ class CLHandler {
 public:
   static CLHandler * New();
 
+  ~CLHandler();
+
   struct MemKernelArg {
     size_t size_;
     cl_mem mem_;

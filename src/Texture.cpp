@@ -3,6 +3,7 @@
  *
  */
    
+#include <GL/glew.h>
 #include <Texture.h>
 #include <Utils.h>
 
@@ -35,4 +36,8 @@ unsigned int Texture::Handle() const {
   return handle_;
 }
 
-Texture::~Texture() { }
+Texture::~Texture() { 
+  glDeleteTextures(1, &handle_);
+}
+
+

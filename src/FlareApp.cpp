@@ -84,7 +84,7 @@ int main() {
   raycaster->SetQuadShaderProgram(quadShaderProgram);
   raycaster->InitFramebuffers();
   raycaster->SetVoxelData(floatData);
-  if (!raycaster->InitPixelBuffers()) exit(1);
+  // if (!raycaster->InitPixelBuffers()) exit(1);
   raycaster->SetAnimator(animator);
   //raycaster->SetAnimationRate(0.08f);
   raycaster->AddTransferFunction(transferFunction);
@@ -98,11 +98,13 @@ int main() {
   if (!manager->StartLoop()) exit(1);
 
   // Clean up, like a good citizen
+  delete floatData;
   delete cubeFrontTex;
   delete cubeBackTex;
-  delete transferFunction;
+  delete quadTex;
   delete cubeShaderProgram;
   delete quadShaderProgram;
+  delete transferFunction;
   delete manager;
   delete animator;
   delete raycaster;
