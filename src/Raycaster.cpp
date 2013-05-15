@@ -483,42 +483,43 @@ bool Raycaster::Render(float _timestep) {
 
   bool timeToUpdate = (currentTimestep != lastTimestep_);
   if (timeToUpdate) {
-    pingPongIndex_ = 1-pingPongIndex_;
     lastTimestep_ = currentTimestep;
   }
 
   // Use a separate thread for dowloading data to PBO
-  // pthread_t downloadThread;
-  //int downloadThreadReturn;
+  pthread_t downloadThread;
+  int downloadThreadReturn;
 
-  if (timeToUpdate) {
+  pingPongIndex_ = 1-pingPongIndex_;
+  // Switch between pinned memory indices
+  CLHandler::MemoryIndex index = 
+    static_cast<CLHandler::MemoryIndex>(pingPongIndex_);
+  CLHandler::MemoryIndex nextIndex = 
+    static_cast<CLHandler::MemoryIndex>(1-pingPongIndex_);
 
-    unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
-    // Even timesteps to pixel buffer 0, odd to buffer 1
-    CLHandler::MemoryIndex index = (CLHandler::MemoryIndex)(pingPongIndex_);
-    CLHandler::MemoryIndex nextIndex = 
-      (CLHandler::MemoryIndex)(1-pingPongIndex_);
-  
-    float *frameData = voxelData_->DataPtr(timestepOffset);
-    unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
+  unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
+  float *frameData = voxelData_->DataPtr(timestepOffset);
+  unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
 
-    // Unmap (and thereby start transfer of) the preloaded pinned memory
-    if (!clHandler_->UnmapPinnedMemory(index)) return false;
+  // Unmap (and thereby start transfer of) the preloaded pinned memory
+  if (!clHandler_->UnmapPinnedMemory(index)) return false;
 
-    // While GPU now is working with transfer, map the next frame 
-    if (!clHandler_->MapPinnedMemory(nextIndex, frameSize)) return false;
+  // While GPU now is working with transfer, map the next frame 
+  if (!clHandler_->MapPinnedMemory(nextIndex, frameSize)) return false;
 
-    // Run kernel and copy memory to pinned memory simultaneously
-
-  }
+  // Run kernel and copy memory to pinned memory simultaneously
+  DownloadThreadData *dtd;
+  dtd->clHandler_ = clHandler_;
+  dtd->voxelData_ = voxelData_;
+  dtd->timestep_ = nextTimestep;
+  pthread_create(&downloadThread, NULL, DownloadThreadFunc, 
+                 reinterpret_cast<void*>(dtd));
 
   if (!clHandler_->RunRaycaster()) return false;
 
-  if (timeToUpdate) {
-    if (!clHandler_->VoxelDataToMappedMemory(voxelData_, nextTimestep)) {
-     return false;
-    }
-  }
+//  if (!clHandler_->VoxelDataToMappedMemory(voxelData_, nextTimestep)) {
+  // return false;
+  //}
 
   /*
   if (!pingPong_) {
@@ -577,11 +578,8 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
 
-  // Sync rendering and PBO download threads before next frame
-  //if (pingPong_) { 
-  //  pthread_join(downloadThread, NULL);
-  //  pixelBuffers_[nextIndex]->UnmapPointer();
- // }
+  // Sync rendering and download thread before next frame
+  pthread_join(downloadThread, NULL);
  
   // Window manager takes care of swapping buffers
   return true;
@@ -590,7 +588,7 @@ bool Raycaster::Render(float _timestep) {
 void * Raycaster::DownloadThreadFunc(void *_downloadThreadData) {
   DownloadThreadData *dtd = reinterpret_cast<DownloadThreadData*>(
                             _downloadThreadData);
-  dtd->pixelBuffer_->Update(dtd->frameData_);
+  dtd->clHandler_->VoxelDataToMappedMemory(dtd->voxelData_, dtd->timestep_);
   pthread_exit(NULL);
 }
 

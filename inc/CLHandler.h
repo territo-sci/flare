@@ -36,8 +36,8 @@ public:
   };
 
   enum MemoryIndex {
-    EVEN = 0,
-    ODD
+    FIRST = 0,
+    SECOND
   };
   
   bool InitPlatform();

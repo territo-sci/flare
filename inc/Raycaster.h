@@ -98,8 +98,9 @@ private:
   
   // Struct for data download thread
   struct DownloadThreadData {
-    float *frameData_;
-    PixelBuffer *pixelBuffer_;
+    CLHandler *clHandler_;
+    VoxelData<float> *voxelData_;
+    unsigned int timestep_;
   };
    
   // Download thread callback

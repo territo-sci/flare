@@ -14,6 +14,7 @@
 #include <sstream>
 #include <fstream>
 #include <cmath>
+#include <boost/timer/timer.hpp>
 
 using namespace osp;
 
@@ -501,7 +502,9 @@ bool CLHandler::AddConstants(unsigned int _argNr,
 }
 
 bool CLHandler::RunRaycaster() {
-  
+
+  boost::timer::auto_cpu_timer t(6, "%w RunRaycaster()\n"); 
+
   if (pinnedMemory_.size() != 2) {
     ERROR("Pinned memory size != 2");
     return false;
@@ -620,12 +623,12 @@ bool CLHandler::InitPinnedMemory(unsigned int _argNr,
       return false;
     }
   }
-  // Copy first frame to EVEN buffer
-  if (!MapPinnedMemory(EVEN, 
+  // Copy first frame to FIRST buffer
+  if (!MapPinnedMemory(FIRST, 
                        _voxelData->NumVoxelsPerTimestep()*sizeof(float))) 
     return false;
   if (!VoxelDataToMappedMemory(_voxelData, 0)) return false;
-  //if (!UnmapPinnedMemory(EVEN)) return false;
+  //if (!UnmapPinnedMemory(FIRST)) return false;
   return true;
 }
 
@@ -651,6 +654,8 @@ bool CLHandler::InitHostBuffers(unsigned int _bufferSize) {
 
 bool CLHandler::MapPinnedMemory(MemoryIndex _memoryIndex, unsigned int _size) {
 
+  boost::timer::auto_cpu_timer t(6, "%w MapPinnedMemory()\n");
+
   if (mappedMemory_) {
     ERROR("MapPinnedMemory(): Memory already mapped");
     return false;
@@ -672,6 +677,9 @@ bool CLHandler::MapPinnedMemory(MemoryIndex _memoryIndex, unsigned int _size) {
 }
 
 bool CLHandler::UnmapPinnedMemory(MemoryIndex _memoryIndex) {
+
+  boost::timer::auto_cpu_timer t(6, "%w UnmapPinnedMemory()\n");
+
   if (!mappedMemory_) {
     ERROR("UnmapPinnedMemory(): Memory is not mapped");
     return false;
@@ -687,6 +695,9 @@ bool CLHandler::UnmapPinnedMemory(MemoryIndex _memoryIndex) {
 
 bool CLHandler::VoxelDataToMappedMemory(VoxelData<float> *_voxelData,
                                         unsigned int _timestep) {
+
+  boost::timer::auto_cpu_timer t(6, "%w VoxelDataToMappedMemory()\n");
+
   if (!mappedMemory_) {
     ERROR("VoxelDataToMappedMemory(): Memory is not mapped");
     return false;
