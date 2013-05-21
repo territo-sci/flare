@@ -48,3 +48,4 @@ target_link_libraries(FlareApp
                       ${Boost_LIBRARIES}
               	      pthread)
 
+set(CMAKE_BUILD_TYPE Debug)

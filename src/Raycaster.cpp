@@ -481,14 +481,13 @@ bool Raycaster::Render(float _timestep) {
     nextTimestep = 1;
   }
 
+  // Shut down after one loop - for profiling purposes
+  //if (nextTimestep == 0) return false;
+
   bool timeToUpdate = (currentTimestep != lastTimestep_);
   if (timeToUpdate) {
     lastTimestep_ = currentTimestep;
   }
-
-  // Use a separate thread for dowloading data to PBO
-  pthread_t downloadThread;
-  int downloadThreadReturn;
 
   pingPongIndex_ = 1-pingPongIndex_;
   // Switch between pinned memory indices
@@ -501,56 +500,18 @@ bool Raycaster::Render(float _timestep) {
   float *frameData = voxelData_->DataPtr(timestepOffset);
   unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
 
-  // Unmap (and thereby start transfer of) the preloaded pinned memory
-  if (!clHandler_->UnmapPinnedMemory(index)) return false;
-
-  // While GPU now is working with transfer, map the next frame 
-  if (!clHandler_->MapPinnedMemory(nextIndex, frameSize)) return false;
-
-  // Run kernel and copy memory to pinned memory simultaneously
-  DownloadThreadData *dtd;
-  dtd->clHandler_ = clHandler_;
-  dtd->voxelData_ = voxelData_;
-  dtd->timestep_ = nextTimestep;
-  pthread_create(&downloadThread, NULL, DownloadThreadFunc, 
-                 reinterpret_cast<void*>(dtd));
-
-  if (!clHandler_->RunRaycaster()) return false;
-
-//  if (!clHandler_->VoxelDataToMappedMemory(voxelData_, nextTimestep)) {
-  // return false;
-  //}
-
-  /*
-  if (!pingPong_) {
-
-    // Fill the pixel buffer
-    pixelBuffers_[0]->MapPointer();
-    pixelBuffers_[0]->Update(frameData);
-    pixelBuffers_[0]->UnmapPointer();
-  
-    // Populate the texture
-    volumeTex_->Update(pixelBuffers_[0]);
-
-  } else {
-
-    // PBO to texture
-    volumeTex_->Update(pixelBuffers_[index]);
-  
-    // Map the PBO data pointer from main thread, then let a separate
-    // thread do the data copy. The data copy does not touch OGL context.
-    pixelBuffers_[nextIndex]->MapPointer();
-
-    DownloadThreadData *dtd;
-    dtd->frameData_ = frameData;
-    dtd->pixelBuffer_ = pixelBuffers_[nextIndex];
-    downloadThreadReturn = pthread_create(&downloadThread, NULL,
-                                          DownloadThreadFunc,
-                                          reinterpret_cast<void*>(dtd));
+  // Start downloading next frame. 
+  if (!clHandler_->UpdatePinnedMemory(nextIndex, voxelData_, nextTimestep)) {
+    return false;
   }
 
-  // Run raycaster
-  */
+  // Start transfer to GMEM
+  if (!clHandler_->WriteToDevice(nextIndex)) {
+    return false;
+  }
+
+  // While next frame is downloading, run kernel
+  if (!clHandler_->RunRaycaster()) return false;
 
   // Render to screen using quad
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
@@ -578,18 +539,11 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
 
-  // Sync rendering and download thread before next frame
-  pthread_join(downloadThread, NULL);
- 
+  // Sync rendering and download before next frame
+  clHandler_->Finish();
+
   // Window manager takes care of swapping buffers
   return true;
-}
-
-void * Raycaster::DownloadThreadFunc(void *_downloadThreadData) {
-  DownloadThreadData *dtd = reinterpret_cast<DownloadThreadData*>(
-                            _downloadThreadData);
-  dtd->clHandler_->VoxelDataToMappedMemory(dtd->voxelData_, dtd->timestep_);
-  pthread_exit(NULL);
 }
 
 bool Raycaster::ReloadShaders() {
@@ -645,7 +599,7 @@ bool Raycaster::HandleKeyboard() {
   if (KeyPressedNoRepeat('F')) animator_->ToggleFPSMode();
   if (KeyPressed('Z')) animator_->IncTimestep();
   if (KeyPressed('X')) animator_->DecTimestep();
-  if (KeyPressedNoRepeat('P')) TogglePingPong();
+  if (KeyPressed('T')) clHandler_->ToggleTimers();
 
   return true;
 }
@@ -733,7 +687,7 @@ bool Raycaster::InitCL() {
     return false;
   if (!clHandler_->CreateCommandQueue()) 
     return false;
-  if (!clHandler_->InitPinnedMemory(voxelVolumeArg_, voxelData_))
+  if (!clHandler_->InitBuffers(voxelVolumeArg_, voxelData_))
     return false;
  // if (!clHandler_->BindVoxelData(voxelVolumeArg_, voxelData_)) 
   if (!clHandler_->AddConstants(constantsArg_, &kernelConstants_)) 

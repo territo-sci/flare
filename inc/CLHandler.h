@@ -12,6 +12,7 @@
 #include <vector>
 #include <VoxelData.h>
 #include <KernelConstants.h>
+#include <boost/timer/timer.hpp>
 
 namespace osp {
 
@@ -37,13 +38,20 @@ public:
 
   enum MemoryIndex {
     FIRST = 0,
-    SECOND
+    SECOND,
+    NUM_MEM_INDICES
   };
   
   bool InitPlatform();
   bool InitDevices();
   bool CreateContext();
-  bool InitPinnedMemory(unsigned int _argNr, VoxelData<float> *_voxelData);
+
+  bool InitBuffers(unsigned int _argNr, VoxelData<float> *_voxelData);
+  bool UpdatePinnedMemory(MemoryIndex _index, 
+                          VoxelData<float> *_voxelData,
+                          unsigned int _timestep);
+  bool WriteToDevice(MemoryIndex _index);
+  
   bool CreateProgram(std::string _filename);
   bool BuildProgram();
   bool CreateKernel();
@@ -52,13 +60,13 @@ public:
   bool AddTexture2D(unsigned int _argNr, Texture2D *_texture, Permissions _p);
   bool AddTransferFunction(unsigned int _argNr, TransferFunction *_tf);
   bool AddConstants(unsigned int _argNr, KernelConstants *_kernelConstants);
-
-  bool MapPinnedMemory(MemoryIndex _memoryIndex, unsigned int _size);
-  bool VoxelDataToMappedMemory(VoxelData<float> *_voxelData, 
-                               unsigned int _timestep);
-  bool UnmapPinnedMemory(MemoryIndex _memoryIndex);
+  
+  // Sync command queue
+  bool Finish();
 
   bool RunRaycaster();
+
+  bool ToggleTimers();
 
 private:
   CLHandler();
@@ -74,10 +82,13 @@ private:
   // location if not equal to CL_SUCCESS
   bool CheckSuccess(cl_int _error, std::string _location);
 
+  bool UnmapPinnedPointers();
+
   cl_int error_;
   cl_uint numPlatforms_;
   cl_platform_id platforms_[32];
   cl_uint numDevices_;
+  cl_ulong maxMemAllocSize_;
   cl_device_id devices_[32];
   char deviceName_[128];
   cl_context context_;
@@ -92,15 +103,28 @@ private:
   // Stores non-texture memory buffer arguments
   std::map<cl_uint, MemKernelArg> memKernelArgs_;
 
-  // Use two specific buffers for voxel data transfers
-  std::vector<MemKernelArg> pinnedMemory_;
   MemoryIndex activeIndex_;
   cl_uint voxelDataArgNr_;
 
-  // Pointer to the currently mapped pinnedmemory
-  float *mappedMemory_;
-  bool memoryMapped_;
+  // Page-locked memory on host
+  std::vector<MemKernelArg> pinnedHostMemory_;
+  // Device buffers in which to load into from pinned memory
+  std::vector<MemKernelArg> deviceBuffer_;
+  // Mapped pointers, referencing pinned host memory
+  std::vector<float*> pinnedPointer_;
+  // Size of buffers for float data
+  size_t bufferSize_;
 
+  // Size for buffer used to optimize copying to the pinned memory.
+  // This might very well be system-dependant and a
+  // TODO is to choose this by some init test or similar.
+  static const unsigned int copyBufferSize_ = 262144;
+
+  bool useTimers_;
+  boost::timer::cpu_timer timer_;
+
+  // Constants
+  static const double BYTES_PER_GB = 1073741824.0;
 
 };
 

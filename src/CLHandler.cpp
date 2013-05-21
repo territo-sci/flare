@@ -14,7 +14,7 @@
 #include <sstream>
 #include <fstream>
 #include <cmath>
-#include <boost/timer/timer.hpp>
+#include <algorithm>
 
 using namespace osp;
 
@@ -32,17 +32,12 @@ CLHandler * CLHandler::New() {
 
 CLHandler::CLHandler() 
   : error_(CL_SUCCESS), 
-    mappedMemory_(NULL),
-    memoryMapped_(false),
     numPlatforms_(0),
+    useTimers_(false),
     numDevices_(0) {
 }
 
 CLHandler::~CLHandler() {
-  clReleaseKernel(kernel_);
-  clReleaseProgram(program_);
-  clReleaseCommandQueue(commandQueue_);
-  clReleaseContext(context_);
 
   for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin();
        it != OGLTextures_.end(); it++) {
@@ -54,12 +49,29 @@ CLHandler::~CLHandler() {
     clReleaseMemObject(it->second.mem_);
   }
 
-  for (std::vector<MemKernelArg>::iterator it = pinnedMemory_.begin();
-       it != pinnedMemory_.end(); it++) {
+  UnmapPinnedPointers();
+
+  for (std::vector<float*>::iterator it = pinnedPointer_.begin();
+       it != pinnedPointer_.end(); ++it) {
+    float* temp = *it;
+    delete temp;
+  }
+
+  for (std::vector<MemKernelArg>::iterator it = pinnedHostMemory_.begin();
+       it != pinnedHostMemory_.end(); ++it) {
     clReleaseMemObject(it->mem_);
   }
 
-  if (mappedMemory_) delete mappedMemory_;
+  for (std::vector<MemKernelArg>::iterator it = deviceBuffer_.begin();
+       it != deviceBuffer_.end(); ++it) {
+    clReleaseMemObject(it->mem_);
+  }
+
+  clReleaseKernel(kernel_);
+  clReleaseProgram(program_);
+  clReleaseCommandQueue(commandQueue_);
+  clReleaseContext(context_);
+
 }
 
 std::string CLHandler::ErrorString(cl_int _error) {
@@ -166,7 +178,6 @@ std::string CLHandler::ErrorString(cl_int _error) {
   }
 }
 
-
 bool CLHandler::CheckSuccess(cl_int _error, std::string _location) {
   if (_error == CL_SUCCESS) {
     return true;
@@ -218,52 +229,20 @@ bool CLHandler::InitDevices() {
     }
   }
 
-  return true;
-}
-/*
-bool CLHandler::Init() {
-  // Find platform(s)
-  error_ = clGetPlatformIDs(32, platforms_, &numPlatforms_);
-  if (error_ == CL_SUCCESS) {
-    INFO("Number of CL platforms: " << numPlatforms_);
-  } else {
-    ERROR("Failed to get CL platforms");
-    ERROR(ErrorString(error_));
-    return false;
-  }
-
-  // TODO Assume only one found platform for now
-  if (numPlatforms_ != 1) {
-    WARNING("numPlatforms not equal to 1, did not count on that");
-  }
-
-  // Find devices
-  error_ = clGetDeviceIDs(platforms_[0], CL_DEVICE_TYPE_ALL, 
-                          sizeof(devices_), devices_, &numDevices_);
-  if (error_ == CL_SUCCESS) {
-    INFO("Number of CL devices: " << numDevices_);
-  } else {
-    ERROR("Failed to get CL devices");
-    ERROR(ErrorString(error_));
-    return false;
-  }
-
-  // Loop over devices
   for (unsigned int i=0; i<numDevices_; i++) {
-    error_ = clGetDeviceInfo(devices_[i], CL_DEVICE_NAME, sizeof(deviceName_),
-                             deviceName_, NULL);
-    if (error_ == CL_SUCCESS) {
-      INFO("Device " << i << " name: " << deviceName_);
+    error_ = clGetDeviceInfo(devices_[i], CL_DEVICE_MAX_MEM_ALLOC_SIZE,
+                             sizeof(maxMemAllocSize_), 
+                             &maxMemAllocSize_, NULL);
+    if (CheckSuccess(error_, "InitDevices()")) {
+      INFO("Max memory alloc size: " << maxMemAllocSize_);
     } else {
-      ERROR("Failed to get device name");
-      ERROR(ErrorString(error_));
       return false;
     }
   }
 
   return true;
+
 }
-*/
 
 bool CLHandler::CreateContext() {
 
@@ -290,8 +269,6 @@ bool CLHandler::CreateContext() {
 
   return CheckSuccess(error_, "CreateContext()");
 }
-
-
 
 /*
 bool CLHandler::AddTexture3D(unsigned int _argNr, Texture3D *_texture,
@@ -448,34 +425,6 @@ bool CLHandler::AddTransferFunction(unsigned int _argNr,
   return true;
 }
 
-/*
-bool CLHandler::BindVoxelData(unsigned int _argNr, 
-                              VoxelData<float> *_voxelData) { 
-  
-  // Remove old data already bound to this argument index
-  if (memKernelArgs_.find((cl_uint)_argNr) != memKernelArgs_.end()) {
-    memKernelArgs_.erase((cl_uint)_argNr);
-  }
-
-  MemKernelArg mka;
-  mka.size_ = sizeof(cl_mem);
-  mka.mem_ = clCreateBuffer(context_,
-                              CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                              _voxelData->NumVoxelsTotal()*sizeof(float),
-                              _voxelData->DataPtr(),
-                              &error_);
-
-  if (error_ != CL_SUCCESS) {
-    ERROR("Failed to bind voxel data to arg index " << _argNr);
-    ERROR(ErrorString(error_));
-    return false;
-  }
-
-  memKernelArgs_.insert(std::make_pair((cl_uint)_argNr, mka));
-  return true;
-}
-*/
-
 bool CLHandler::AddConstants(unsigned int _argNr, 
                               KernelConstants *_kernelConstants) {
 
@@ -503,12 +452,7 @@ bool CLHandler::AddConstants(unsigned int _argNr,
 
 bool CLHandler::RunRaycaster() {
 
-  boost::timer::auto_cpu_timer t(6, "%w RunRaycaster()\n"); 
-
-  if (pinnedMemory_.size() != 2) {
-    ERROR("Pinned memory size != 2");
-    return false;
-  }
+  //boost::timer::auto_cpu_timer t(6, "%w RunRaycaster()\n"); 
 
   // TODO Don't hardcode
   size_t globalSize[] = { 512, 512 };
@@ -559,8 +503,8 @@ bool CLHandler::RunRaycaster() {
   // Set up kernel argument for the active voxel data buffer
   error_ = clSetKernelArg(kernel_, 
                           voxelDataArgNr_, 
-                          pinnedMemory_[activeIndex_].size_,
-                          &(pinnedMemory_[activeIndex_].mem_));
+                          deviceBuffer_[activeIndex_].size_,
+                          &(deviceBuffer_[activeIndex_].mem_));
   if (!CheckSuccess(error_, "Kernel argument for voxel data buffer")) {
     return false;
   } 
@@ -583,8 +527,23 @@ bool CLHandler::RunRaycaster() {
   */
 
   // Set up kernel execution
+
+
+  if (useTimers_) {
+    timer_.start();
+  }
+
   error_ = clEnqueueNDRangeKernel(commandQueue_, kernel_, 2, NULL, globalSize,
                                   localSize, 0, NULL, NULL);
+
+  clFinish(commandQueue_);
+
+  if (useTimers_) {
+    timer_.stop();
+    double time = (double)timer_.elapsed().wall / 1.0e9;
+    INFO("Kernel execution: " << time << " s");
+  }
+
   if (error_ != CL_SUCCESS) {
     ERROR("Failed to enqueue kernel");
     ERROR(ErrorString(error_));
@@ -607,107 +566,146 @@ bool CLHandler::RunRaycaster() {
   return true;
 }
 
+bool CLHandler::Finish() {
+  clFinish(commandQueue_);
+  return true;
+}
 
-bool CLHandler::InitPinnedMemory(unsigned int _argNr, 
-                                 VoxelData<float> *_voxelData) {
+
+bool CLHandler::InitBuffers(unsigned int _argNr,
+                            VoxelData<float> *_voxelData) {
+  
   voxelDataArgNr_ = _argNr;
-  pinnedMemory_.resize(2);
-  for (std::vector<MemKernelArg>::iterator it = pinnedMemory_.begin();
-       it != pinnedMemory_.end(); it++) {
+  pinnedHostMemory_.resize(NUM_MEM_INDICES);
+  deviceBuffer_.resize(NUM_MEM_INDICES);
+  pinnedPointer_.resize(NUM_MEM_INDICES);
+
+  bufferSize_ = static_cast<size_t>(
+    _voxelData->NumVoxelsPerTimestep()*sizeof(float));
+
+  // Allocate the pinned memory host buffers
+  for (std::vector<MemKernelArg>::iterator it = pinnedHostMemory_.begin();
+       it != pinnedHostMemory_.end(); ++it) {
     it->mem_ = clCreateBuffer(context_, 
                               CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-                              _voxelData->NumVoxelsPerTimestep()*sizeof(float),
-                              NULL, &error_);
-    it->size_ = sizeof(cl_mem);//sizeof(float)*_voxelData->NumVoxelsPerTimestep();
-    if (!CheckSuccess(error_, "InitPinnedMemory()")) {
+                              bufferSize_, NULL, &error_);
+    it->size_ = sizeof(cl_mem);
+    if (!CheckSuccess(error_, "InitBuffers() allocating pinned mem")) {
+      return false;
+    }                         
+  }
+
+  // Allocate the device buffers
+  for (std::vector<MemKernelArg>::iterator it = deviceBuffer_.begin();
+      it != deviceBuffer_.end(); ++it) {
+    it->mem_ = clCreateBuffer(context_, CL_MEM_READ_ONLY,
+                              bufferSize_, NULL, &error_);
+    it->size_ = sizeof(cl_mem);
+    if (!CheckSuccess(error_, "InitBuffers() allocating device mem")) {
       return false;
     }
   }
-  // Copy first frame to FIRST buffer
-  if (!MapPinnedMemory(FIRST, 
-                       _voxelData->NumVoxelsPerTimestep()*sizeof(float))) 
+
+  // Map standard pointers to reference the pinned host memory
+  // TODO non-blocking
+  // TODO loop
+  pinnedPointer_[FIRST] = static_cast<float*>(
+    clEnqueueMapBuffer(commandQueue_, pinnedHostMemory_[FIRST].mem_,
+                       CL_TRUE, CL_MAP_WRITE, 0, bufferSize_, 0, NULL, 
+                       NULL, &error_));   
+  pinnedPointer_[SECOND] = static_cast<float*>(
+    clEnqueueMapBuffer(commandQueue_, pinnedHostMemory_[SECOND].mem_,
+                       CL_TRUE, CL_MAP_WRITE, 0, bufferSize_, 0, NULL,
+                       NULL, &error_));
+  if (!CheckSuccess(error_, "InitBuffer() mapping pointers")) {
     return false;
-  if (!VoxelDataToMappedMemory(_voxelData, 0)) return false;
-  //if (!UnmapPinnedMemory(FIRST)) return false;
+  }
+
+  // Init the first buffer with data from timestep 0
+  UpdatePinnedMemory(FIRST, _voxelData, 0);
+  WriteToDevice(FIRST);
+
   return true;
+
 }
 
-
-/*
-bool CLHandler::InitHostBuffers(unsigned int _bufferSize) {
-  
-  // TODO remove one step
-  pinnedMemory_.resize(2);
-  for (std::vector<cl_mem>::iterator it = pinnedMemory_.begin();
-       it != pinnedMemory_.end(); it++) {
-    *it = clCreateBuffer(context_, CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-                         _bufferSize, NULL, &error_);
-    if (error_ != CL_SUCCESS) {
-      ERROR("Failed to create pinned memory");
-      ERROR(ErrorString(error_));
-      return false;
-    }
-  }
-  return true;
-}
-*/
-
-bool CLHandler::MapPinnedMemory(MemoryIndex _memoryIndex, unsigned int _size) {
-
-  boost::timer::auto_cpu_timer t(6, "%w MapPinnedMemory()\n");
-
-  if (mappedMemory_) {
-    ERROR("MapPinnedMemory(): Memory already mapped");
-    return false;
-  }
-
-  mappedMemory_ = reinterpret_cast<float*>(
-                    clEnqueueMapBuffer(commandQueue_,
-                                       pinnedMemory_[_memoryIndex].mem_,
-                                       CL_TRUE, // TODO blocking now
-                                       CL_MAP_WRITE,
-                                       0,
-                                       _size,
-                                       0,
-                                       NULL,
-                                       NULL,
-                                       &error_));
-
-  return CheckSuccess(error_, "MapBufferToPinnedMemory()");
-}
-
-bool CLHandler::UnmapPinnedMemory(MemoryIndex _memoryIndex) {
-
-  boost::timer::auto_cpu_timer t(6, "%w UnmapPinnedMemory()\n");
-
-  if (!mappedMemory_) {
-    ERROR("UnmapPinnedMemory(): Memory is not mapped");
-    return false;
-  }
-
+bool CLHandler::UnmapPinnedPointers() {
+  // TODO loop
   error_ = clEnqueueUnmapMemObject(commandQueue_, 
-                                   pinnedMemory_[_memoryIndex].mem_,
-                                   reinterpret_cast<float*>(mappedMemory_),
+                                   pinnedHostMemory_[FIRST].mem_,
+                                   pinnedPointer_[FIRST],
                                    0, NULL, NULL);
-  mappedMemory_ = NULL;
-  return CheckSuccess(error_, "UnmapPinnedMemory()");
+  error_ = clEnqueueUnmapMemObject(commandQueue_,
+                                   pinnedHostMemory_[SECOND].mem_,
+                                   pinnedPointer_[SECOND],
+                                   0, NULL, NULL);
+  return (CheckSuccess(error_, "UnmapPinnedPointers()"));
 }
 
-bool CLHandler::VoxelDataToMappedMemory(VoxelData<float> *_voxelData,
-                                        unsigned int _timestep) {
 
-  boost::timer::auto_cpu_timer t(6, "%w VoxelDataToMappedMemory()\n");
+bool CLHandler::UpdatePinnedMemory(MemoryIndex _index,
+                                   VoxelData<float> *_voxelData,
+                                   unsigned int _timestep) {
+  
 
-  if (!mappedMemory_) {
-    ERROR("VoxelDataToMappedMemory(): Memory is not mapped");
+  unsigned int numVoxels = _voxelData->NumVoxelsPerTimestep();
+  unsigned int timestepOffset = _voxelData->TimestepOffset(_timestep);
+  float *data = _voxelData->DataPtr(timestepOffset);
+
+  if (numVoxels % copyBufferSize_ != 0) {
+    ERROR("numVoxels needs to be evenly divisable by copyBufferSize_");
     return false;
   }
-  unsigned int offset = _voxelData->TimestepOffset(_timestep);
-  float * data = _voxelData->DataPtr(offset);
-  unsigned int size = _voxelData->NumVoxelsPerTimestep();
-  std::copy(data, data+size, mappedMemory_);
+
+  if (sizeof(float)*numVoxels != bufferSize_) {
+    ERROR("Number of voxels and buffer size do not correspond");
+    return false;
+  }
+
+  if (useTimers_) {
+    timer_.start();
+  }
+
+  unsigned int parts = numVoxels/copyBufferSize_;
+  for (unsigned int i=0; i<parts; ++i) {
+    std::copy(data+i*copyBufferSize_, 
+              data+(i+1)*copyBufferSize_, 
+              pinnedPointer_[_index]+i*copyBufferSize_);
+  }
+  parts *= 2;
+
+  if (useTimers_) {
+    double time = (double)timer_.elapsed().wall / 1.0e9;
+    double size = bufferSize_ / BYTES_PER_GB;
+    INFO("Copy to pinned mem: " << time << " s, " << size/time << "GB/s");
+  }
+
   return true;
 }
 
+bool CLHandler::WriteToDevice(MemoryIndex _index) {
+  // TODO non-blocking
 
+  if (useTimers_) {   
+    timer_.start();
+  }
+
+  error_ = clEnqueueWriteBuffer(commandQueue_, deviceBuffer_[_index].mem_,
+                                CL_TRUE, 0, bufferSize_, 
+                                pinnedPointer_[_index], 0, NULL, NULL);
+  
+  if (useTimers_) {
+    timer_.stop();
+    double time = (double)timer_.elapsed().wall / 1.0e9;
+    double size = bufferSize_ / BYTES_PER_GB;
+    INFO("Write to device: " << time << " s, " << size/time << " GB/s");
+  }
+
+  return (CheckSuccess(error_, "WriteToDevice()"));
+
+}
+  
+bool CLHandler::ToggleTimers() {
+  useTimers_ = !useTimers_;
+}
                                      

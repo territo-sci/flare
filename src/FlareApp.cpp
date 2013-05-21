@@ -21,7 +21,7 @@ int main() {
   VoxelData<float> *floatData = new VoxelData<float>();
   VDFReader *reader_ = VDFReader::New();
   reader_->SetVoxelData(floatData);
-  if (!reader_->Read("/home/vsand/OpenSpace/enlilTestData_128_128_128.vdf")) exit(1);
+  if (!reader_->Read("/home/vsand/OpenSpace/enlilTestData_256_256_256.vdf")) exit(1);
 
   unsigned int width = 512;
   unsigned int height = 512;
@@ -95,7 +95,8 @@ int main() {
 
   // Go!
   manager->SetRenderer(raycaster);
-  if (!manager->StartLoop()) exit(1);
+  // We expect a false return from the loop, so exit with normal code
+  if (!manager->StartLoop()) exit(0);
 
   // Clean up, like a good citizen
   delete floatData;
