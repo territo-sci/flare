@@ -379,7 +379,6 @@ void Raycaster::SetQuadShaderProgram(ShaderProgram *_quadShaderProgram) {
 
 bool Raycaster::Render(float _timestep) {
 
-  //timeElapsed_ += _timestep;
   if (animator_ != NULL) {
     animator_->Update(_timestep);
   } else {
@@ -500,10 +499,6 @@ bool Raycaster::Render(float _timestep) {
   float *frameData = voxelData_->DataPtr(timestepOffset);
   unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
 
-  // Transfer current frame from pinned memory to GMEM
-  if (!clHandler_->WriteToDevice(index)) return false;
-  if (!clHandler_->Finish(CLHandler::TRANSFER)) return false;
-
   // Prepare and run kernel. The RunRaycaster command returns immediately.
   if (!clHandler_->PrepareRaycaster()) return false;
   if (!clHandler_->RunRaycaster()) return false;
@@ -513,8 +508,12 @@ bool Raycaster::Render(float _timestep) {
     return false;
   }
 
-  // Wait for kernel to finish if needed and finish up
+  // Initiate transfer of next frame from pinned memory to GMEM
+  if (!clHandler_->WriteToDevice(nextIndex)) return false;
+  
+  // Wait for kernel to finish if needed and release resources 
   if (!clHandler_->FinishRaycaster()) return false;
+
 
   // Render to screen using quad
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
@@ -547,6 +546,9 @@ bool Raycaster::Render(float _timestep) {
   //  ERROR("Failed to join copy thread");
   //  return false;
   //}
+
+  // Wait for transfer to pinned mem to complete
+  clHandler_->Finish(CLHandler::TRANSFER);
 
   // Signal that the next frame is ready
   clHandler_->SetActiveIndex(nextIndex);
