@@ -500,18 +500,21 @@ bool Raycaster::Render(float _timestep) {
   float *frameData = voxelData_->DataPtr(timestepOffset);
   unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
 
-  // Start downloading next frame. 
+  // Transfer current frame from pinned memory to GMEM
+  if (!clHandler_->WriteToDevice(index)) return false;
+  if (!clHandler_->Finish(CLHandler::TRANSFER)) return false;
+
+  // Prepare and run kernel. The RunRaycaster command returns immediately.
+  if (!clHandler_->PrepareRaycaster()) return false;
+  if (!clHandler_->RunRaycaster()) return false;
+
+  // Copy next frame to pinned memory
   if (!clHandler_->UpdatePinnedMemory(nextIndex, voxelData_, nextTimestep)) {
     return false;
   }
 
-  // Start transfer to GMEM
-  if (!clHandler_->WriteToDevice(nextIndex)) {
-    return false;
-  }
-
-  // While next frame is downloading, run kernel
-  if (!clHandler_->RunRaycaster()) return false;
+  // Wait for kernel to finish if needed and finish up
+  if (!clHandler_->FinishRaycaster()) return false;
 
   // Render to screen using quad
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
@@ -539,8 +542,14 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
 
-  // Sync rendering and download before next frame
-  clHandler_->Finish();
+  // Make sure copy thread is complete before next frame
+  //if (!clHandler_->JoinCopyThread()) {
+  //  ERROR("Failed to join copy thread");
+  //  return false;
+  //}
+
+  // Signal that the next frame is ready
+  clHandler_->SetActiveIndex(nextIndex);
 
   // Window manager takes care of swapping buffers
   return true;
@@ -599,7 +608,7 @@ bool Raycaster::HandleKeyboard() {
   if (KeyPressedNoRepeat('F')) animator_->ToggleFPSMode();
   if (KeyPressed('Z')) animator_->IncTimestep();
   if (KeyPressed('X')) animator_->DecTimestep();
-  if (KeyPressed('T')) clHandler_->ToggleTimers();
+  if (KeyPressedNoRepeat('T')) clHandler_->ToggleTimers();
 
   return true;
 }

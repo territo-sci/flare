@@ -15,6 +15,15 @@
 #include <fstream>
 #include <cmath>
 #include <algorithm>
+#include <pthread.h>
+
+void * CopyThread(void *_copyThreadArgs);
+struct CopyThreadArgs {
+  unsigned int numParts_;
+  unsigned int bufferSize_;
+  float *source_;
+  float *target_;
+};
 
 using namespace osp;
 
@@ -33,6 +42,7 @@ CLHandler * CLHandler::New() {
 CLHandler::CLHandler() 
   : error_(CL_SUCCESS), 
     numPlatforms_(0),
+    activeIndex_(FIRST),
     useTimers_(false),
     numDevices_(0) {
 }
@@ -69,7 +79,9 @@ CLHandler::~CLHandler() {
 
   clReleaseKernel(kernel_);
   clReleaseProgram(program_);
-  clReleaseCommandQueue(commandQueue_);
+  for (unsigned int i=0; i<NUM_QUEUE_INDICES; ++i) {
+    clReleaseCommandQueue(commandQueue_[i]);
+  }
   clReleaseContext(context_);
 
 }
@@ -360,8 +372,13 @@ bool CLHandler::CreateKernel() {
 }
 
 bool CLHandler::CreateCommandQueue() {
-  commandQueue_ = clCreateCommandQueue(context_, devices_[0], 0, &error_);
-  return CheckSuccess(error_, "CreateCommandQueue");
+  for (unsigned int i=0; i<NUM_QUEUE_INDICES; ++i) {
+    commandQueue_[i] = clCreateCommandQueue(context_, devices_[0], 0, &error_);
+    if (!CheckSuccess(error_, "CreateCommandQueue")) {
+      return false;
+    }
+  }
+  return true;
 }
 
 bool CLHandler::AddTexture2D(unsigned int _argNr, Texture2D *_texture, 
@@ -450,18 +467,14 @@ bool CLHandler::AddConstants(unsigned int _argNr,
   return true;
 }
 
-bool CLHandler::RunRaycaster() {
 
-  //boost::timer::auto_cpu_timer t(6, "%w RunRaycaster()\n"); 
-
-  // TODO Don't hardcode
-  size_t globalSize[] = { 512, 512 };
-  size_t localSize[] = { 16, 16 };
+bool CLHandler::PrepareRaycaster() {
 
   // Let OpenCL take control of the shared GL objects
   for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin(); 
        it != OGLTextures_.end(); it++) {
-    error_ = clEnqueueAcquireGLObjects(commandQueue_, 1, &(it->second),
+    error_ = clEnqueueAcquireGLObjects(commandQueue_[EXECUTE], 1, 
+                                       &(it->second),
                                        0, NULL, NULL);
     if (error_ != CL_SUCCESS) {
       ERROR("Failed to enqueue GL object aqcuisition");
@@ -485,7 +498,6 @@ bool CLHandler::RunRaycaster() {
     }
   }
   
-  
   // Set up kernel arguments for textures
   for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin(); 
        it != OGLTextures_.end(); it++) {
@@ -507,38 +519,32 @@ bool CLHandler::RunRaycaster() {
                           &(deviceBuffer_[activeIndex_].mem_));
   if (!CheckSuccess(error_, "Kernel argument for voxel data buffer")) {
     return false;
-  } 
-
-  // Set up unsigned integer kernel arguments
-  /*
-  for (std::map<cl_uint, unsigned int>::iterator it = uintArgs_.begin();
-       it != uintArgs_.end();
-       it++) {
-    error_ = clSetKernelArg(kernel_,
-                            it->first,
-                            sizeof(unsigned int),
-                            &(it->second));
-    if (error_ != CL_SUCCESS) {
-      ERROR("Failed to set kernel argument " << it->first);
-      ERROR(ErrorString(error_));
-      return false;
-    }
   }
-  */
 
-  // Set up kernel execution
+  return true;
+}
+
+bool CLHandler::Finish(QueueIndex _queueIndex) {
+  clFinish(commandQueue_[_queueIndex]);
+  return true;
+}
+
+bool CLHandler::RunRaycaster() {
+  
+  // TODO Don't hardcode
+  size_t globalSize[] = { 512, 512 };
+  size_t localSize[] = { 16, 16 };
 
 
   if (useTimers_) {
     timer_.start();
   }
 
-  error_ = clEnqueueNDRangeKernel(commandQueue_, kernel_, 2, NULL, globalSize,
-                                  localSize, 0, NULL, NULL);
-
-  clFinish(commandQueue_);
+  error_ = clEnqueueNDRangeKernel(commandQueue_[EXECUTE], kernel_, 2, NULL, 
+                                  globalSize, localSize, 0, NULL, NULL);
 
   if (useTimers_) {
+    clFinish(commandQueue_[EXECUTE]);
     timer_.stop();
     double time = (double)timer_.elapsed().wall / 1.0e9;
     INFO("Kernel execution: " << time << " s");
@@ -550,11 +556,19 @@ bool CLHandler::RunRaycaster() {
     return false;
   }
 
+  return true;
+}
+
+bool CLHandler::FinishRaycaster() {
+
+  // Make sure kernel is done
+  clFinish(commandQueue_[EXECUTE]);
+
   // Release the shared GL objects
   for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin(); 
        it != OGLTextures_.end(); it++) {
-    error_ = clEnqueueReleaseGLObjects(commandQueue_, 1, &(it->second), 0,
-                                       NULL, NULL);
+    error_ = clEnqueueReleaseGLObjects(commandQueue_[EXECUTE], 1, 
+                                       &(it->second), 0, NULL, NULL);
     if (error_ != CL_SUCCESS) {
       ERROR("Failed to release GL object");
       ERROR("Failed object: " << it->first);
@@ -562,12 +576,6 @@ bool CLHandler::RunRaycaster() {
       return false;
     }
   }
-  
-  return true;
-}
-
-bool CLHandler::Finish() {
-  clFinish(commandQueue_);
   return true;
 }
 
@@ -607,14 +615,13 @@ bool CLHandler::InitBuffers(unsigned int _argNr,
   }
 
   // Map standard pointers to reference the pinned host memory
-  // TODO non-blocking
   // TODO loop
   pinnedPointer_[FIRST] = static_cast<float*>(
-    clEnqueueMapBuffer(commandQueue_, pinnedHostMemory_[FIRST].mem_,
+    clEnqueueMapBuffer(commandQueue_[TRANSFER], pinnedHostMemory_[FIRST].mem_,
                        CL_TRUE, CL_MAP_WRITE, 0, bufferSize_, 0, NULL, 
                        NULL, &error_));   
   pinnedPointer_[SECOND] = static_cast<float*>(
-    clEnqueueMapBuffer(commandQueue_, pinnedHostMemory_[SECOND].mem_,
+    clEnqueueMapBuffer(commandQueue_[TRANSFER], pinnedHostMemory_[SECOND].mem_,
                        CL_TRUE, CL_MAP_WRITE, 0, bufferSize_, 0, NULL,
                        NULL, &error_));
   if (!CheckSuccess(error_, "InitBuffer() mapping pointers")) {
@@ -624,18 +631,23 @@ bool CLHandler::InitBuffers(unsigned int _argNr,
   // Init the first buffer with data from timestep 0
   UpdatePinnedMemory(FIRST, _voxelData, 0);
   WriteToDevice(FIRST);
+  SetActiveIndex(FIRST);
 
   return true;
 
 }
 
+bool CLHandler::SetActiveIndex(MemoryIndex _activeIndex) {
+  activeIndex_ = _activeIndex;
+}
+
 bool CLHandler::UnmapPinnedPointers() {
   // TODO loop
-  error_ = clEnqueueUnmapMemObject(commandQueue_, 
+  error_ = clEnqueueUnmapMemObject(commandQueue_[TRANSFER], 
                                    pinnedHostMemory_[FIRST].mem_,
                                    pinnedPointer_[FIRST],
                                    0, NULL, NULL);
-  error_ = clEnqueueUnmapMemObject(commandQueue_,
+  error_ = clEnqueueUnmapMemObject(commandQueue_[TRANSFER],
                                    pinnedHostMemory_[SECOND].mem_,
                                    pinnedPointer_[SECOND],
                                    0, NULL, NULL);
@@ -666,13 +678,25 @@ bool CLHandler::UpdatePinnedMemory(MemoryIndex _index,
     timer_.start();
   }
 
-  unsigned int parts = numVoxels/copyBufferSize_;
-  for (unsigned int i=0; i<parts; ++i) {
+  unsigned int numParts = numVoxels/copyBufferSize_;
+
+  /*
+  CopyThreadArgs cta;
+  cta.numParts_ = numParts;
+  cta.bufferSize_ = copyBufferSize_;
+  cta.source_ = data;
+  cta.target_ = pinnedPointer_[_index];
+
+  pthread_create(&copyThread_, NULL, CopyThread, 
+                 reinterpret_cast<void*>(&cta));
+   */
+  
+  for (unsigned int i=0; i<numParts; ++i) {
     std::copy(data+i*copyBufferSize_, 
               data+(i+1)*copyBufferSize_, 
               pinnedPointer_[_index]+i*copyBufferSize_);
   }
-  parts *= 2;
+  
 
   if (useTimers_) {
     double time = (double)timer_.elapsed().wall / 1.0e9;
@@ -686,12 +710,15 @@ bool CLHandler::UpdatePinnedMemory(MemoryIndex _index,
 bool CLHandler::WriteToDevice(MemoryIndex _index) {
   // TODO non-blocking
 
+  cl_bool blocking = CL_FALSE;
   if (useTimers_) {   
     timer_.start();
+    blocking = CL_TRUE;
   }
 
-  error_ = clEnqueueWriteBuffer(commandQueue_, deviceBuffer_[_index].mem_,
-                                CL_TRUE, 0, bufferSize_, 
+  error_ = clEnqueueWriteBuffer(commandQueue_[TRANSFER], 
+                                deviceBuffer_[_index].mem_,
+                                blocking, 0, bufferSize_, 
                                 pinnedPointer_[_index], 0, NULL, NULL);
   
   if (useTimers_) {
@@ -709,3 +736,28 @@ bool CLHandler::ToggleTimers() {
   useTimers_ = !useTimers_;
 }
                                      
+void * CopyThread(void *_copyThreadArgs) {
+
+  CopyThreadArgs cta = *reinterpret_cast<CopyThreadArgs*>(_copyThreadArgs);
+ 
+  // Lock mutex and wait for signal
+  // Mutex will automatically be unlocked while waiting
+  //pthread_mutex_lock(&copyMutex_);
+  //pthread_cond_wait(&copyCond_, &copyMutex_);
+  
+  // When signal is reciever, start copying
+  for (unsigned int i=0; i<cta.numParts_; ++i) {
+    std::copy(cta.source_+i*cta.bufferSize_, 
+              cta.source_+(i+1)*cta.bufferSize_, 
+              cta.target_+i*cta.bufferSize_);
+  }
+ 
+  //pthread_mutex_unlock(&copyMutex_);
+  pthread_exit(NULL);
+
+}
+
+bool CLHandler::JoinCopyThread() {
+  pthread_join(copyThread_, NULL);
+  return true;
+}

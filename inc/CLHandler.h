@@ -13,8 +13,10 @@
 #include <VoxelData.h>
 #include <KernelConstants.h>
 #include <boost/timer/timer.hpp>
+#include <pthread.h>
 
 namespace osp {
+
 
 class Texture2D;
 class TransferFunction;
@@ -41,6 +43,12 @@ public:
     SECOND,
     NUM_MEM_INDICES
   };
+
+  enum QueueIndex {
+    EXECUTE = 0,
+    TRANSFER,
+    NUM_QUEUE_INDICES
+  };
   
   bool InitPlatform();
   bool InitDevices();
@@ -51,7 +59,8 @@ public:
                           VoxelData<float> *_voxelData,
                           unsigned int _timestep);
   bool WriteToDevice(MemoryIndex _index);
-  
+  bool SetActiveIndex(MemoryIndex _memoryIndex);  
+
   bool CreateProgram(std::string _filename);
   bool BuildProgram();
   bool CreateKernel();
@@ -61,13 +70,13 @@ public:
   bool AddTransferFunction(unsigned int _argNr, TransferFunction *_tf);
   bool AddConstants(unsigned int _argNr, KernelConstants *_kernelConstants);
   
-  // Sync command queue
-  bool Finish();
-
+  bool PrepareRaycaster();
   bool RunRaycaster();
+  bool FinishRaycaster();
 
   bool ToggleTimers();
-
+  bool JoinCopyThread();
+  bool Finish(QueueIndex _queueIndex);
 private:
   CLHandler();
 
@@ -92,7 +101,7 @@ private:
   cl_device_id devices_[32];
   char deviceName_[128];
   cl_context context_;
-  cl_command_queue commandQueue_;
+  cl_command_queue commandQueue_[NUM_QUEUE_INDICES];
   cl_program program_;
   cl_kernel kernel_;
   static unsigned int instances_;
@@ -125,6 +134,13 @@ private:
 
   // Constants
   static const double BYTES_PER_GB = 1073741824.0;
+
+  // Pthreads and conditions
+  pthread_t copyThread_;
+  pthread_mutex_t copyMutex_;
+  pthread_cond_t copyCond_;
+ 
+ 
 
 };
 
