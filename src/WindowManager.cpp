@@ -100,6 +100,7 @@ bool WindowManager::StartLoop() {
   keysToCheck.push_back('X');
   keysToCheck.push_back('P');
   keysToCheck.push_back('T');
+  keysToCheck.push_back('U');
 
   unsigned int numFrames = 0;
   float lastTime = 0.f;

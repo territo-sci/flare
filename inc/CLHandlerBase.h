@@ -30,13 +30,25 @@ public:
   };
 
   // Buffer permissions
-  enum Permissions { READ_ONLY, WRITE_ONLY, READ_WRITE };
+  enum Permission {
+    READ_ONLY,
+    WRITE_ONLY,
+    READ_WRITE
+  };
 
   // Indices for double memory buffer setup
-  enum MemIndex { FIRST = 0, SECOND, NUM_MEM_INDICES };
+  enum MemIndex {
+    FIRST = 0,
+    SECOND,
+    NUM_MEM_INDICES
+  };
 
   // Indices for double command queue setup
-  enum QueueIndex { EXECUTE = 0, TRANSFER, NUM_QUEUE_INDICES };
+  enum QueueIndex {
+    EXECUTE = 0,
+    TRANSFER,
+    NUM_QUEUE_INDICES
+  };
 
   bool InitPlatform();
   bool InitDevices();
@@ -57,19 +69,16 @@ public:
   virtual bool InitBuffers(unsigned int _argNr,
                            VoxelData<float> *_voxelData) = 0;
   // Update host memory with data
-  virtual bool UpdateHostMemory(MemIndex _memIndex, 
-                                VoxelData<float> *_data,
-                                unsigned int _timestep) = 0;
-
+  virtual bool UpdateHostMemory(MemoryIndex _memIndex, 
+                                VoxelData<float> *_data) = 0;
   // Transfer from host to device
-  virtual  bool WriteToDevice(MemIndex _index) = 0;
+  virtual bool WriteToDevice(MemoryIndex _index) = 0;
    
   // Set index used for rendering
-  bool SetActiveIndex(MemIndex _memoryIndex);
+  bool SetActiveIndex(MemoryIndex _memoryIndex);
 
   // Aquire shared OGL textures and set up kernel arguments
-  virtual bool PrepareRaycaster() = 0;
-
+  bool PrepareRaycaster() = 0;
   // Launch kernel (asynchronously, returns immediately)
   bool LaunchRaycaster();
   // Wait for kernel to finish, release shared OGL textures
@@ -81,6 +90,7 @@ public:
   // Finish all commands in a command queue
   // Can be used e.g. to sync a DMA transfer operation
   bool FinishQueue(QueueIndex _queueIndex);
+
 
 protected:
   CLHandler();
@@ -100,10 +110,10 @@ protected:
   cl_platform_id platforms_[32];
   cl_uint numDevices_;
   cl_device_id devices_[32];
-  cl_ulong maxMemAllocSize_[32];
+  cl_uint maxMemAllocSize_[32];
   char deviceName_[128];
   cl_context context_;
-  cl_command_queue commandQueues_[NUM_QUEUE_INDICES];
+  cl_command_Queue_[NUM_QUEUE_INDICES];
   cl_program program_;
   cl_kernel kernel_;
   
@@ -114,7 +124,7 @@ protected:
   std::map<cl_uint, MemArg> memArgs_;
 
   // Keep track of which memory buffer to use for rendering
-  MemIndex activeIndex_;
+  MemoryIndex activeIndex_;
 
   // Argument number for voxel data
   cl_uint voxelDataArgNr_;
@@ -124,8 +134,6 @@ protected:
   boost::timer::cpu_timer timer_;
   static const double BYTES_PER_GB = 1073741824.0; 
  
-};
-
 }
 
 #endif

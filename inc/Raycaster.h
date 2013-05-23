@@ -29,7 +29,9 @@ class Animator;
 
 class Raycaster : public Renderer {
 public:
-  static Raycaster * New();
+  enum UploadMode { BUFFER = 0, PBO, NUM_UPLOAD_MODES };
+  
+  static Raycaster * New(UploadMode _uploadMode);
   virtual ~Raycaster();
   virtual bool Render(float _timestep);
 
@@ -73,8 +75,6 @@ public:
   // TODO remove 
   bool PopulateVolumeTexture();
 
-  // Toggle the use of DMA texture streaming
-  bool TogglePingPong();
 
   Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
   Texture2D * CubeBackTexture() const { return cubeBackTex_; }
@@ -92,8 +92,10 @@ public:
   void SetKeyLastState(int, bool _pressed);
   void SetAnimator(Animator *_animator);
 
+  // TODO work in progress
+
 private:
-  Raycaster();
+  Raycaster(UploadMode _uploadMode);
   std::string configFilename_;
   
   // Struct for data download thread
@@ -172,6 +174,10 @@ private:
   // For texture streaming
   std::vector<PixelBuffer*> pixelBuffers_;
   
+
+  // TODO work in progress
+  
+
 
 };
 

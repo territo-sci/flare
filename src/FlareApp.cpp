@@ -71,7 +71,7 @@ int main() {
   animator->SetRefreshInterval(0.07f);
 
   // Create a raycaster and set it up
-  Raycaster * raycaster = Raycaster::New();
+  Raycaster * raycaster = Raycaster::New(Raycaster::BUFFER);
   raycaster->SetWinWidth(width);
   raycaster->SetWinHeight(height);
   raycaster->InitMatrices();

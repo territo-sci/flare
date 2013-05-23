@@ -15,6 +15,8 @@
 #include <ShaderProgram.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <CLHandler.h>
+#include <CLHandlerBuffer.h>
+#include <CLHandlerPBO.h>
 #include <TransferFunction.h>
 #include <Animator.h>
 #include <vector>
@@ -23,7 +25,7 @@
 
 using namespace osp;
 
-Raycaster::Raycaster() 
+Raycaster::Raycaster(UploadMode _uploadMode) 
   : Renderer(),
     configFilename_("NotSet"),
     kernelConfigFilename_("NotSet"),
@@ -52,10 +54,21 @@ Raycaster::Raycaster()
     matricesInitialized_(false),
     framebuffersInitialized_(false),
     pingPongIndex_(true),
-    clHandler_(CLHandler::New()),
+    clHandler_(NULL),
     animator_(NULL),
     pingPong_(0),
     lastTimestep_(1) {
+
+  if (_uploadMode == BUFFER) {
+    clHandler_ = CLHandlerBuffer::New();
+    INFO("Using CLHandlerBuffer");
+  } else if (_uploadMode == PBO) {
+//    clHandler_ = CLHandlerPBO::New();
+    INFO("Using CLHandlerPBO");
+  } else {
+    ERROR("Unsupported upload mode, defaulting to CLHandlerBuffer");
+    clHandler_ = CLHandlerBuffer::New();
+  }
 
   kernelConstants_.stepSize = 0.01f;
   kernelConstants_.intensity = 60.f;
@@ -75,8 +88,8 @@ Raycaster::~Raycaster() {
   }
 }
 
-Raycaster * Raycaster::New() {
-  return new Raycaster();
+Raycaster * Raycaster::New(UploadMode _uploadMode) {
+  return new Raycaster(_uploadMode);
 }
 
 // TODO Move out hardcoded values
@@ -490,21 +503,21 @@ bool Raycaster::Render(float _timestep) {
 
   pingPongIndex_ = 1-pingPongIndex_;
   // Switch between pinned memory indices
-  CLHandler::MemoryIndex index = 
-    static_cast<CLHandler::MemoryIndex>(pingPongIndex_);
-  CLHandler::MemoryIndex nextIndex = 
-    static_cast<CLHandler::MemoryIndex>(1-pingPongIndex_);
+  CLHandler::MemIndex index = 
+    static_cast<CLHandler::MemIndex>(pingPongIndex_);
+  CLHandler::MemIndex nextIndex = 
+    static_cast<CLHandler::MemIndex>(1-pingPongIndex_);
 
   unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
   float *frameData = voxelData_->DataPtr(timestepOffset);
   unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
 
-  // Prepare and run kernel. The RunRaycaster command returns immediately.
+  // Prepare and run kernel. The launch returns immediately.
   if (!clHandler_->PrepareRaycaster()) return false;
-  if (!clHandler_->RunRaycaster()) return false;
+  if (!clHandler_->LaunchRaycaster()) return false;
 
-  // Copy next frame to pinned memory
-  if (!clHandler_->UpdatePinnedMemory(nextIndex, voxelData_, nextTimestep)) {
+  // Copy next frame data to host
+  if (!clHandler_->UpdateHostMemory(nextIndex, voxelData_, nextTimestep)) {
     return false;
   }
 
@@ -513,7 +526,6 @@ bool Raycaster::Render(float _timestep) {
   
   // Wait for kernel to finish if needed and release resources 
   if (!clHandler_->FinishRaycaster()) return false;
-
 
   // Render to screen using quad
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
@@ -541,14 +553,8 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
 
-  // Make sure copy thread is complete before next frame
-  //if (!clHandler_->JoinCopyThread()) {
-  //  ERROR("Failed to join copy thread");
-  //  return false;
-  //}
-
   // Wait for transfer to pinned mem to complete
-  clHandler_->Finish(CLHandler::TRANSFER);
+  clHandler_->FinishQueue(CLHandler::TRANSFER);
 
   // Signal that the next frame is ready
   clHandler_->SetActiveIndex(nextIndex);
@@ -647,15 +653,6 @@ bool Raycaster::KeyLastState(int _key) const {
   }
 }
 
-bool Raycaster::TogglePingPong() {
-  pingPong_ = !pingPong_;
-  if (pingPong_) { 
-    INFO("Ping-pong rendering ON"); 
-  } else { 
-    INFO("Ping-pong rendering OFF");
-  }
-}
-
 bool Raycaster::InitPixelBuffers() {
   
   if (voxelData_ == NULL) {
@@ -696,7 +693,7 @@ bool Raycaster::InitCL() {
     return false;
   if (!clHandler_->CreateKernel()) 
     return false;
-  if (!clHandler_->CreateCommandQueue()) 
+  if (!clHandler_->CreateCommandQueues()) 
     return false;
   if (!clHandler_->InitBuffers(voxelVolumeArg_, voxelData_))
     return false;
