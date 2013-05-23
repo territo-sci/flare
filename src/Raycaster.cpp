@@ -63,7 +63,7 @@ Raycaster::Raycaster(UploadMode _uploadMode)
     clHandler_ = CLHandlerBuffer::New();
     INFO("Using CLHandlerBuffer");
   } else if (_uploadMode == PBO) {
-//    clHandler_ = CLHandlerPBO::New();
+    clHandler_ = CLHandlerPBO::New();
     INFO("Using CLHandlerPBO");
   } else {
     ERROR("Unsupported upload mode, defaulting to CLHandlerBuffer");
@@ -687,7 +687,8 @@ bool Raycaster::InitCL() {
     return false;
   //if (!clHandler_->AddTexture3D(voxelVolumeArg_, volumeTex_, true))
   //  return false;
-  if (!clHandler_->CreateProgram("kernels/Raycaster.cl")) 
+  // TODO move out
+  if (!clHandler_->CreateProgram("kernels/RaycasterTexture.cl")) 
     return false;
   if (!clHandler_->BuildProgram()) 
     return false;

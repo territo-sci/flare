@@ -35,7 +35,7 @@ add_executable(FlareApp
                PixelBuffer.cpp
                CLHandler.cpp
                CLHandlerBuffer.cpp
-               #CLHandlerPBO.cpp
+               CLHandlerPBO.cpp
                Animator.cpp
                MappingKey.cpp
                TransferFunction.cpp

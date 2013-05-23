@@ -211,3 +211,23 @@ bool CLHandlerBuffer::PrepareRaycaster() {
 }
 
 
+bool CLHandlerBuffer::FinishRaycaster() {
+
+  // Make sure kernel is done
+  clFinish(commandQueues_[EXECUTE]);
+
+  // Release the shared GL objects
+  for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin(); 
+       it != OGLTextures_.end(); it++) {
+    error_ = clEnqueueReleaseGLObjects(commandQueues_[EXECUTE], 1, 
+                                       &(it->second), 0, NULL, NULL);
+    if (error_ != CL_SUCCESS) {
+      ERROR("Failed to release GL object");
+      ERROR("Failed object: " << it->first);
+      ERROR(ErrorString(error_));
+      return false;
+    }
+
+  }
+  return true;
+}

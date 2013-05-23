@@ -72,8 +72,9 @@ public:
 
   // Launch kernel (asynchronously, returns immediately)
   bool LaunchRaycaster();
+
   // Wait for kernel to finish, release shared OGL textures
-  bool FinishRaycaster();
+  virtual bool FinishRaycaster() = 0;
 
   // Toggle timer use. When timers are on, many calls become blocking.
   bool ToggleTimers();
@@ -124,6 +125,12 @@ protected:
   boost::timer::cpu_timer timer_;
   static const double BYTES_PER_GB = 1073741824.0; 
  
+  // Size of buffers for float data
+  size_t bufferSize_;
+
+  // Size of copy buffer
+  // TODO Do a "dry run" at init and determine this value
+  static const unsigned int copyBufferSize_ = 262144;
 };
 
 }

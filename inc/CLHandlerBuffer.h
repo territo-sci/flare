@@ -27,6 +27,7 @@ public:
   virtual bool WriteToDevice(MemIndex _memIndex);
 
   virtual bool PrepareRaycaster();
+  virtual bool FinishRaycaster();
 
 private:
   CLHandlerBuffer();
@@ -37,12 +38,7 @@ private:
   std::vector<MemArg> deviceBuffers_;
   // Mapped pointers, referencing the pinned host memory
   std::vector<float*> pinnedPointers_;
-  // Size of buffers for float data
-  size_t bufferSize_;
 
-  // Size of copy buffer
-  // TODO Do a "dry run" at init and determine this value
-  static const unsigned int copyBufferSize_ = 262144;
 
 };
 
