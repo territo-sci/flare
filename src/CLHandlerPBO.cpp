@@ -6,7 +6,6 @@
 #include <GL/glew.h>
 #include <CLHandlerPBO.h>
 #include <Texture3D.h>
-#include <PixelBuffer.h>
 #include <Utils.h>
 
 using namespace osp;
@@ -18,13 +17,6 @@ CLHandlerPBO * CLHandlerPBO::New() {
 CLHandlerPBO::CLHandlerPBO() : CLHandler() { }
 
 CLHandlerPBO::~CLHandlerPBO() {
-
-  /*
-  for (std::vector<PixelBuffer*>::iterator it = pixelBuffers_.begin();
-       it != pixelBuffers_.end(); ++it) {
-    delete *it;
-  }
-  */
 
   for (std::vector<Texture3D*>::iterator it = hostTextures_.begin();
        it != hostTextures_.end(); ++it) {

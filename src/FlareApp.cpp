@@ -68,7 +68,7 @@ int main() {
   //Create animator
   Animator *animator = Animator::New();
   animator->SetNumTimesteps(floatData->NumTimesteps());
-  animator->SetRefreshInterval(0.07f);
+  animator->SetRefreshInterval(0.05f);
 
   // Create a raycaster and set it up
   Raycaster * raycaster = Raycaster::New(Raycaster::PBO);
@@ -84,13 +84,10 @@ int main() {
   raycaster->SetQuadShaderProgram(quadShaderProgram);
   raycaster->InitFramebuffers();
   raycaster->SetVoxelData(floatData);
-  // if (!raycaster->InitPixelBuffers()) exit(1);
   raycaster->SetAnimator(animator);
-  //raycaster->SetAnimationRate(0.08f);
   raycaster->AddTransferFunction(transferFunction);
   raycaster->SetKernelConfigFilename("config/kernelConstants.txt");
   raycaster->UpdateKernelConfig();
-  if (!raycaster->PopulateVolumeTexture()) exit(1);
   if (!raycaster->InitCL()) exit(1);
 
   // Go!

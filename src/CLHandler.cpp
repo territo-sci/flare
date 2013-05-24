@@ -17,18 +17,6 @@
 
 using namespace osp;
 
-/*
-CLHandler * CLHandler::New() {
-  if (instances_ == 0) {
-    instances_++;
-    return new CLHandler();
-  } else {
-    ERROR("Can't create another instance of CLHandler");
-    return NULL;
-  }
-}
-*/
-
 CLHandler::CLHandler() 
   : error_(CL_SUCCESS), 
     numPlatforms_(0),
@@ -50,15 +38,12 @@ CLHandler::~CLHandler() {
     clReleaseMemObject(it->second.mem_);
   }
 
-  //UnmapPinnedPointers();
-
   clReleaseKernel(kernel_);
   clReleaseProgram(program_);
   for (unsigned int i=0; i<NUM_QUEUE_INDICES; ++i) {
     clReleaseCommandQueue(commandQueues_[i]);
   }
   clReleaseContext(context_);
-
 }
 
 
@@ -213,8 +198,8 @@ bool CLHandler::CreateProgram(std::string _filename) {
   int numChars;
   char * source = ReadSource(_filename, numChars);
   program_ = clCreateProgramWithSource(context_, 1, (const char**)&source,
-                                       (const size_t*)&numChars, &error_);
-  delete source;
+                                       NULL, &error_);
+  free(source);
   return CheckSuccess(error_, "CreateProgram()");
 }
 
@@ -239,7 +224,7 @@ bool CLHandler::BuildProgram() {
                             logSize, log, NULL);
       log[logSize] = '\0';
       INFO(log);
-      delete log;                       
+      free(log);                       
     }
 
     return false;

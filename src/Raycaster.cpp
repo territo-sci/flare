@@ -10,7 +10,6 @@
 #include <Raycaster.h>
 #include <Texture2D.h>
 #include <Texture3D.h>
-#include <PixelBuffer.h>
 #include <Utils.h>
 #include <ShaderProgram.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -80,12 +79,6 @@ Raycaster::Raycaster(UploadMode _uploadMode)
 Raycaster::~Raycaster() {
   if (clHandler_) delete clHandler_;
   if (volumeTex_) delete volumeTex_;
-  for (std::vector<PixelBuffer*>::iterator it = pixelBuffers_.begin();
-      it != pixelBuffers_.end(); it++) {
-    if (*it != NULL) {
-      delete *it;
-    }
-  }
 }
 
 Raycaster * Raycaster::New(UploadMode _uploadMode) {
@@ -102,31 +95,6 @@ bool Raycaster::InitMatrices() {
 
 void Raycaster::SetAnimator(Animator *_animator) {
   animator_ = _animator;
-}
-
-bool Raycaster::PopulateVolumeTexture() {
-
-  if (animator_ == NULL) {
-    ERROR("Animator not set");
-    return false;
-  }
-
-  if (voxelData_ == NULL) {
-    ERROR("Voxel data not set");
-    return false;
-  }
-  
-  std::vector<unsigned int> dim;
-  dim.push_back(voxelData_->ADim());
-  dim.push_back(voxelData_->BDim());
-  dim.push_back(voxelData_->CDim());
-  volumeTex_ = Texture3D::New(dim);
-  if (!volumeTex_->Init(voxelData_->DataPtr())) {
-    return false;
-  }
-
-  return true;
-
 }
 
 bool Raycaster::InitCube() {
@@ -653,23 +621,6 @@ bool Raycaster::KeyLastState(int _key) const {
   }
 }
 
-bool Raycaster::InitPixelBuffers() {
-  
-  if (voxelData_ == NULL) {
-    ERROR("Must init voxelData before pixel buffers");
-    return false;
-  }
-
-  pixelBuffers_.resize(2);
-  pixelBuffers_[0] = PixelBuffer::New(voxelData_->NumVoxelsPerTimestep());
-  pixelBuffers_[0]->Init(voxelData_->DataPtr(0));
-  pixelBuffers_[1] = PixelBuffer::New(voxelData_->NumVoxelsPerTimestep());
-  pixelBuffers_[1]->Init(voxelData_->DataPtr(1));
-
-  return true;
-
-}
-
 bool Raycaster::InitCL() {
   if (!clHandler_->InitPlatform()) 
     return false;
@@ -677,16 +628,6 @@ bool Raycaster::InitCL() {
     return false;
   if (!clHandler_->CreateContext()) 
     return false;
-  if (!clHandler_->AddTexture2D(cubeFrontArg_, cubeFrontTex_, 
-                                CLHandler::READ_ONLY)) 
-    return false;
-  if (!clHandler_->AddTexture2D(cubeBackArg_, cubeBackTex_, 
-                                CLHandler::READ_ONLY)) 
-    return false;
-  if (!clHandler_->AddTexture2D(quadArg_, quadTex_, CLHandler::WRITE_ONLY)) 
-    return false;
-  //if (!clHandler_->AddTexture3D(voxelVolumeArg_, volumeTex_, true))
-  //  return false;
   // TODO move out
   if (!clHandler_->CreateProgram("kernels/RaycasterTexture.cl")) 
     return false;
@@ -698,7 +639,14 @@ bool Raycaster::InitCL() {
     return false;
   if (!clHandler_->InitBuffers(voxelVolumeArg_, voxelData_))
     return false;
- // if (!clHandler_->BindVoxelData(voxelVolumeArg_, voxelData_)) 
+  if (!clHandler_->AddTexture2D(cubeFrontArg_, cubeFrontTex_, 
+                                CLHandler::READ_ONLY)) 
+    return false;
+  if (!clHandler_->AddTexture2D(cubeBackArg_, cubeBackTex_, 
+                                CLHandler::READ_ONLY)) 
+    return false;
+  if (!clHandler_->AddTexture2D(quadArg_, quadTex_, CLHandler::WRITE_ONLY)) 
+    return false;
   if (!clHandler_->AddConstants(constantsArg_, &kernelConstants_)) 
     return false;
   if (!clHandler_->AddTransferFunction(transferFunctionArg_, 

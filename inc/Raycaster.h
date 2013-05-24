@@ -72,10 +72,6 @@ public:
   // TODO Actually support and make use of multiple TFs
   void AddTransferFunction(TransferFunction *_transferFunction);
 
-  // TODO remove 
-  bool PopulateVolumeTexture();
-
-
   Texture2D * CubeFrontTexture() const { return cubeFrontTex_; }
   Texture2D * CubeBackTexture() const { return cubeBackTex_; }
   Texture2D * QuadTexture() const { return quadTex_; }
@@ -92,21 +88,9 @@ public:
   void SetKeyLastState(int, bool _pressed);
   void SetAnimator(Animator *_animator);
 
-  // TODO work in progress
-
 private:
   Raycaster(UploadMode _uploadMode);
   std::string configFilename_;
-  
-  // Struct for data download thread
-  struct DownloadThreadData {
-    CLHandler *clHandler_;
-    VoxelData<float> *voxelData_;
-    unsigned int timestep_;
-  };
-   
-  // Download thread callback
-  static void * DownloadThreadFunc(void *_downloadThreadData); 
     
   // Buffer object handles
   unsigned int cubeFrontFBO_;
@@ -170,14 +154,6 @@ private:
   static const unsigned int voxelVolumeArg_ = 3;
   static const unsigned int constantsArg_ = 4;
   static const unsigned int transferFunctionArg_ = 5; 
-
-  // For texture streaming
-  std::vector<PixelBuffer*> pixelBuffers_;
-  
-
-  // TODO work in progress
-  
-
 
 };
 
