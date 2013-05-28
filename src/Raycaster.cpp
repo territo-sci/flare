@@ -14,8 +14,6 @@
 #include <ShaderProgram.h>
 #include <glm/gtc/matrix_transform.hpp>
 #include <CLHandler.h>
-#include <CLHandlerBuffer.h>
-#include <CLHandlerPBO.h>
 #include <TransferFunction.h>
 #include <Animator.h>
 #include <vector>
@@ -24,7 +22,7 @@
 
 using namespace osp;
 
-Raycaster::Raycaster(UploadMode _uploadMode) 
+Raycaster::Raycaster() 
   : Renderer(),
     configFilename_("NotSet"),
     kernelConfigFilename_("NotSet"),
@@ -58,16 +56,7 @@ Raycaster::Raycaster(UploadMode _uploadMode)
     pingPong_(0),
     lastTimestep_(1) {
 
-  if (_uploadMode == BUFFER) {
-    clHandler_ = CLHandlerBuffer::New();
-    INFO("Using CLHandlerBuffer");
-  } else if (_uploadMode == PBO) {
-    clHandler_ = CLHandlerPBO::New();
-    INFO("Using CLHandlerPBO");
-  } else {
-    ERROR("Unsupported upload mode, defaulting to CLHandlerBuffer");
-    clHandler_ = CLHandlerBuffer::New();
-  }
+  clHandler_ = CLHandler::New();
 
   kernelConstants_.stepSize = 0.01f;
   kernelConstants_.intensity = 60.f;
@@ -81,8 +70,8 @@ Raycaster::~Raycaster() {
   if (volumeTex_) delete volumeTex_;
 }
 
-Raycaster * Raycaster::New(UploadMode _uploadMode) {
-  return new Raycaster(_uploadMode);
+Raycaster * Raycaster::New() {
+  return new Raycaster();
 }
 
 // TODO Move out hardcoded values

@@ -17,11 +17,13 @@
 namespace osp {
 
 class Texture2D;
+class Texture3D;
 class TransferFunction;
 
 class CLHandler {
 public:
-  virtual ~CLHandler();
+  static CLHandler * New(); 
+  ~CLHandler();
 
   // Bundle cl_mem and its size
   struct MemArg {
@@ -54,27 +56,27 @@ public:
   bool AddConstants(unsigned int _argNr, KernelConstants *_kernelConstants);
   
   // Init the double buffer setup
-  virtual bool InitBuffers(unsigned int _argNr,
-                           VoxelData<float> *_voxelData) = 0;
+  bool InitBuffers(unsigned int _argNr,
+                   VoxelData<float> *_voxelData);
   // Update host memory with data
-  virtual bool UpdateHostMemory(MemIndex _memIndex, 
-                                VoxelData<float> *_data,
-                                unsigned int _timestep) = 0;
+  bool UpdateHostMemory(MemIndex _memIndex, 
+                        VoxelData<float> *_data,
+                        unsigned int _timestep);
 
   // Transfer from host to device
-  virtual  bool WriteToDevice(MemIndex _index) = 0;
+  bool WriteToDevice(MemIndex _index);
    
   // Set index used for rendering
   bool SetActiveIndex(MemIndex _memoryIndex);
 
   // Aquire shared OGL textures and set up kernel arguments
-  virtual bool PrepareRaycaster() = 0;
+  bool PrepareRaycaster();
 
   // Launch kernel (asynchronously, returns immediately)
   bool LaunchRaycaster();
 
   // Wait for kernel to finish, release shared OGL textures
-  virtual bool FinishRaycaster() = 0;
+  virtual bool FinishRaycaster();
 
   // Toggle timer use. When timers are on, many calls become blocking.
   bool ToggleTimers();
@@ -107,30 +109,39 @@ protected:
   cl_command_queue commandQueues_[NUM_QUEUE_INDICES];
   cl_program program_;
   cl_kernel kernel_;
-  
-  // Stores OGL textures together with their kernel argument number
+
+  // Stores device side OGL textures together with their kernel arg number
   std::map<cl_uint, cl_mem> OGLTextures_;
+
+  // Host side textures for volume data
+  std::vector<Texture3D*> hostTextures_;
+  
+  // Device side textures for volume data
+  std::vector<MemArg> deviceTextures_;
+  
+  // Handles for PBOs
+  std::vector<unsigned int> pixelBufferObjects_;
 
   // Stores non-texture memory buffer arguments
   std::map<cl_uint, MemArg> memArgs_;
-
+  
   // Keep track of which memory buffer to use for rendering
   MemIndex activeIndex_;
-
+  
   // Argument number for voxel data
   cl_uint voxelDataArgNr_;
-
+  
   // Timer members
   bool useTimers_;
   boost::timer::cpu_timer timer_;
-  static const double BYTES_PER_GB = 1073741824.0; 
+  const double BYTES_PER_GB = 1073741824.0; 
  
   // Size of buffers for float data
   size_t bufferSize_;
 
   // Size of copy buffer
   // TODO Do a "dry run" at init and determine this value
-  static const unsigned int copyBufferSize_ = 262144;
+  const unsigned int copyBufferSize_ = 262144;
 };
 
 }

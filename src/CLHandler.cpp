@@ -8,6 +8,7 @@
 #include <Utils.h>
 #include <CLHandler.h>
 #include <Texture2D.h>
+#include <Texture3D.h>
 #include <VoxelData.h>
 #include <TransferFunction.h>
 #include <sstream>
@@ -26,16 +27,22 @@ CLHandler::CLHandler()
     useTimers_(false) {
 }
 
+CLHandler * CLHandler::New() {
+  return new CLHandler();
+}
+
 CLHandler::~CLHandler() {
 
-  for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin();
-       it != OGLTextures_.end(); it++) {
+  for (auto it=OGLTextures_.begin(); it!=OGLTextures_.end(); ++it) {
     clReleaseMemObject(it->second);
   }
 
-  for (std::map<cl_uint, MemArg>::iterator it = memArgs_.begin();
-       it != memArgs_.end(); it++) {
+  for (auto it=memArgs_.begin(); it!=memArgs_.end(); ++it) {
     clReleaseMemObject(it->second.mem_);
+  }
+
+  for (auto it=hostTextures_.begin(); it!=hostTextures_.end(); ++it) {
+    delete *it;
   }
 
   clReleaseKernel(kernel_);
@@ -56,7 +63,6 @@ bool CLHandler::CheckSuccess(cl_int _error, std::string _location) {
     return false;
   }
 }
-
 
 bool CLHandler::InitPlatform() {
   
@@ -146,32 +152,6 @@ bool CLHandler::CreateContext() {
   return CheckSuccess(error_, "CreateContext()");
 }
 
-/*
-bool CLHandler::AddTexture3D(unsigned int _argNr, Texture3D *_texture,
-                             bool _readOnly) {
-
-  // Remove anything already associated with argument index
-  if (GLTextures_.find((cl_uint)_argNr) != GLTextures_.end()) {
-    INFO("Erasing texture at kernel argument " << _argNr);
-    GLTextures_.erase((cl_uint)_argNr);
-  }
-
-  cl_mem_flags flag = _readOnly ? CL_MEM_READ_ONLY : CL_MEM_WRITE_ONLY;
-  cl_mem texture = clCreateFromGLTexture3D(context_, flag, GL_TEXTURE_3D,
-                                           0, _texture->Handle(), &error_);
-
-  if (error_ != CL_SUCCESS) {
-    ERROR("Failed to create cl_mem object for argument index " << _argNr);
-    ERROR(ErrorString(error_));
-    return false;
-  }
-  
-  INFO("Inserting kernel argument " << _argNr);
-  GLTextures_.insert(std::make_pair((cl_uint)_argNr, texture));
-
-  return true;
-}
-*/
 
 char * CLHandler::ReadSource(std::string _filename, int &_numChars) const {
   FILE *in;
@@ -247,6 +227,120 @@ bool CLHandler::CreateCommandQueues() {
   }
   return true;
 }
+
+
+bool CLHandler::InitBuffers(unsigned int _argNr,
+                            VoxelData<float> *_voxelData) {
+
+  voxelDataArgNr_ = _argNr;  
+  unsigned int numVoxels = _voxelData->NumVoxelsPerTimestep();
+  unsigned int index;
+
+  bufferSize_ = numVoxels*sizeof(float);
+
+  // Create and initialize PBOs
+  pixelBufferObjects_.resize(NUM_MEM_INDICES);
+  index = 0;
+  for (auto it=pixelBufferObjects_.begin(); it!=pixelBufferObjects_.end(); ++it) {
+    glGenBuffers(1, &(*it));
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, *it);
+    unsigned int timestepOffset = _voxelData->TimestepOffset(index);
+    float *data = _voxelData->DataPtr(timestepOffset);
+    glBufferData(GL_PIXEL_UNPACK_BUFFER, numVoxels*sizeof(float),
+                 reinterpret_cast<GLvoid*>(data), GL_STREAM_DRAW);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    index++;
+    if (CheckGLError("InitBuffers() Init PBOs") != GL_NO_ERROR) {
+      return false;
+    }
+  }
+
+  // Create host-side textures
+  hostTextures_.resize(NUM_MEM_INDICES);
+  std::vector<unsigned int> dims;
+  dims.push_back(_voxelData->ADim());
+  dims.push_back(_voxelData->BDim());
+  dims.push_back(_voxelData->CDim());
+  index = 0;
+  for (std::vector<Texture3D*>::iterator it = hostTextures_.begin();
+      it != hostTextures_.end(); ++it) {
+      *it = Texture3D::New(dims);
+      unsigned int timestepOffset = _voxelData->TimestepOffset(index);
+      float *data = _voxelData->DataPtr(timestepOffset);
+      (*it)->Init(data);
+      index++;
+  }
+
+  // Allocate device side textures
+  deviceTextures_.resize(NUM_MEM_INDICES);
+  index = 0;
+  for (auto it=deviceTextures_.begin(); it!=deviceTextures_.end(); ++it) {
+    it->mem_ = clCreateFromGLTexture3D(context_,
+                                      CL_MEM_READ_ONLY,
+                                      GL_TEXTURE_3D,
+                                      0, 
+                                      hostTextures_[index]->Handle(),
+                                      &error_);
+    it->size_ = sizeof(cl_mem);
+    index++;
+    if (!CheckSuccess(error_, "InitBuffers() init device textures")) {
+      return false;
+    }
+  }
+  
+  return true;
+}
+
+
+bool CLHandler::UpdateHostMemory(MemIndex _memIndex,
+                                    VoxelData<float> *_voxelData,
+                                    unsigned int _timestep) {
+
+  unsigned int numVoxels = _voxelData->NumVoxelsPerTimestep();
+  unsigned int timestepOffset = _voxelData->TimestepOffset(_timestep);
+  float *data = _voxelData->DataPtr(timestepOffset);
+
+  if (numVoxels % copyBufferSize_ != 0) {
+    ERROR("numVoxels needs to be evenly divisable by copyBufferSize_");
+    return false;
+  }
+
+  if (sizeof(float)*numVoxels != bufferSize_) {
+    ERROR("Number of voxels and buffer size do not correspond");
+    return false;
+  }
+
+  if (useTimers_) {
+    timer_.start();
+  }
+  
+
+  // Map buffer to CPU controlled memory
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBufferObjects_[_memIndex]);
+  float *mappedPointer = reinterpret_cast<float*>(
+    glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY));
+
+  // Copy data in parts for perfomance reasons
+  unsigned int numParts = numVoxels/copyBufferSize_;
+  for (unsigned int i=0; i<numParts; ++i) {
+    std::copy(data+i*copyBufferSize_,
+              data+(i+1)*copyBufferSize_,
+              mappedPointer+i*copyBufferSize_);
+  }
+
+  if (useTimers_) {
+    double time = (double)timer_.elapsed().wall / 1.0e9;
+    double size = bufferSize_ / BYTES_PER_GB;
+    INFO("Copy to PBO mapped mem: " << time << " s, " << size/time << "GB/s");
+  }
+
+
+  glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+   
+  return true;
+}
+
 
 
 bool CLHandler::AddTexture2D(unsigned int _argNr, Texture2D *_texture, 
@@ -338,12 +432,37 @@ bool CLHandler::AddConstants(unsigned int _argNr,
   return true;
 }
 
-/*
+
+bool CLHandler::FinishQueue(QueueIndex _queueIndex) {
+  clFinish(commandQueues_[_queueIndex]);
+  return true;
+}
+
+
+bool CLHandler::WriteToDevice(MemIndex _memIndex) {
+
+  // Read and write from pixel buffer
+  glBindTexture(GL_TEXTURE_3D, hostTextures_[_memIndex]->Handle());
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pixelBufferObjects_[_memIndex]);  
+  
+  glTexSubImage3D(GL_TEXTURE_3D, 0, 0, 0, 0,
+                  hostTextures_[_memIndex]->Dim(0),
+                  hostTextures_[_memIndex]->Dim(1),
+                  hostTextures_[_memIndex]->Dim(2),
+                  GL_RED, GL_FLOAT, 0);
+
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+  glBindTexture(GL_TEXTURE_3D, 0);
+ 
+  return CheckGLError("CLHandlerPBO: WriteToDevice()") == GL_NO_ERROR;
+                      
+}
+
+
 bool CLHandler::PrepareRaycaster() {
 
-  // Let OpenCL take control of the shared GL objects
-  for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin(); 
-       it != OGLTextures_.end(); it++) {
+  // Let OpenCL take control of the shared GL textures
+  for (auto it = OGLTextures_.begin(); it != OGLTextures_.end(); ++it) {
     error_ = clEnqueueAcquireGLObjects(commandQueues_[EXECUTE], 1, 
                                        &(it->second),
                                        0, NULL, NULL);
@@ -356,8 +475,7 @@ bool CLHandler::PrepareRaycaster() {
   }
 
   // Set up kernel arguments of non-shared items
-  for (std::map<cl_uint, MemArg>::iterator it = memArgs_.begin();
-       it != memArgs_.end(); it++) {
+  for (auto it=memArgs_.begin(); it!=memArgs_.end(); ++it) {
     error_ = clSetKernelArg(kernel_,
                             it->first,
                             (it->second).size_,
@@ -370,8 +488,7 @@ bool CLHandler::PrepareRaycaster() {
   }
   
   // Set up kernel arguments for textures
-  for (std::map<cl_uint, cl_mem>::iterator it = OGLTextures_.begin(); 
-       it != OGLTextures_.end(); it++) {
+  for (auto it=OGLTextures_.begin(); it!=OGLTextures_.end(); ++it) {
     error_ = clSetKernelArg(kernel_,
                             it->first,
                             sizeof(cl_mem),
@@ -386,8 +503,8 @@ bool CLHandler::PrepareRaycaster() {
   // Set up kernel argument for the active voxel data buffer
   error_ = clSetKernelArg(kernel_, 
                           voxelDataArgNr_, 
-                          deviceBuffer_[activeIndex_].size_,
-                          &(deviceBuffer_[activeIndex_].mem_));
+                          deviceTextures_[activeIndex_].size_,
+                          &(deviceTextures_[activeIndex_].mem_));
   if (!CheckSuccess(error_, "Kernel argument for voxel data buffer")) {
     return false;
   }
@@ -395,13 +512,35 @@ bool CLHandler::PrepareRaycaster() {
   return true;
 }
 
-*/
 
-bool CLHandler::FinishQueue(QueueIndex _queueIndex) {
-  clFinish(commandQueues_[_queueIndex]);
+bool CLHandler::FinishRaycaster() {
+
+  // Make sure kernel is done
+  clFinish(commandQueues_[EXECUTE]);
+
+  // Release the shared GL objects
+  for (auto it=OGLTextures_.begin(); it!=OGLTextures_.end(); ++it) {
+    error_ = clEnqueueReleaseGLObjects(commandQueues_[EXECUTE], 1, 
+                                       &(it->second), 0, NULL, NULL);
+    if (error_ != CL_SUCCESS) {
+      ERROR("Failed to release GL object");
+      ERROR("Failed object: " << it->first);
+      ERROR(ErrorString(error_));
+      return false;
+    }
+  }
+
+  for (std::vector<MemArg>::iterator it = deviceTextures_.begin();
+      it != deviceTextures_.end(); ++it) {
+    error_ = clEnqueueReleaseGLObjects(commandQueues_[EXECUTE], 1,
+                                      &(it->mem_), 0, NULL, NULL);
+    if (!CheckSuccess(error_, "FinishRaycaster()")) {
+      return false;
+   }
+  }
+
   return true;
 }
-
 
 bool CLHandler::LaunchRaycaster() {
   
@@ -434,155 +573,10 @@ bool CLHandler::LaunchRaycaster() {
 }
 
 
-
-/*
-bool CLHandler::InitBuffers(unsigned int _argNr,
-                            VoxelData<float> *_voxelData) {
-  
-  voxelDataArgNr_ = _argNr;
-  pinnedHostMemory_.resize(NUM_MEM_INDICES);
-  deviceBuffer_.resize(NUM_MEM_INDICES);
-  pinnedPointer_.resize(NUM_MEM_INDICES);
-
-  bufferSize_ = static_cast<size_t>(
-    _voxelData->NumVoxelsPerTimestep()*sizeof(float));
-
-  // Allocate the pinned memory host buffers
-  for (std::vector<MemArg>::iterator it = pinnedHostMemory_.begin();
-       it != pinnedHostMemory_.end(); ++it) {
-    it->mem_ = clCreateBuffer(context_, 
-                              CL_MEM_READ_ONLY | CL_MEM_ALLOC_HOST_PTR,
-                              bufferSize_, NULL, &error_);
-    it->size_ = sizeof(cl_mem);
-    if (!CheckSuccess(error_, "InitBuffers() allocating pinned mem")) {
-      return false;
-    }                         
-  }
-
-  // Allocate the device buffers
-  for (std::vector<MemArg>::iterator it = deviceBuffer_.begin();
-      it != deviceBuffer_.end(); ++it) {
-    it->mem_ = clCreateBuffer(context_, CL_MEM_READ_ONLY,
-                              bufferSize_, NULL, &error_);
-    it->size_ = sizeof(cl_mem);
-    if (!CheckSuccess(error_, "InitBuffers() allocating device mem")) {
-      return false;
-    }
-  }
-
-  // Map standard pointers to reference the pinned host memory
-  // TODO loop
-  pinnedPointer_[FIRST] = static_cast<float*>(
-    clEnqueueMapBuffer(commandQueues_[TRANSFER], pinnedHostMemory_[FIRST].mem_,
-                       CL_TRUE, CL_MAP_WRITE, 0, bufferSize_, 0, NULL, 
-                       NULL, &error_));   
-  pinnedPointer_[SECOND] = static_cast<float*>(
-    clEnqueueMapBuffer(commandQueues_[TRANSFER], pinnedHostMemory_[SECOND].mem_,
-                       CL_TRUE, CL_MAP_WRITE, 0, bufferSize_, 0, NULL,
-                       NULL, &error_));
-  if (!CheckSuccess(error_, "InitBuffer() mapping pointers")) {
-    return false;
-  }
-
-  // Init the first buffer with data from timestep 0
-  UpdatePinnedMemory(FIRST, _voxelData, 0);
-  WriteToDevice(FIRST);
-  SetActiveIndex(FIRST);
-
-  return true;
-
-}
-
-*/
-
 bool CLHandler::SetActiveIndex(MemIndex _activeIndex) {
   activeIndex_ = _activeIndex;
 }
 
-
-/*
-bool CLHandler::UnmapPinnedPointers() {
-  // TODO loop
-  error_ = clEnqueueUnmapMemObject(commandQueues_[TRANSFER], 
-                                   pinnedHostMemory_[FIRST].mem_,
-                                   pinnedPointer_[FIRST],
-                                   0, NULL, NULL);
-  error_ = clEnqueueUnmapMemObject(commandQueues_[TRANSFER],
-                                   pinnedHostMemory_[SECOND].mem_,
-                                   pinnedPointer_[SECOND],
-                                   0, NULL, NULL);
-  return (CheckSuccess(error_, "UnmapPinnedPointers()"));
-}
-
-
-bool CLHandler::UpdatePinnedMemory(MemIndex _index,
-                                   VoxelData<float> *_voxelData,
-                                   unsigned int _timestep) {
-  
-
-  unsigned int numVoxels = _voxelData->NumVoxelsPerTimestep();
-  unsigned int timestepOffset = _voxelData->TimestepOffset(_timestep);
-  float *data = _voxelData->DataPtr(timestepOffset);
-
-  if (numVoxels % copyBufferSize_ != 0) {
-    ERROR("numVoxels needs to be evenly divisable by copyBufferSize_");
-    return false;
-  }
-
-  if (sizeof(float)*numVoxels != bufferSize_) {
-    ERROR("Number of voxels and buffer size do not correspond");
-    return false;
-  }
-
-  if (useTimers_) {
-    timer_.start();
-  }
-
-  unsigned int numParts = numVoxels/copyBufferSize_;
-
-  
-  for (unsigned int i=0; i<numParts; ++i) {
-    std::copy(data+i*copyBufferSize_, 
-              data+(i+1)*copyBufferSize_, 
-              pinnedPointer_[_index]+i*copyBufferSize_);
-  }
-  
-
-  if (useTimers_) {
-    double time = (double)timer_.elapsed().wall / 1.0e9;
-    double size = bufferSize_ / BYTES_PER_GB;
-    INFO("Copy to pinned mem: " << time << " s, " << size/time << "GB/s");
-  }
-
-  return true;
-}
-
-bool CLHandler::WriteToDevice(MemIndex _index) {
-  // TODO non-blocking
-
-  cl_bool blocking = CL_FALSE;
-  if (useTimers_) {   
-    timer_.start();
-    blocking = CL_TRUE;
-  }
-
-  error_ = clEnqueueWriteBuffer(commandQueues_[TRANSFER], 
-                                deviceBuffer_[_index].mem_,
-                                blocking, 0, bufferSize_, 
-                                pinnedPointer_[_index], 0, NULL, NULL);
-  
-  if (useTimers_) {
-    timer_.stop();
-    double time = (double)timer_.elapsed().wall / 1.0e9;
-    double size = bufferSize_ / BYTES_PER_GB;
-    INFO("Write to device: " << time << " s, " << size/time << " GB/s");
-  }
-
-  return (CheckSuccess(error_, "WriteToDevice()"));
-
-}
-
-*/
   
 bool CLHandler::ToggleTimers() {
   useTimers_ = !useTimers_;

@@ -29,9 +29,8 @@ class Animator;
 
 class Raycaster : public Renderer {
 public:
-  enum UploadMode { BUFFER = 0, PBO, NUM_UPLOAD_MODES };
   
-  static Raycaster * New(UploadMode _uploadMode);
+  static Raycaster * New();
   virtual ~Raycaster();
   virtual bool Render(float _timestep);
 
@@ -89,7 +88,7 @@ public:
   void SetAnimator(Animator *_animator);
 
 private:
-  Raycaster(UploadMode _uploadMode);
+  Raycaster();
   std::string configFilename_;
     
   // Buffer object handles

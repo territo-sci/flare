@@ -1,6 +1,8 @@
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
 set(OPENSPACE_DIR /home/vsand/OpenSpace)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+
 set(Boost_INCLUDE_DIR ${OPENSPACE_DIR}/common_external/boost_1_53_0)
 set(Boost_LIBRARY_DIR ${OPENSPACE_DIR}/common_external/boost_1_53_0/stage/lib)
 
@@ -49,4 +51,4 @@ target_link_libraries(FlareApp
                       ${Boost_LIBRARIES}
               	      pthread)
 
-set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_BUILD_TYPE Release)
