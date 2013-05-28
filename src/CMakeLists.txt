@@ -34,6 +34,7 @@ add_executable(FlareApp
                Texture1D.cpp
                Texture2D.cpp
                Texture3D.cpp
+               VoxelDataHeader.cpp
                CLHandler.cpp
                Animator.cpp
                MappingKey.cpp
@@ -48,5 +49,3 @@ target_link_libraries(FlareApp
                       ${OPENCL_LIBRARIES}
                       ${Boost_LIBRARIES}
               	      pthread)
-
-set(CMAKE_BUILD_TYPE Release)

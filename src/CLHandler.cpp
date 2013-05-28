@@ -474,14 +474,13 @@ bool CLHandler::PrepareRaycaster() {
     }
   }
 
-  // Let OpenCL take control of the shaded 3D OGL objects
-  for (std::vector<MemArg>::iterator it = deviceTextures_.begin();
-       it != deviceTextures_.end(); ++it) {
-    error_ = clEnqueueAcquireGLObjects(commandQueues_[EXECUTE], 1,
-                                       &(it->mem_), 0, NULL, NULL);
-    if (!CheckSuccess(error_, "PrepareRaycaster() aquire 3D GL objects")) {
-      return false;
-    }
+  // Let OpenCL take control of the shared volume texture
+  error_ = clEnqueueAcquireGLObjects(commandQueues_[EXECUTE], 
+                                     1,
+                                     &(deviceTextures_[activeIndex_].mem_), 
+                                     0, NULL, NULL);
+  if (!CheckSuccess(error_, "PrepareRaycaster() aquire 3D GL object")) {
+    return false;
   }
 
   // Set up kernel arguments of non-shared items
@@ -540,13 +539,12 @@ bool CLHandler::FinishRaycaster() {
     }
   }
 
-  for (std::vector<MemArg>::iterator it = deviceTextures_.begin();
-      it != deviceTextures_.end(); ++it) {
-    error_ = clEnqueueReleaseGLObjects(commandQueues_[EXECUTE], 1,
-                                      &(it->mem_), 0, NULL, NULL);
-    if (!CheckSuccess(error_, "FinishRaycaster()")) {
-      return false;
-   }
+  error_ = clEnqueueReleaseGLObjects(commandQueues_[EXECUTE],
+                                    1,
+                                    &(deviceTextures_[activeIndex_].mem_), 
+                                    0, NULL, NULL);
+  if (!CheckSuccess(error_, "FinishRaycaster()")) {
+    return false;
   }
 
   return true;

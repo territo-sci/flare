@@ -10,6 +10,9 @@
 #include <Raycaster.h>
 #include <Texture2D.h>
 #include <Texture3D.h>
+#include <VDFReader.h>
+#include <VoxelDataHeader.h>
+#include <VoxelDataFrame.h>
 #include <Utils.h>
 #include <ShaderProgram.h>
 #include <glm/gtc/matrix_transform.hpp>
@@ -296,9 +299,16 @@ bool Raycaster::UpdateKernelConfig() {
       }
     }
   }
+
+  kernelConstants_.aDim = voxelDataHeader_->ADim();
+  kernelConstants_.bDim = voxelDataHeader_->BDim();
+  kernelConstants_.cDim = voxelDataHeader_->CDim();
+
+  /*
   kernelConstants_.aDim = voxelData_->ADim();
   kernelConstants_.bDim = voxelData_->BDim();
   kernelConstants_.cDim = voxelData_->CDim();
+  */
   return true;
 }
 
@@ -336,7 +346,10 @@ void Raycaster::SetQuadTexture(Texture2D *_quadTexture) {
 
 void Raycaster::SetVolumeTexture(Texture3D *_volumeTexture) {
   volumeTex_ = _volumeTexture;
+}
 
+void Raycaster::SetVDFReader(VDFReader *_reader) {
+  reader_ = _reader;
 }
 
 void Raycaster::SetCubeShaderProgram(ShaderProgram *_cubeShaderProgram) {
@@ -465,9 +478,14 @@ bool Raycaster::Render(float _timestep) {
   CLHandler::MemIndex nextIndex = 
     static_cast<CLHandler::MemIndex>(1-pingPongIndex_);
 
-  unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
-  float *frameData = voxelData_->DataPtr(timestepOffset);
-  unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
+  //unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
+  //float *frameData = voxelData_->DataPtr(timestepOffset);
+  //unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
+
+  reader_->ReadTimestep(currentTimestep);
+  float *frameData = voxelDataFrame_->Data();
+  unsigned int frameSize = 
+    voxelDataHeader_->NumVoxelsPerTimestep()*sizeof(float);
 
   // Prepare and run kernel. The launch returns immediately.
   if (!clHandler_->PrepareRaycaster()) return false;
@@ -646,6 +664,14 @@ bool Raycaster::InitCL() {
 
 void Raycaster::SetVoxelData(VoxelData<float> *_voxelData) {
   voxelData_ = _voxelData;
+}
+
+void Raycaster::SetVoxelDataHeader(VoxelDataHeader *_voxelDataHeader) {
+  voxelDataHeader_ = _voxelDataHeader;
+}
+
+void Raycaster::SetVoxelDataFrame(VoxelDataFrame<float> *_voxelDataFrame) {
+  voxelDataFrame_ = _voxelDataFrame;
 }
 
 void Raycaster::SetKernelConfigFilename(const std::string &_filename) {

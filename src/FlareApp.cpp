@@ -13,22 +13,38 @@
 #include <iostream>
 #include <Animator.h>
 
+#include <VoxelDataHeader.h>
+#include <VoxelDataFrame.h>
+
 using namespace osp;
 
 int main() {
 
+  std::string filename = "/home/vsand/OpenSpace/enlilTestData_256_256_256.vdf";
+
   // Read data
   VoxelData<float> *floatData = new VoxelData<float>();
-  VDFReader *reader_ = VDFReader::New();
-  reader_->SetVoxelData(floatData);
-  if (!reader_->Read("/home/vsand/OpenSpace/enlilTestData_256_256_256.vdf")) exit(1);
+  VDFReader *reader = VDFReader::New();
+  reader->SetVoxelData(floatData);
+  if (!reader->Read(filename)) exit(1);
+
+
+
+  VoxelDataHeader *voxelDataHeader = VoxelDataHeader::New();
+  VoxelDataFrame<float> *voxelDataFrame = VoxelDataFrame<float>::New();
+  reader->Init(filename, voxelDataHeader, voxelDataFrame);
+  if (!reader->ReadHeader()) exit(1);
+  // TODO temp
+  reader->ReadTimestep(0);
+
+
 
   unsigned int width = 512;
   unsigned int height = 512;
 
   // Create a WindowManager, open window to init GLEW and GLFW
   WindowManager *manager = WindowManager::New(width, height, "FlareApp");
-  manager->OpenWindow();
+  if (!manager->OpenWindow()) exit(1);
 
   // Create shaders
   ShaderProgram *cubeShaderProgram = ShaderProgram::New();
@@ -83,7 +99,10 @@ int main() {
   raycaster->SetCubeShaderProgram(cubeShaderProgram);
   raycaster->SetQuadShaderProgram(quadShaderProgram);
   raycaster->InitFramebuffers();
+  raycaster->SetVDFReader(reader);
   raycaster->SetVoxelData(floatData);
+  raycaster->SetVoxelDataFrame(voxelDataFrame);
+  raycaster->SetVoxelDataHeader(voxelDataHeader);
   raycaster->SetAnimator(animator);
   raycaster->AddTransferFunction(transferFunction);
   raycaster->SetKernelConfigFilename("config/kernelConstants.txt");
@@ -96,6 +115,8 @@ int main() {
   if (!manager->StartLoop()) exit(0);
 
   // Clean up, like a good citizen
+  delete voxelDataHeader;
+  delete voxelDataFrame;
   delete floatData;
   delete cubeFrontTex;
   delete cubeBackTex;
