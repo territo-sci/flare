@@ -35,8 +35,6 @@ add_executable(FlareApp
                Texture2D.cpp
                Texture3D.cpp
                CLHandler.cpp
-               CLHandlerBuffer.cpp
-               CLHandlerPBO.cpp
                Animator.cpp
                MappingKey.cpp
                TransferFunction.cpp

@@ -474,6 +474,16 @@ bool CLHandler::PrepareRaycaster() {
     }
   }
 
+  // Let OpenCL take control of the shaded 3D OGL objects
+  for (std::vector<MemArg>::iterator it = deviceTextures_.begin();
+       it != deviceTextures_.end(); ++it) {
+    error_ = clEnqueueAcquireGLObjects(commandQueues_[EXECUTE], 1,
+                                       &(it->mem_), 0, NULL, NULL);
+    if (!CheckSuccess(error_, "PrepareRaycaster() aquire 3D GL objects")) {
+      return false;
+    }
+  }
+
   // Set up kernel arguments of non-shared items
   for (auto it=memArgs_.begin(); it!=memArgs_.end(); ++it) {
     error_ = clSetKernelArg(kernel_,
