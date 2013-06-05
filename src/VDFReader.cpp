@@ -2,13 +2,14 @@
 #include <fstream>
 #include <Utils.h>
 #include <VoxelData.h>
-
 #include <VoxelDataHeader.h>
 #include <VoxelDataFrame.h>
+#include <boost/timer/timer.hpp>
 
 using namespace osp;
 
-VDFReader::VDFReader() {
+VDFReader::VDFReader() 
+ : initialized_(false), hasReadHeader_(false), useTimers_(false) {
 }
 
 VDFReader * VDFReader::New() {
@@ -128,6 +129,11 @@ bool VDFReader::ReadHeader() {
 
 
 bool VDFReader::ReadTimestep(unsigned int _timestep) {
+
+  if (useTimers_) {
+    timer_.start();
+  }
+
   // Get the place to read to
   float *data = frame_->Data();
   std::streampos pos = headerOffset_ + 
@@ -135,5 +141,13 @@ bool VDFReader::ReadTimestep(unsigned int _timestep) {
   // Read one frame into the chosen location
   fs_.seekg(pos);
   fs_.read(reinterpret_cast<char*>(data), timestepSize_);
+
+  if (useTimers_) {
+    timer_.stop();
+    double time = (double)timer_.elapsed().wall / 1.0e9;
+    double size = static_cast<float>(timestepSize_) / BYTES_PER_GB;
+    INFO("Copy frame from disk: " << time << " s, " << size/time << " GB/s");
+  }
+
   return true;
 }

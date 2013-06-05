@@ -9,6 +9,7 @@
 
 #include <string>
 #include <fstream>
+#include <boost/timer/timer.hpp>
 
 namespace osp {
 
@@ -51,6 +52,11 @@ private:
   std::streampos headerOffset_;
   // Size in bytes of one frame
   unsigned int timestepSize_;
+
+  bool useTimers_;
+  boost::timer::cpu_timer timer_;
+  const double BYTES_PER_GB = 1073741824.0;
+
 };
 
 }

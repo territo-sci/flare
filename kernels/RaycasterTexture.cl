@@ -33,9 +33,9 @@ float3 CartesianToSpherical(float3 _cartesian) {
 }
 
 float4 TransferFunction(__global __read_only float *_tf, float _i) {
-  // TODO remove 512 hard-coded value and change to 1D texture
-  int i0 = (int)floor(511.0*_i);
-  int i1 = (i0 < 511) ? i0+1 : i0;
+  // TODO remove  hard-coded value and change to 1D texture
+  int i0 = (int)floor(1023.0*_i);
+  int i1 = (i0 < 1023) ? i0+1 : i0;
   float di = _i - floor(_i);
   
   float tfr0 = _tf[i0*4+0];

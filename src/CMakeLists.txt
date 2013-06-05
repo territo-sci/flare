@@ -26,6 +26,7 @@ link_directories(${Boost_LIBRARY_DIR})
 
 add_executable(FlareApp
                FlareApp.cpp
+               BrickReader.cpp
                Utils.cpp
                WindowManager.cpp
                Renderer.cpp
@@ -34,6 +35,7 @@ add_executable(FlareApp
                Texture1D.cpp
                Texture2D.cpp
                Texture3D.cpp
+               TextureAtlas.cpp
                VoxelDataHeader.cpp
                CLHandler.cpp
                Animator.cpp

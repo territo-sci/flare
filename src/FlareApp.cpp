@@ -12,6 +12,7 @@
 #include <vector>
 #include <iostream>
 #include <Animator.h>
+#include <BrickReader.h>
 
 #include <VoxelDataHeader.h>
 #include <VoxelDataFrame.h>
@@ -20,7 +21,8 @@ using namespace osp;
 
 int main() {
 
-  std::string filename = "/home/vsand/OpenSpace/enlilTestData_256_256_256.vdf";
+  std::string filename = 
+    "/home/vsand/OpenSpace/enlilTestData_256_256_256.vdf";
 
   // Read data
   VoxelData<float> *floatData = new VoxelData<float>();
@@ -28,16 +30,18 @@ int main() {
   reader->SetVoxelData(floatData);
   if (!reader->Read(filename)) exit(1);
 
-
-
   VoxelDataHeader *voxelDataHeader = VoxelDataHeader::New();
   VoxelDataFrame<float> *voxelDataFrame = VoxelDataFrame<float>::New();
   reader->Init(filename, voxelDataHeader, voxelDataFrame);
   if (!reader->ReadHeader()) exit(1);
-  // TODO temp
+  // TODO temp, move into Reader class
   reader->ReadTimestep(0);
 
 
+  // TODO Work in progress
+  BrickReader *brickReader = BrickReader::New();
+  brickReader->SetInFilename("/home/vsand/OpenSpace/testBricks.bdf");
+  if (!brickReader->ReadHeader()) exit(1);
 
   unsigned int width = 512;
   unsigned int height = 512;
@@ -78,7 +82,6 @@ int main() {
   TransferFunction *transferFunction = TransferFunction::New();
   transferFunction->SetInFilename("transferfunctions/test.txt");
   transferFunction->ReadFile();
-  std::cout << *transferFunction << std::endl;
   transferFunction->ConstructTexture();
 
   //Create animator
@@ -93,6 +96,8 @@ int main() {
   raycaster->InitMatrices();
   if (!raycaster->InitCube()) exit(1);
   if (!raycaster->InitQuad()) exit(1);
+  raycaster->SetBrickReader(brickReader);
+  if (!raycaster->InitTextureAtlas()) exit(1);
   raycaster->SetCubeFrontTexture(cubeFrontTex);
   raycaster->SetCubeBackTexture(cubeBackTex);
   raycaster->SetQuadTexture(quadTex);
@@ -115,6 +120,7 @@ int main() {
   if (!manager->StartLoop()) exit(0);
 
   // Clean up, like a good citizen
+  delete brickReader;
   delete voxelDataHeader;
   delete voxelDataFrame;
   delete floatData;

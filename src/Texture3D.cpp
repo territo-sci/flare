@@ -28,6 +28,16 @@ bool Texture3D::Init(float *_data) {
     return true;
   }
 
+  unsigned int maxTextureSize;
+  glGetIntegerv(GL_MAX_3D_TEXTURE_SIZE, (int*)&maxTextureSize);
+  if (dim_[0] > maxTextureSize || dim_[1] > maxTextureSize ||
+      dim_[2] > maxTextureSize) {
+    ERROR("Dimension larger than texture size");
+    ERROR("Max texture size: " << maxTextureSize);
+    ERROR("Dims: " << dim_[0] << " " << dim_[1] << " " << dim_[2]);
+    return false;
+  }
+
   glEnable(GL_TEXTURE_3D);
   glGenTextures(1, &handle_);
   glBindTexture(GL_TEXTURE_3D, handle_);
@@ -43,7 +53,35 @@ bool Texture3D::Init(float *_data) {
   
   initialized_ = true;
 
-  CheckGLError("Texture3D::Init()");
-  return true;
+  return (CheckGLError("Texture3D::Init()") == GL_NO_ERROR);
+}
+
+
+bool Texture3D::UpdateSubRegion(unsigned int _xOffset,
+                                unsigned int _yOffset,
+                                unsigned int _zOffset,
+                                unsigned int _xSize,
+                                unsigned int _ySize,
+                                unsigned int _zSize,
+                                float *_data) {
+
+  glGetError();
+  
+  glBindTexture(GL_TEXTURE_3D, handle_);
+  glTexSubImage3D(GL_TEXTURE_3D,
+                  0,
+                  _xOffset,
+                  _yOffset,
+                  _zOffset,
+                  _xSize,
+                  _ySize,
+                  _zSize,
+                  GL_RED,
+                  GL_FLOAT,
+                  _data);
+  glBindTexture(GL_TEXTURE_3D, 0);
+  
+
+  return (CheckGLError("Texture3D::UpdateSubRegion") == GL_NO_ERROR);
 }
 

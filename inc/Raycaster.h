@@ -29,6 +29,8 @@ class CLHandler;
 class TransferFunction;
 class Animator;
 class VDFReader;
+class BrickReader;
+class TextureAtlas;
 
 class Raycaster : public Renderer {
 public:
@@ -93,6 +95,9 @@ public:
   void SetAnimator(Animator *_animator);
   void SetVDFReader(VDFReader *_reader);
 
+  void SetBrickReader(BrickReader *_brickReader);
+  bool InitTextureAtlas();
+
 private:
   Raycaster();
   std::string configFilename_;
@@ -154,6 +159,11 @@ private:
   std::string kernelConfigFilename_;
   // Transfer functions
   std::vector<TransferFunction*> transferFunctions_;
+
+
+  // TODO work in progress
+  BrickReader *brickReader_;
+  TextureAtlas *textureAtlas_;
 
   // For the corresponding CL kernel
   static const unsigned int cubeFrontArg_ = 0;

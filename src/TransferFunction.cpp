@@ -109,7 +109,6 @@ bool TransferFunction::ConstructTexture() {
     // Float values for R, G, B and A channels
     // TODO temp
     if (floatData_ == NULL) {
-      INFO("Allocating new floatData_");
       floatData_ = new float[4*width_];
     }
     

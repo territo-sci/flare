@@ -10,6 +10,8 @@
 #include <Raycaster.h>
 #include <Texture2D.h>
 #include <Texture3D.h>
+#include <TextureAtlas.h>
+#include <BrickReader.h>
 #include <VDFReader.h>
 #include <VoxelDataHeader.h>
 #include <VoxelDataFrame.h>
@@ -57,7 +59,9 @@ Raycaster::Raycaster()
     clHandler_(NULL),
     animator_(NULL),
     pingPong_(0),
-    lastTimestep_(1) {
+    lastTimestep_(1),
+    brickReader_(NULL),
+    textureAtlas_(NULL) {
 
   clHandler_ = CLHandler::New();
 
@@ -88,6 +92,40 @@ bool Raycaster::InitMatrices() {
 void Raycaster::SetAnimator(Animator *_animator) {
   animator_ = _animator;
 }
+
+void Raycaster::SetBrickReader(BrickReader *_brickReader) {
+  brickReader_ = _brickReader;
+}
+
+bool Raycaster::InitTextureAtlas() {
+  if (brickReader_ == NULL) {
+    ERROR("Raycaster::InitTextureAtlas() No BrickReader set");
+    return false;
+  }
+
+  textureAtlas_ = TextureAtlas::New();
+  textureAtlas_->SetBrickDimensions(brickReader_->XBrickDim(),
+                                    brickReader_->YBrickDim(),
+                                    brickReader_->ZBrickDim());
+  textureAtlas_->SetNumBricks(brickReader_->XNumBricks(),
+                              brickReader_->YNumBricks(),
+                              brickReader_->ZNumBricks());
+  if (!textureAtlas_->Init()) return false;
+
+  // Fill the atlas with bricks from timestep 0
+  unsigned int bricksPerTimestep = brickReader_->XNumBricks() * 
+                                   brickReader_->YNumBricks() * 
+                                   brickReader_->ZNumBricks();
+  
+  for (unsigned int i=0; i<bricksPerTimestep; ++i) {
+    brickReader_->ReadBrick(i, 0); // timestep 0
+    float *brickData = brickReader_->BrickPtr();
+    textureAtlas_->UpdateBrick(i, brickData);  
+  }
+
+  return true;
+}
+
 
 bool Raycaster::InitCube() {
   glGetError();

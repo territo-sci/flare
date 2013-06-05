@@ -17,6 +17,12 @@ typedef struct {
   int cDim;
 } KernelConstants;
 
+// TODO move or rename file
+typedef struct {
+  float numBricksPerAxis;
+  float brickDim;
+} BrickConfig;
+
 }
 
 #endif
