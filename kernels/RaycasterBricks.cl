@@ -129,9 +129,9 @@ float4 TraverseBrick(__global __read_only image3d_t _textureAtlas,
 
   // Find local sample coordinates [0 .. 1]
   float3 localEntryCoords = (float)numBoxesPerAxis *
-    (_brickEntry - convert_float3(brickCoords/numBoxesPerAxis));
+    (_brickEntry - convert_float3(brickCoords)/(float)numBoxesPerAxis);
   float3 localExitCoords = (float)numBoxesPerAxis *
-  (_brickExit - convert_float3(brickCoords/numBoxesPerAxis));
+  (_brickExit - convert_float3(brickCoords)/(float)numBoxesPerAxis);
 
   // Translate local brick coordinates to texture atlas coordinates
   float3 offset = convert_float3(_brickCoords)/(float)8;
@@ -160,10 +160,7 @@ float4 TraverseBrick(__global __read_only image3d_t _textureAtlas,
 
     // Front-to-back compositing
     float4 tf = TransferFunction(_tf, i);
-    if (samplePoint.y < 0.5) {
-      color += spherical.x*0.001+0.000001*tf.x;
-    }
-    //color += (1.0 - color.w)*tf;
+    color += (1.0 - color.w)*tf;
 
     traversed += localStepSize;
     samplePoint += localStepSize * direction;
@@ -238,8 +235,8 @@ Raycaster(__global __read_only image2d_t _cubeFront,
 
     // Traverse brick
     float4 brickColor = TraverseBrick(_textureAtlas, _tf, 
-                                       brickCoords, brickSize, stepSize,
-                                       brickEntry, brickExit);
+                                      brickCoords, brickSize, stepSize,
+                                      brickEntry, brickExit);
 
     // Compositing
     color += (1.0 - brickColor.w)*brickColor;
