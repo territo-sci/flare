@@ -674,7 +674,7 @@ bool Raycaster::InitCL() {
   if (!clHandler_->CreateContext()) 
     return false;
   // TODO move out
-  if (!clHandler_->CreateProgram("kernels/RaycasterTexture.cl")) 
+  if (!clHandler_->CreateProgram("kernels/RaycasterBricks.cl")) 
     return false;
   if (!clHandler_->BuildProgram()) 
     return false;
