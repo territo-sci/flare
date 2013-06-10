@@ -67,8 +67,8 @@ int3 BoxCoords(float3 _globalCoords, int _boxesPerAxis) {
 // that fit along each axis
 void BoxCorners(int3 _boxCoords, float3 *_minCorner, float3 *_maxCorner,
                 int _boxesPerAxis) {
-  *_minCorner = convert_float3(_boxCoords) / (float)_boxesPerAxis;
-  *_maxCorner = convert_float3((_boxCoords+1)) / (float)_boxesPerAxis;
+  *_minCorner = convert_float3(_boxCoords) / (float)_boxesPerAxis + (float3)(0.000001);
+  *_maxCorner = convert_float3((_boxCoords+(int3)(1))) / (float)_boxesPerAxis - (float3)(0.000001);
 }
 
 
@@ -116,27 +116,32 @@ bool IntersectBox(float3 _boundsMin, float3 _boundsMax,
   return ( (_tMin < 1e20 && _tMax > -1e20 ) );
 }
 
+
 float4 TraverseBrick(__global __read_only image3d_t _textureAtlas,
                      __global __read_only float *_tf,
-                     int3 _brickCoords, int _brickSize, 
-                     float _globalStepSize, float3 _brickEntry, 
-                     float3 _brickExit) {
-  
-  // Number of boxes of this size for each axix
-  int numBoxesPerAxis = 8/_brickSize;
-  // Find brick box coordinates [0 .. NumBricksPerAxis]
-  int3 brickCoords = BoxCoords (_brickEntry, numBoxesPerAxis);
+                     int3 _brickAtlasCoords, int _numBoxesPerAxis, 
+                     int _brickSize, float _globalStepSize, 
+                     float3 _brickEntry, float3 _brickExit) {
 
-  // Find local sample coordinates [0 .. 1]
-  float3 localEntryCoords = (float)numBoxesPerAxis *
-    (_brickEntry - convert_float3(brickCoords)/(float)numBoxesPerAxis);
-  float3 localExitCoords = (float)numBoxesPerAxis *
-  (_brickExit - convert_float3(brickCoords)/(float)numBoxesPerAxis);
+  // Number of bricks of this size for each axix
+  int numBricksPerAxis = _numBoxesPerAxis/_brickSize;
+  // Find brick coordinates [0 .. NumBricksPerAxis]
+  // Also taking brick size into account
+  int3 brickCoords = BoxCoords(_brickEntry, numBricksPerAxis);
 
-  // Translate local brick coordinates to texture atlas coordinates
-  float3 offset = convert_float3(_brickCoords)/(float)8;
-  float3 atlasEntry = localEntryCoords/(float)8 + offset;
-  float3 atlasExit = localExitCoords/(float)8 + offset;
+  float numBoxesPerAxisf = (float)_numBoxesPerAxis;
+  float numBricksPerAxisf = (float)numBricksPerAxis;
+
+  // Calculate local brick entry and exit coordinates [0..1]
+  float3 localEntryCoords = numBricksPerAxisf * 
+    (_brickEntry - convert_float3(brickCoords)/numBricksPerAxisf);
+  float3 localExitCoords = numBricksPerAxisf * 
+    (_brickExit - convert_float3(brickCoords)/numBricksPerAxisf);
+
+  // Calculate offset into texture atlas
+  float3 offset = convert_float3(_brickAtlasCoords)/numBoxesPerAxisf;
+  float3 atlasEntry = localEntryCoords/numBoxesPerAxisf + offset;
+  float3 atlasExit = localExitCoords/numBoxesPerAxisf + offset;
 
   float3 direction = atlasExit - atlasEntry;
   float maxDistance = length(direction);
@@ -208,22 +213,22 @@ Raycaster(__global __read_only image2d_t _cubeFront,
   // Sum colors
   float stepSize = _constants->stepSize;
   float3 samplePoint = cubeFrontColor.xyz;
-  float4 spherical;
   float4 color = (float4)(0.0, 0.0, 0.0, 0.0);
    
   while (traversed < maxDistance) {
+
+    int numBoxesPerAxis = 8; 
     
     // Convert the sample point to coords
-    int3 boxCoords = BoxCoords(samplePoint, 8);
+    int3 boxCoords = BoxCoords(samplePoint, numBoxesPerAxis);
     // Calculate BRICK coords (in atlas)
-    int3 brickCoords = boxCoords;
 
     // TODO lookup brick and brick size
     int brickSize = 1;
 
     // Calculate the box's corners
     float3 minCorner, maxCorner;
-    BoxCorners(boxCoords, &minCorner, &maxCorner, 8);
+    BoxCorners(boxCoords, &minCorner, &maxCorner, numBoxesPerAxis);
 
     // Intersect ray with box
     float tMin, tMax;
@@ -234,16 +239,20 @@ Raycaster(__global __read_only image2d_t _cubeFront,
     float brickDist = length(brickExit - brickEntry);
 
     // Traverse brick
+    int3 brickAtlasCoords = boxCoords;
+    if (brickAtlasCoords.x != boxCoords.x) {
+      color += (float4)(1.0, 0.0, 0.0, 1.0);
+    }
     float4 brickColor = TraverseBrick(_textureAtlas, _tf, 
-                                      brickCoords, brickSize, stepSize,
+                                      brickAtlasCoords, numBoxesPerAxis, 
+                                      brickSize, stepSize,
                                       brickEntry, brickExit);
 
     // Compositing
     color += (1.0 - brickColor.w)*brickColor;
                   
     // Advance ray
-    brickDist += 0.000000001;
-    samplePoint = brickEntry + direction * brickDist;
+    samplePoint = brickExit;
     traversed += brickDist;         
     
     //  color += (float4)(i, i, i, 1.0);
