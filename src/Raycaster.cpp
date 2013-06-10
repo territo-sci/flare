@@ -697,6 +697,8 @@ bool Raycaster::InitCL() {
   if (!clHandler_->AddTransferFunction(transferFunctionArg_, 
                                        transferFunctions_[0]))
     return false;
+  if (!clHandler_->AddBrickList(brickListArg_))
+    return false;
   return true;
 }
 

@@ -52,6 +52,8 @@ public:
   bool AddTexture2D(unsigned int _argNr, Texture2D *_texture, Permissions _p);
   // Add a transfer function
   bool AddTransferFunction(unsigned int _argNr, TransferFunction *_tf);
+  // Add a brick list
+  bool AddBrickList(unsigned int _argNr);
   // Add kernel constants
   bool AddConstants(unsigned int _argNr, KernelConstants *_kernelConstants);
   

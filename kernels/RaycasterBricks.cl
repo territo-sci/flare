@@ -67,8 +67,11 @@ int3 BoxCoords(float3 _globalCoords, int _boxesPerAxis) {
 // that fit along each axis
 void BoxCorners(int3 _boxCoords, float3 *_minCorner, float3 *_maxCorner,
                 int _boxesPerAxis) {
-  *_minCorner = convert_float3(_boxCoords) / (float)_boxesPerAxis + (float3)(0.000001);
-  *_maxCorner = convert_float3((_boxCoords+(int3)(1))) / (float)_boxesPerAxis - (float3)(0.000001);
+  // TODO figure out a better way to handle offsets
+  *_minCorner = convert_float3(_boxCoords) / (float)_boxesPerAxis + 
+    (float3)(0.00001);
+  *_maxCorner = convert_float3((_boxCoords+1)) / (float)_boxesPerAxis - 
+    (float3)(0.00001);
 }
 
 
@@ -114,6 +117,24 @@ bool IntersectBox(float3 _boundsMin, float3 _boundsMax,
   *_tMinOut = _tMin;
   *_tMaxOut = _tMax;
   return ( (_tMin < 1e20 && _tMax > -1e20 ) );
+}
+
+
+int3 BrickAtlasCoords(int3 _boxCoords, __global int *_brickList) {
+  int boxIndex = _boxCoords.x +
+                 _boxCoords.y*8 +
+                 _boxCoords.z*8*8; 
+  int x = _brickList[4*boxIndex];
+  int y = _brickList[4*boxIndex+1];
+  int z = _brickList[4*boxIndex+2];
+  return (int3)(x, y, z);
+}
+
+int BrickSize(int3 _boxCoords, __global int * _brickList) {
+  int boxIndex = _boxCoords.x +
+                 _boxCoords.y*8 +
+                 _boxCoords.z*8*8;
+  return _brickList[4*boxIndex+3];
 }
 
 
@@ -182,7 +203,8 @@ Raycaster(__global __read_only image2d_t _cubeFront,
           __global __write_only image2d_t _output,
           __global __read_only image3d_t _textureAtlas,
           __constant struct KernelConstants *_constants,
-          __global __read_only float *_tf) {
+          __global __read_only float *_tf,
+          __global int *_brickList) {
 
 
   int3 dimensions = (int3)(_constants->aDim,
@@ -221,10 +243,9 @@ Raycaster(__global __read_only image2d_t _cubeFront,
     
     // Convert the sample point to coords
     int3 boxCoords = BoxCoords(samplePoint, numBoxesPerAxis);
-    // Calculate BRICK coords (in atlas)
-
-    // TODO lookup brick and brick size
-    int brickSize = 1;
+    // Lookup brick coords and size
+    int3 brickAtlasCoords = BrickAtlasCoords(boxCoords, _brickList);
+    int brickSize = BrickSize(boxCoords, _brickList);
 
     // Calculate the box's corners
     float3 minCorner, maxCorner;
@@ -239,10 +260,6 @@ Raycaster(__global __read_only image2d_t _cubeFront,
     float brickDist = length(brickExit - brickEntry);
 
     // Traverse brick
-    int3 brickAtlasCoords = boxCoords;
-    if (brickAtlasCoords.x != boxCoords.x) {
-      color += (float4)(1.0, 0.0, 0.0, 1.0);
-    }
     float4 brickColor = TraverseBrick(_textureAtlas, _tf, 
                                       brickAtlasCoords, numBoxesPerAxis, 
                                       brickSize, stepSize,

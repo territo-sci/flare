@@ -380,6 +380,39 @@ bool CLHandler::AddTexture2D(unsigned int _argNr, Texture2D *_texture,
   return true;
 }
 
+// TODO make classes
+bool CLHandler::AddBrickList(unsigned int _argNr) {
+
+  int *brickList = new int[8*8*8*4];
+  for (int z=0; z<8; z++) {
+    for (int y=0; y<8; y++) {
+      for (int x=0; x<8; x++) {
+        int i = 4*(x + y*8 + z*8*8);
+        brickList[i] = x;
+        brickList[i+1] = y;
+        brickList[i+2] = z;
+        brickList[i+3] = 1;
+      }
+    }
+  }
+
+  MemArg ma;
+  ma.size_ = sizeof(cl_mem);
+  ma.mem_ = clCreateBuffer(context_, CL_MEM_COPY_HOST_PTR,
+                            8*8*8*4*sizeof(int),
+                            brickList,
+                            &error_);
+  if (!CheckSuccess(error_, "AddBrickList()")) {
+    ERROR("Failed to add brick list");
+    return false;
+  }
+
+  memArgs_.insert(std::make_pair((cl_uint)_argNr, ma));
+
+  delete[] brickList;
+  return true;
+
+}
 
 bool CLHandler::AddTransferFunction(unsigned int _argNr, 
                                      TransferFunction *_tf) {

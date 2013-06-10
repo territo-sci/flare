@@ -172,6 +172,7 @@ private:
   static const unsigned int voxelVolumeArg_ = 3;
   static const unsigned int constantsArg_ = 4;
   static const unsigned int transferFunctionArg_ = 5; 
+  static const unsigned int brickListArg_ = 6;
 
 };
 
