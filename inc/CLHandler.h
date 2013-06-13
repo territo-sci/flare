@@ -16,8 +16,7 @@
 
 namespace osp {
 
-class Texture2D;
-class Texture3D;
+class Texture;
 class TransferFunction;
 
 class CLHandler {
@@ -34,6 +33,9 @@ public:
   // Buffer permissions
   enum Permissions { READ_ONLY, WRITE_ONLY, READ_WRITE };
 
+  // For different types of textures
+  enum TextureType { TEXTURE_1D, TEXTURE_2D, TEXTURE_3D };
+
   // Indices for double memory buffer setup
   enum MemIndex { FIRST = 0, SECOND, NUM_MEM_INDICES };
 
@@ -48,15 +50,19 @@ public:
   bool CreateKernel();
   bool CreateCommandQueues();
 
-  // Add an OGL 2D texture 
-  bool AddTexture2D(unsigned int _argNr, Texture2D *_texture, Permissions _p);
+  // Add an OGL texture
+  bool AddTexture(unsigned int _argNr, 
+                  Texture *_texture, 
+                  TextureType _textureType,
+                  Permissions _p);
   // Add a transfer function
   bool AddTransferFunction(unsigned int _argNr, TransferFunction *_tf);
-  // Add a brick list
-  bool AddBrickList(unsigned int _argNr);
+  // Add a box list
+  bool AddBoxList(unsigned int _argNr, std::vector<int> _boxList);
   // Add kernel constants
   bool AddConstants(unsigned int _argNr, KernelConstants *_kernelConstants);
-  
+
+  /*  
   // Init the double buffer setup
   bool InitBuffers(unsigned int _argNr,
                    VoxelData<float> *_voxelData);
@@ -64,12 +70,15 @@ public:
   bool UpdateHostMemory(MemIndex _memIndex, 
                         VoxelData<float> *_data,
                         unsigned int _timestep);
+  
 
   // Transfer from host to device
   bool WriteToDevice(MemIndex _index);
    
   // Set index used for rendering
   bool SetActiveIndex(MemIndex _memoryIndex);
+  */
+
 
   // Aquire shared OGL textures and set up kernel arguments
   bool PrepareRaycaster();
@@ -116,22 +125,22 @@ protected:
   std::map<cl_uint, cl_mem> OGLTextures_;
 
   // Host side textures for volume data
-  std::vector<Texture3D*> hostTextures_;
+  //std::vector<Texture3D*> hostTextures_;
   
   // Device side textures for volume data
-  std::vector<MemArg> deviceTextures_;
+  //std::vector<MemArg> deviceTextures_;
   
   // Handles for PBOs
-  std::vector<unsigned int> pixelBufferObjects_;
+  //std::vector<unsigned int> pixelBufferObjects_;
 
   // Stores non-texture memory buffer arguments
   std::map<cl_uint, MemArg> memArgs_;
   
   // Keep track of which memory buffer to use for rendering
-  MemIndex activeIndex_;
+  //MemIndex activeIndex_;
   
   // Argument number for voxel data
-  cl_uint voxelDataArgNr_;
+  //cl_uint voxelDataArgNr_;
   
   // Timer members
   bool useTimers_;

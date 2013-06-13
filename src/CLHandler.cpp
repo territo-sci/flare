@@ -22,8 +22,8 @@ CLHandler::CLHandler()
   : error_(CL_SUCCESS), 
     numPlatforms_(0),
     numDevices_(0),
-    activeIndex_(FIRST),
-    voxelDataArgNr_(0),
+    //activeIndex_(FIRST),
+    //voxelDataArgNr_(0),
     useTimers_(false) {
 }
 
@@ -39,10 +39,6 @@ CLHandler::~CLHandler() {
 
   for (auto it=memArgs_.begin(); it!=memArgs_.end(); ++it) {
     clReleaseMemObject(it->second.mem_);
-  }
-
-  for (auto it=hostTextures_.begin(); it!=hostTextures_.end(); ++it) {
-    delete *it;
   }
 
   clReleaseKernel(kernel_);
@@ -228,7 +224,7 @@ bool CLHandler::CreateCommandQueues() {
   return true;
 }
 
-
+/*
 bool CLHandler::InitBuffers(unsigned int _argNr,
                             VoxelData<float> *_voxelData) {
 
@@ -340,10 +336,11 @@ bool CLHandler::UpdateHostMemory(MemIndex _memIndex,
    
   return true;
 }
+*/
 
 
-
-bool CLHandler::AddTexture2D(unsigned int _argNr, Texture2D *_texture, 
+bool CLHandler::AddTexture(unsigned int _argNr, Texture *_texture, 
+                             TextureType _textureType, 
                              Permissions _permissions) {
   
   // Remove anything already associated with argument index
@@ -367,8 +364,24 @@ bool CLHandler::AddTexture2D(unsigned int _argNr, Texture2D *_texture,
       return false;
   }
 
-  cl_mem texture = clCreateFromGLTexture2D(context_, flag, GL_TEXTURE_2D,
-                                           0, _texture->Handle(), &error_);
+  cl_mem texture;
+  switch (_textureType) {
+    case TEXTURE_1D:
+      ERROR("Texture 1D unimplemented");
+      return false;
+      break;
+    case TEXTURE_2D:
+      texture = clCreateFromGLTexture2D(context_, flag, GL_TEXTURE_2D,
+                                        0, _texture->Handle(), &error_);
+      break;
+    case TEXTURE_3D:
+      texture = clCreateFromGLTexture3D(context_, flag, GL_TEXTURE_3D,
+                                        0, _texture->Handle(), &error_);
+      break;
+    default:
+      ERROR("Unknown texture type");
+      return false;
+  }
 
   if (!CheckSuccess(error_, "AddTexture2D()")) {
     ERROR("Failed to add GL texture at argument index " << _argNr);
@@ -380,36 +393,26 @@ bool CLHandler::AddTexture2D(unsigned int _argNr, Texture2D *_texture,
   return true;
 }
 
-// TODO make classes
-bool CLHandler::AddBrickList(unsigned int _argNr) {
 
-  int *brickList = new int[8*8*8*4];
-  for (int z=0; z<8; z++) {
-    for (int y=0; y<8; y++) {
-      for (int x=0; x<8; x++) {
-        int i = 4*(x + y*8 + z*8*8);
-        brickList[i] = x;
-        brickList[i+1] = y;
-        brickList[i+2] = z;
-        brickList[i+3] = 1;
-      }
-    }
+bool CLHandler::AddBoxList(unsigned int _argNr, std::vector<int> _boxList) {
+
+  if (memArgs_.find((cl_uint)_argNr) != memArgs_.end()) {
+    memArgs_.erase((cl_uint)_argNr);
   }
 
   MemArg ma;
   ma.size_ = sizeof(cl_mem);
   ma.mem_ = clCreateBuffer(context_, CL_MEM_COPY_HOST_PTR,
-                            8*8*8*4*sizeof(int),
-                            brickList,
+                            _boxList.size()*sizeof(int),
+                            &(_boxList[0]),
                             &error_);
-  if (!CheckSuccess(error_, "AddBrickList()")) {
-    ERROR("Failed to add brick list");
+  if (!CheckSuccess(error_, "AddBoxList()")) {
+    ERROR("Failed to add box list");
     return false;
   }
 
   memArgs_.insert(std::make_pair((cl_uint)_argNr, ma));
 
-  delete[] brickList;
   return true;
 
 }
@@ -471,7 +474,7 @@ bool CLHandler::FinishQueue(QueueIndex _queueIndex) {
   return true;
 }
 
-
+/*
 bool CLHandler::WriteToDevice(MemIndex _memIndex) {
 
   // Read and write from pixel buffer
@@ -490,7 +493,7 @@ bool CLHandler::WriteToDevice(MemIndex _memIndex) {
   return CheckGLError("CLHandlerPBO: WriteToDevice()") == GL_NO_ERROR;
                       
 }
-
+*/
 
 bool CLHandler::PrepareRaycaster() {
 
@@ -508,6 +511,7 @@ bool CLHandler::PrepareRaycaster() {
   }
 
   // Let OpenCL take control of the shared volume texture
+  /*
   error_ = clEnqueueAcquireGLObjects(commandQueues_[EXECUTE], 
                                      1,
                                      &(deviceTextures_[activeIndex_].mem_), 
@@ -515,6 +519,7 @@ bool CLHandler::PrepareRaycaster() {
   if (!CheckSuccess(error_, "PrepareRaycaster() aquire 3D GL object")) {
     return false;
   }
+  */
 
   // Set up kernel arguments of non-shared items
   for (auto it=memArgs_.begin(); it!=memArgs_.end(); ++it) {
@@ -542,6 +547,7 @@ bool CLHandler::PrepareRaycaster() {
     }
   }
 
+  /*
   // Set up kernel argument for the active voxel data buffer
   error_ = clSetKernelArg(kernel_, 
                           voxelDataArgNr_, 
@@ -550,6 +556,7 @@ bool CLHandler::PrepareRaycaster() {
   if (!CheckSuccess(error_, "Kernel argument for voxel data buffer")) {
     return false;
   }
+  */
 
   return true;
 }
@@ -571,7 +578,7 @@ bool CLHandler::FinishRaycaster() {
       return false;
     }
   }
-
+  /*
   error_ = clEnqueueReleaseGLObjects(commandQueues_[EXECUTE],
                                     1,
                                     &(deviceTextures_[activeIndex_].mem_), 
@@ -579,6 +586,8 @@ bool CLHandler::FinishRaycaster() {
   if (!CheckSuccess(error_, "FinishRaycaster()")) {
     return false;
   }
+  */
+
 
   return true;
 }
@@ -613,11 +622,11 @@ bool CLHandler::LaunchRaycaster() {
   return true;
 }
 
-
+/*
 bool CLHandler::SetActiveIndex(MemIndex _activeIndex) {
   activeIndex_ = _activeIndex;
 }
-
+*/
   
 bool CLHandler::ToggleTimers() {
   useTimers_ = !useTimers_;

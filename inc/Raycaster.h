@@ -29,8 +29,7 @@ class CLHandler;
 class TransferFunction;
 class Animator;
 class VDFReader;
-class BrickReader;
-class TextureAtlas;
+class BrickManager;
 
 class Raycaster : public Renderer {
 public:
@@ -95,8 +94,7 @@ public:
   void SetAnimator(Animator *_animator);
   void SetVDFReader(VDFReader *_reader);
 
-  void SetBrickReader(BrickReader *_brickReader);
-  bool InitTextureAtlas();
+  void SetBrickManager(BrickManager *_brickManager);
 
 private:
   Raycaster();
@@ -162,17 +160,16 @@ private:
 
 
   // TODO work in progress
-  BrickReader *brickReader_;
-  TextureAtlas *textureAtlas_;
+  BrickManager *brickManager_;
 
   // For the corresponding CL kernel
   static const unsigned int cubeFrontArg_ = 0;
   static const unsigned int cubeBackArg_ = 1;
   static const unsigned int quadArg_ = 2;
-  static const unsigned int voxelVolumeArg_ = 3;
+  static const unsigned int textureAtlasArg_ = 3;
   static const unsigned int constantsArg_ = 4;
   static const unsigned int transferFunctionArg_ = 5; 
-  static const unsigned int brickListArg_ = 6;
+  static const unsigned int boxListArg_ = 6;
 
 };
 

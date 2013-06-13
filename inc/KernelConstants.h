@@ -12,16 +12,11 @@ namespace osp {
 typedef struct {
   float stepSize;
   float intensity;
-  int aDim;
-  int bDim;
-  int cDim;
+  int xDim;
+  int yDim;
+  int zDim;
+  int numBoxesPerAxis;
 } KernelConstants;
-
-// TODO move or rename file
-typedef struct {
-  float numBricksPerAxis;
-  float brickDim;
-} BrickConfig;
 
 }
 

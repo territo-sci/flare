@@ -12,7 +12,7 @@
 #include <vector>
 #include <iostream>
 #include <Animator.h>
-#include <BrickReader.h>
+#include <BrickManager.h>
 
 #include <VoxelDataHeader.h>
 #include <VoxelDataFrame.h>
@@ -21,10 +21,11 @@ using namespace osp;
 
 int main() {
 
-  std::string filename = 
-    "/home/vsand/OpenSpace/enlilTestData_256_256_256.vdf";
+  //std::string filename = 
+  //  "/home/vsand/OpenSpace/enlilTestData_256_256_256.vdf";
 
   // Read data
+  /*
   VoxelData<float> *floatData = new VoxelData<float>();
   VDFReader *reader = VDFReader::New();
   reader->SetVoxelData(floatData);
@@ -36,12 +37,7 @@ int main() {
   if (!reader->ReadHeader()) exit(1);
   // TODO temp, move into Reader class
   reader->ReadTimestep(0);
-
-
-  // TODO Work in progress
-  BrickReader *brickReader = BrickReader::New();
-  brickReader->SetInFilename("/home/vsand/OpenSpace/testBricks.bdf");
-  if (!brickReader->ReadHeader()) exit(1);
+  */
 
   unsigned int width = 512;
   unsigned int height = 512;
@@ -49,6 +45,12 @@ int main() {
   // Create a WindowManager, open window to init GLEW and GLFW
   WindowManager *manager = WindowManager::New(width, height, "FlareApp");
   if (!manager->OpenWindow()) exit(1);
+
+  // Create brick manager and init (has to be done after init OpenGL!)
+  BrickManager *brickManager= BrickManager::New();
+  brickManager->SetInFilename("/home/vsand/OpenSpace/testBricks.bdf");
+  if (!brickManager->ReadHeader()) exit(1);
+  if (!brickManager->InitAtlas()) exit(1);
 
   // Create shaders
   ShaderProgram *cubeShaderProgram = ShaderProgram::New();
@@ -86,7 +88,7 @@ int main() {
 
   //Create animator
   Animator *animator = Animator::New();
-  animator->SetNumTimesteps(floatData->NumTimesteps());
+  animator->SetNumTimesteps(brickManager->NumTimesteps());
   animator->SetRefreshInterval(0.05f);
 
   // Create a raycaster and set it up
@@ -96,22 +98,21 @@ int main() {
   raycaster->InitMatrices();
   if (!raycaster->InitCube()) exit(1);
   if (!raycaster->InitQuad()) exit(1);
-  raycaster->SetBrickReader(brickReader);
-  if (!raycaster->InitTextureAtlas()) exit(1);
+  raycaster->SetBrickManager(brickManager);
   raycaster->SetCubeFrontTexture(cubeFrontTex);
   raycaster->SetCubeBackTexture(cubeBackTex);
   raycaster->SetQuadTexture(quadTex);
   raycaster->SetCubeShaderProgram(cubeShaderProgram);
   raycaster->SetQuadShaderProgram(quadShaderProgram);
-  raycaster->InitFramebuffers();
-  raycaster->SetVDFReader(reader);
-  raycaster->SetVoxelData(floatData);
-  raycaster->SetVoxelDataFrame(voxelDataFrame);
-  raycaster->SetVoxelDataHeader(voxelDataHeader);
+  if (!raycaster->InitFramebuffers()) exit(1);
+  //raycaster->SetVDFReader(reader);
+  //raycaster->SetVoxelData(floatData);
+  //raycaster->SetVoxelDataFrame(voxelDataFrame);
+  //raycaster->SetVoxelDataHeader(voxelDataHeader);
   raycaster->SetAnimator(animator);
   raycaster->AddTransferFunction(transferFunction);
   raycaster->SetKernelConfigFilename("config/kernelConstants.txt");
-  raycaster->UpdateKernelConfig();
+  if (!raycaster->UpdateKernelConfig()) exit(1);
   if (!raycaster->InitCL()) exit(1);
 
   // Go!
@@ -120,10 +121,7 @@ int main() {
   if (!manager->StartLoop()) exit(0);
 
   // Clean up, like a good citizen
-  delete brickReader;
-  delete voxelDataHeader;
-  delete voxelDataFrame;
-  delete floatData;
+  delete brickManager;
   delete cubeFrontTex;
   delete cubeBackTex;
   delete quadTex;

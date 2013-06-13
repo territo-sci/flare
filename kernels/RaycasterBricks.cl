@@ -2,9 +2,10 @@
 struct KernelConstants {
   float stepSize;
   float intensity;
-  int aDim;
-  int bDim;
-  int cDim;
+  int xDim;
+  int yDim;
+  int zDim;
+  int numBoxesPerAxis;
 };
 
 // Linearly interpolate between two values. Distance
@@ -120,20 +121,25 @@ bool IntersectBox(float3 _boundsMin, float3 _boundsMax,
 }
 
 
-int3 BrickAtlasCoords(int3 _boxCoords, __global int *_brickList) {
+int3 BrickAtlasCoords(int3 _boxCoords, 
+                      __global int *_brickList,
+                      int _numBoxesPerAxis) {
   int boxIndex = _boxCoords.x +
-                 _boxCoords.y*8 +
-                 _boxCoords.z*8*8; 
+                 _boxCoords.y*_numBoxesPerAxis +
+                 _boxCoords.z*_numBoxesPerAxis*_numBoxesPerAxis; 
   int x = _brickList[4*boxIndex];
   int y = _brickList[4*boxIndex+1];
   int z = _brickList[4*boxIndex+2];
   return (int3)(x, y, z);
 }
 
-int BrickSize(int3 _boxCoords, __global int * _brickList) {
+
+int BrickSize(int3 _boxCoords, 
+              __global int * _brickList,
+              int _numBoxesPerAxis) {
   int boxIndex = _boxCoords.x +
-                 _boxCoords.y*8 +
-                 _boxCoords.z*8*8;
+                 _boxCoords.y*_numBoxesPerAxis +
+                 _boxCoords.z*_numBoxesPerAxis*_numBoxesPerAxis;
   return _brickList[4*boxIndex+3];
 }
 
@@ -207,9 +213,9 @@ Raycaster(__global __read_only image2d_t _cubeFront,
           __global int *_brickList) {
 
 
-  int3 dimensions = (int3)(_constants->aDim,
-                           _constants->bDim,
-                           _constants->cDim);
+  int3 dimensions = (int3)(_constants->xDim,
+                           _constants->yDim,
+                           _constants->zDim);
   
   // Kernel should be launched in 2D with one work item per pixel
   int idx = get_global_id(0);
@@ -239,13 +245,15 @@ Raycaster(__global __read_only image2d_t _cubeFront,
    
   while (traversed < maxDistance) {
 
-    int numBoxesPerAxis = 8; 
+    int numBoxesPerAxis = _constants->numBoxesPerAxis;
     
     // Convert the sample point to coords
     int3 boxCoords = BoxCoords(samplePoint, numBoxesPerAxis);
     // Lookup brick coords and size
-    int3 brickAtlasCoords = BrickAtlasCoords(boxCoords, _brickList);
-    int brickSize = BrickSize(boxCoords, _brickList);
+    int3 brickAtlasCoords = BrickAtlasCoords(boxCoords, 
+                                             _brickList,
+                                             numBoxesPerAxis);
+    int brickSize = BrickSize(boxCoords, _brickList, numBoxesPerAxis);
 
     // Calculate the box's corners
     float3 minCorner, maxCorner;

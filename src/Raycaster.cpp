@@ -11,7 +11,7 @@
 #include <Texture2D.h>
 #include <Texture3D.h>
 #include <TextureAtlas.h>
-#include <BrickReader.h>
+#include <BrickManager.h>
 #include <VDFReader.h>
 #include <VoxelDataHeader.h>
 #include <VoxelDataFrame.h>
@@ -42,7 +42,6 @@ Raycaster::Raycaster()
     quadShaderProgram_(NULL),
     cubeFrontTex_(NULL),
     cubeBackTex_(NULL),
-    volumeTex_(NULL),
     quadTex_(NULL),
     pitch_(-30.f),
     yaw_(0.f),
@@ -60,21 +59,21 @@ Raycaster::Raycaster()
     animator_(NULL),
     pingPong_(0),
     lastTimestep_(1),
-    brickReader_(NULL),
-    textureAtlas_(NULL) {
+    brickManager_(NULL) {
 
   clHandler_ = CLHandler::New();
 
   kernelConstants_.stepSize = 0.01f;
   kernelConstants_.intensity = 60.f;
-  kernelConstants_.aDim = 128;
-  kernelConstants_.bDim = 128;
-  kernelConstants_.cDim = 128;
+  kernelConstants_.xDim = 256;
+  kernelConstants_.yDim = 256;
+  kernelConstants_.zDim = 256;
+  kernelConstants_.numBoxesPerAxis = 8;
 }
 
 Raycaster::~Raycaster() {
   if (clHandler_) delete clHandler_;
-  if (volumeTex_) delete volumeTex_;
+//  if (volumeTex_) delete volumeTex_;
 }
 
 Raycaster * Raycaster::New() {
@@ -93,39 +92,9 @@ void Raycaster::SetAnimator(Animator *_animator) {
   animator_ = _animator;
 }
 
-void Raycaster::SetBrickReader(BrickReader *_brickReader) {
-  brickReader_ = _brickReader;
+void Raycaster::SetBrickManager(BrickManager *_brickManager) {
+  brickManager_ = _brickManager;
 }
-
-bool Raycaster::InitTextureAtlas() {
-  if (brickReader_ == NULL) {
-    ERROR("Raycaster::InitTextureAtlas() No BrickReader set");
-    return false;
-  }
-
-  textureAtlas_ = TextureAtlas::New();
-  textureAtlas_->SetBrickDimensions(brickReader_->XBrickDim(),
-                                    brickReader_->YBrickDim(),
-                                    brickReader_->ZBrickDim());
-  textureAtlas_->SetNumBricks(brickReader_->XNumBricks(),
-                              brickReader_->YNumBricks(),
-                              brickReader_->ZNumBricks());
-  if (!textureAtlas_->Init()) return false;
-
-  // Fill the atlas with bricks from timestep 0
-  unsigned int bricksPerTimestep = brickReader_->XNumBricks() * 
-                                   brickReader_->YNumBricks() * 
-                                   brickReader_->ZNumBricks();
-  
-  for (unsigned int i=0; i<bricksPerTimestep; ++i) {
-    brickReader_->ReadBrick(i, 0); // timestep 0
-    float *brickData = brickReader_->BrickPtr();
-    textureAtlas_->UpdateBrick(i, brickData);  
-  }
-
-  return true;
-}
-
 
 bool Raycaster::InitCube() {
   glGetError();
@@ -338,15 +307,9 @@ bool Raycaster::UpdateKernelConfig() {
     }
   }
 
-  kernelConstants_.aDim = voxelDataHeader_->ADim();
-  kernelConstants_.bDim = voxelDataHeader_->BDim();
-  kernelConstants_.cDim = voxelDataHeader_->CDim();
-
-  /*
-  kernelConstants_.aDim = voxelData_->ADim();
-  kernelConstants_.bDim = voxelData_->BDim();
-  kernelConstants_.cDim = voxelData_->CDim();
-  */
+  kernelConstants_.xDim = 256;
+  kernelConstants_.yDim = 256;
+  kernelConstants_.zDim = 256;
   return true;
 }
 
@@ -382,13 +345,13 @@ void Raycaster::SetQuadTexture(Texture2D *_quadTexture) {
   quadTex_ = _quadTexture;
 }
 
-void Raycaster::SetVolumeTexture(Texture3D *_volumeTexture) {
-  volumeTex_ = _volumeTexture;
-}
+//void Raycaster::SetVolumeTexture(Texture3D *_volumeTexture) {
+//  volumeTex_ = _volumeTexture;
+//}
 
-void Raycaster::SetVDFReader(VDFReader *_reader) {
-  reader_ = _reader;
-}
+//void Raycaster::SetVDFReader(VDFReader *_reader) {
+//  reader_ = _reader;
+//}
 
 void Raycaster::SetCubeShaderProgram(ShaderProgram *_cubeShaderProgram) {
   cubeShaderProgram_ = _cubeShaderProgram;
@@ -501,6 +464,38 @@ bool Raycaster::Render(float _timestep) {
     nextTimestep = 1;
   }
 
+  
+  // TODO Temp test of brick functionality
+  unsigned int xnb = brickManager_->XNumBricks();
+  unsigned int ynb = brickManager_->YNumBricks();
+  unsigned int znb = brickManager_->ZNumBricks();
+  for (unsigned int z=0; z<znb; ++z) {
+    for (unsigned int y=0; y<ynb; ++y) {
+      for (unsigned int x=0; x<xnb; ++x) {
+        unsigned int boxIndex = (x+y*xnb+z*xnb*ynb);
+        unsigned int brickIndex = currentTimestep*xnb*ynb*znb + boxIndex;
+        BrickManager::AtlasCoords ac;
+        ac.x_ = x;
+        ac.y_ = y;
+        ac.z_ = z;
+        ac.size_ = 1;
+        brickManager_->UpdateBrick(brickIndex, ac);
+        brickManager_->UpdateBoxList(boxIndex, brickIndex);
+     }
+    }
+  }
+
+  if (!clHandler_->AddBoxList(boxListArg_, brickManager_->BoxList())) {
+    return false;
+  }
+
+  if (!clHandler_->PrepareRaycaster()) return false;
+  if (!clHandler_->LaunchRaycaster()) return false;
+  if (!clHandler_->FinishRaycaster()) return false;
+
+
+  /*
+
   // Shut down after one loop - for profiling purposes
   //if (nextTimestep == 0) return false;
 
@@ -539,6 +534,7 @@ bool Raycaster::Render(float _timestep) {
   
   // Wait for kernel to finish if needed and release resources 
   if (!clHandler_->FinishRaycaster()) return false;
+  */
 
   // Render to screen using quad
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
@@ -565,12 +561,16 @@ bool Raycaster::Render(float _timestep) {
   CheckGLError("Quad rendering");
 
   glUseProgram(0);
-
+  
+  /*
+  
   // Wait for transfer to pinned mem to complete
   clHandler_->FinishQueue(CLHandler::TRANSFER);
 
   // Signal that the next frame is ready
   clHandler_->SetActiveIndex(nextIndex);
+
+  */
 
   // Window manager takes care of swapping buffers
   return true;
@@ -682,37 +682,47 @@ bool Raycaster::InitCL() {
     return false;
   if (!clHandler_->CreateCommandQueues()) 
     return false;
-  if (!clHandler_->InitBuffers(voxelVolumeArg_, voxelData_))
+  //if (!clHandler_->InitBuffers(voxelVolumeArg_, voxelData_))
+  //  return false;
+  if (!clHandler_->AddTexture(cubeFrontArg_, cubeFrontTex_, 
+                              CLHandler::TEXTURE_2D,  CLHandler::READ_ONLY)) 
     return false;
-  if (!clHandler_->AddTexture2D(cubeFrontArg_, cubeFrontTex_, 
-                                CLHandler::READ_ONLY)) 
+  if (!clHandler_->AddTexture(cubeBackArg_, cubeBackTex_, 
+                              CLHandler::TEXTURE_2D, CLHandler::READ_ONLY)) 
     return false;
-  if (!clHandler_->AddTexture2D(cubeBackArg_, cubeBackTex_, 
-                                CLHandler::READ_ONLY)) 
+  if (!clHandler_->AddTexture(quadArg_, quadTex_, CLHandler::TEXTURE_2D, 
+                              CLHandler::WRITE_ONLY)) 
     return false;
-  if (!clHandler_->AddTexture2D(quadArg_, quadTex_, CLHandler::WRITE_ONLY)) 
+  if (!clHandler_->AddTexture(textureAtlasArg_, brickManager_->TextureAtlas(),
+                              CLHandler::TEXTURE_3D, CLHandler::READ_ONLY))
     return false;
   if (!clHandler_->AddConstants(constantsArg_, &kernelConstants_)) 
     return false;
   if (!clHandler_->AddTransferFunction(transferFunctionArg_, 
                                        transferFunctions_[0]))
     return false;
-  if (!clHandler_->AddBrickList(brickListArg_))
-    return false;
+
+  for (unsigned int i=0; i<brickManager_->BoxList().size()/4; ++i) {
+    //INFO(brickManager_->BoxList()[4*i+3]);
+  }
+  INFO("size: " << brickManager_->BoxList().size());
+
+  //if (!clHandler_->AddBoxList(boxListArg_, brickManager_->BoxList()))
+  //  return false;
   return true;
 }
 
-void Raycaster::SetVoxelData(VoxelData<float> *_voxelData) {
-  voxelData_ = _voxelData;
-}
+//void Raycaster::SetVoxelData(VoxelData<float> *_voxelData) {
+//  voxelData_ = _voxelData;
+//}
 
-void Raycaster::SetVoxelDataHeader(VoxelDataHeader *_voxelDataHeader) {
-  voxelDataHeader_ = _voxelDataHeader;
-}
+//void Raycaster::SetVoxelDataHeader(VoxelDataHeader *_voxelDataHeader) {
+//  voxelDataHeader_ = _voxelDataHeader;
+//}
 
-void Raycaster::SetVoxelDataFrame(VoxelDataFrame<float> *_voxelDataFrame) {
-  voxelDataFrame_ = _voxelDataFrame;
-}
+//void Raycaster::SetVoxelDataFrame(VoxelDataFrame<float> *_voxelDataFrame) {
+//  voxelDataFrame_ = _voxelDataFrame;
+//}
 
 void Raycaster::SetKernelConfigFilename(const std::string &_filename) {
   kernelConfigFilename_ = _filename;
