@@ -11,6 +11,7 @@
 #include <vector>
 #include <map>
 #include <fstream>
+#include <boost/timer/timer.hpp>
 
 #define real float
 
@@ -31,6 +32,8 @@ public:
     int size_;
   };
 
+  enum BUFFER_INDEX { EVEN = 0, ODD };
+
   void SetInFilename(const std::string &_inFilename);
   // Read header data from file, should normally only be called once
   // unless header data changes
@@ -38,12 +41,13 @@ public:
 
   bool InitAtlas();
 
-  // Read a certain brick from file and put it at a given coordinate
-  // in the texture atlas. This updates the list of bricks in the atlas.
-  bool UpdateBrick(unsigned int _brickIndex, AtlasCoords _atlasCoords);
+  // Update the brick list. This does not apply the changes.
+  bool UpdateBrickList(unsigned int _brickIndex, AtlasCoords _atlasCoords);
   // See if a certain brick is present in the atlas. If it is, put its
   // coordnates in the referenced argument.
   bool InAtlas(unsigned int _brickIndex, AtlasCoords &_atlasCoords);
+  // Apply changed upload bricks in brick list to texture
+  bool UpdateAtlas();
 
   // The box list maps one brick index to each box in the volume
   bool UpdateBoxList(unsigned int _boxIndex, unsigned int _brickIndex);
@@ -70,7 +74,7 @@ private:
   BrickManager(const BrickManager&);
 
   // Read a single brick into the brick buffer
-  bool ReadBrick(unsigned int _brickIndex);
+  bool ReadBrick(unsigned int _brickIndex, BUFFER_INDEX _bufferIndex);
 
   std::string inFilename_;
 
@@ -105,10 +109,15 @@ private:
   
   // Buffer for reading brick data
   // Allocated in ReadHeader(), deleted in destructor
-  real *brickBuffer_;
+  real *brickBuffer_[2];
 
   bool hasReadHeader_;
   bool atlasInitialized_;
+
+  boost::timer::cpu_timer timer_;
+
+  // PBO
+  unsigned int pboHandle_[2];
 
 };
 

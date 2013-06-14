@@ -2,9 +2,6 @@
 struct KernelConstants {
   float stepSize;
   float intensity;
-  int xDim;
-  int yDim;
-  int zDim;
   int numBoxesPerAxis;
 };
 
@@ -122,14 +119,14 @@ bool IntersectBox(float3 _boundsMin, float3 _boundsMax,
 
 
 int3 BrickAtlasCoords(int3 _boxCoords, 
-                      __global int *_brickList,
+                      __global int *_boxList,
                       int _numBoxesPerAxis) {
   int boxIndex = _boxCoords.x +
                  _boxCoords.y*_numBoxesPerAxis +
                  _boxCoords.z*_numBoxesPerAxis*_numBoxesPerAxis; 
-  int x = _brickList[4*boxIndex];
-  int y = _brickList[4*boxIndex+1];
-  int z = _brickList[4*boxIndex+2];
+  int x = _boxList[5*boxIndex+1];
+  int y = _boxList[5*boxIndex+2];
+  int z = _boxList[5*boxIndex+3];
   return (int3)(x, y, z);
 }
 
@@ -140,7 +137,7 @@ int BrickSize(int3 _boxCoords,
   int boxIndex = _boxCoords.x +
                  _boxCoords.y*_numBoxesPerAxis +
                  _boxCoords.z*_numBoxesPerAxis*_numBoxesPerAxis;
-  return _brickList[4*boxIndex+3];
+  return _brickList[5*boxIndex+4];
 }
 
 
@@ -212,11 +209,6 @@ Raycaster(__global __read_only image2d_t _cubeFront,
           __global __read_only float *_tf,
           __global int *_brickList) {
 
-
-  int3 dimensions = (int3)(_constants->xDim,
-                           _constants->yDim,
-                           _constants->zDim);
-  
   // Kernel should be launched in 2D with one work item per pixel
   int idx = get_global_id(0);
   int idy = get_global_id(1);

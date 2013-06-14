@@ -22,7 +22,6 @@
 #include <TransferFunction.h>
 #include <Animator.h>
 #include <vector>
-#include <boost/timer/timer.hpp>
 #include <pthread.h>
 
 using namespace osp;
@@ -65,15 +64,11 @@ Raycaster::Raycaster()
 
   kernelConstants_.stepSize = 0.01f;
   kernelConstants_.intensity = 60.f;
-  kernelConstants_.xDim = 256;
-  kernelConstants_.yDim = 256;
-  kernelConstants_.zDim = 256;
   kernelConstants_.numBoxesPerAxis = 8;
 }
 
 Raycaster::~Raycaster() {
   if (clHandler_) delete clHandler_;
-//  if (volumeTex_) delete volumeTex_;
 }
 
 Raycaster * Raycaster::New() {
@@ -306,10 +301,9 @@ bool Raycaster::UpdateKernelConfig() {
       }
     }
   }
-
-  kernelConstants_.xDim = 256;
-  kernelConstants_.yDim = 256;
-  kernelConstants_.zDim = 256;
+  if (brickManager_) {
+    kernelConstants_.numBoxesPerAxis = brickManager_->XNumBricks();
+  }
   return true;
 }
 
@@ -465,7 +459,10 @@ bool Raycaster::Render(float _timestep) {
   }
 
   
-  // TODO Temp test of brick functionality
+
+  // TODO temp test
+
+  // Construct the brick and box lists
   unsigned int xnb = brickManager_->XNumBricks();
   unsigned int ynb = brickManager_->YNumBricks();
   unsigned int znb = brickManager_->ZNumBricks();
@@ -479,12 +476,16 @@ bool Raycaster::Render(float _timestep) {
         ac.y_ = y;
         ac.z_ = z;
         ac.size_ = 1;
-        brickManager_->UpdateBrick(brickIndex, ac);
+        brickManager_->UpdateBrickList(brickIndex, ac);
         brickManager_->UpdateBoxList(boxIndex, brickIndex);
      }
     }
   }
 
+  // Apply the brick list, update the texture atlas
+  if (!brickManager_->UpdateAtlas()) return false;
+
+  // Bind box list to kernel
   if (!clHandler_->AddBoxList(boxListArg_, brickManager_->BoxList())) {
     return false;
   }

@@ -18,6 +18,7 @@ TODO: Iteratively break away parts from it into other classes.
 #include <VoxelDataHeader.h>
 #include <VoxelDataFrame.h>
 #include <KernelConstants.h>
+#include <boost/timer/timer.hpp>
 
 namespace osp {
 
@@ -158,9 +159,10 @@ private:
   // Transfer functions
   std::vector<TransferFunction*> transferFunctions_;
 
-
   // TODO work in progress
   BrickManager *brickManager_;
+  boost::timer::cpu_timer timer_;
+  const double BYTES_PER_GB = 1073741824.0;
 
   // For the corresponding CL kernel
   static const unsigned int cubeFrontArg_ = 0;

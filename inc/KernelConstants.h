@@ -12,9 +12,6 @@ namespace osp {
 typedef struct {
   float stepSize;
   float intensity;
-  int xDim;
-  int yDim;
-  int zDim;
   int numBoxesPerAxis;
 } KernelConstants;
 

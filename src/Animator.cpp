@@ -10,7 +10,7 @@ Animator * Animator::New() {
 Animator::Animator() 
   : numTimesteps_(0),
     currentTimestep_(0),
-    fpsMode_(false),
+    fpsMode_(true),
     paused_(false),
     elapsedTime_(0.f),
     refreshInterval_(0.f) {
