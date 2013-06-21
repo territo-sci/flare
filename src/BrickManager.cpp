@@ -74,7 +74,6 @@ bool BrickManager::ReadHeader() {
 
   // Keep track of where in file brick data starts
   dataPos_ = in_.tellg();
-  INFO("Data offset: " << dataPos_);
 
   // Allocate box list and brick buffer
   // The box list keeps track of 1 brick index, 3 coordinate and 1 size value
@@ -237,9 +236,6 @@ bool BrickManager::ReadBrick(unsigned int _brickIndex,
   // Read
   in_.seekg(offset);
   in_.read(reinterpret_cast<char*>(brickBuffer_[_bufferIndex]), brickSize);
-
-  INFO("Read brick " << _brickIndex);
-  INFO("Value " << *(brickBuffer_[_bufferIndex]));
 
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
