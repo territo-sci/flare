@@ -74,6 +74,7 @@ bool BrickManager::ReadHeader() {
 
   // Keep track of where in file brick data starts
   dataPos_ = in_.tellg();
+  INFO("Data offset: " << dataPos_);
 
   // Allocate box list and brick buffer
   // The box list keeps track of 1 brick index, 3 coordinate and 1 size value
@@ -123,7 +124,8 @@ bool BrickManager::UpdateAtlas() {
   if (!ReadBrick(boxList_[0], EVEN)) return false;
 
   // Loop over all bricks in box list
-  for (unsigned int i=0; i<512; ++i) {
+  unsigned int numBoxes = xNumBricks_*yNumBricks_*zNumBricks_;
+  for (unsigned int i=0; i<numBoxes; ++i) {
  
     BUFFER_INDEX bufIndex = (i % 2 == 0) ? EVEN : ODD;
     BUFFER_INDEX nextIndex = (bufIndex == EVEN) ? ODD : EVEN;
@@ -147,7 +149,7 @@ bool BrickManager::UpdateAtlas() {
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     // Read the next brick from file to the brick buffer
-    if (i < 511) {
+    if (i < numBoxes-1) {
       unsigned int nextBrickIndex = boxList_[5*(i+1)];
       if (!ReadBrick(nextBrickIndex, nextIndex)) return false;
     }
@@ -235,6 +237,9 @@ bool BrickManager::ReadBrick(unsigned int _brickIndex,
   // Read
   in_.seekg(offset);
   in_.read(reinterpret_cast<char*>(brickBuffer_[_bufferIndex]), brickSize);
+
+  INFO("Read brick " << _brickIndex);
+  INFO("Value " << *(brickBuffer_[_bufferIndex]));
 
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);

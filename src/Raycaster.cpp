@@ -26,6 +26,30 @@
 
 using namespace osp;
 
+uint32_t ZOrder(uint16_t xPos, uint16_t yPos, uint16_t zPos) {
+  static const uint32_t MASKS[] =
+  {0x55555555, 0x33333333, 0x0F0F0F0F, 0x00FF00FF};
+  static const uint32_t SHIFTS[] = {1, 2, 4, 8};
+  uint32_t x = xPos;
+  uint32_t y = yPos;
+  uint32_t z = zPos;
+  x = (x | (x << 16)) & 0x030000FF;
+  x = (x | (x << 8)) & 0x0300F00F;
+  x = (x | (x << 4)) & 0x030C30C3;
+  x = (x | (x << 2)) & 0x09249249;
+  y = (y | (y << 16)) & 0x030000FF;
+  y = (y | (y << 8)) & 0x0300F00F;
+  y = (y | (y << 4)) & 0x030C30C3;
+  y = (y | (y << 2)) & 0x09249249;
+  z = (z | (z << 16)) & 0x030000FF;
+  z = (z | (z << 8)) & 0x0300F00F;
+  z = (z | (z << 4)) & 0x030C30C3;
+  z = (z | (z << 2)) & 0x09249249;
+  const uint32_t result = x | (y << 1) | (z << 2);
+  return result;
+}
+
+
 Raycaster::Raycaster() 
   : Renderer(),
     configFilename_("NotSet"),
@@ -458,8 +482,6 @@ bool Raycaster::Render(float _timestep) {
     nextTimestep = 1;
   }
 
-  
-
   // TODO temp test
 
   // Construct the brick and box lists
@@ -469,8 +491,21 @@ bool Raycaster::Render(float _timestep) {
   for (unsigned int z=0; z<znb; ++z) {
     for (unsigned int y=0; y<ynb; ++y) {
       for (unsigned int x=0; x<xnb; ++x) {
+        // Index for the box to put the brick in
         unsigned int boxIndex = (x+y*xnb+z*xnb*ynb);
-        unsigned int brickIndex = currentTimestep*xnb*ynb*znb + boxIndex;
+
+        // Test hardcoded values
+        unsigned int bricksPerBST = 1+2+4+8+16+32;
+        unsigned int firstOctreeLeaf = 1+8+64;
+        unsigned int firstBSTLeaf = 1+2+4+8+16;
+
+        unsigned int zOrderIdx = static_cast<unsigned int>(
+          ZOrder((uint16_t)x, (uint16_t)y, (uint16_t)z));
+
+        unsigned int brickIndex = bricksPerBST*firstOctreeLeaf + 
+                                  bricksPerBST*zOrderIdx +
+                                  firstBSTLeaf+currentTimestep;
+
         BrickManager::AtlasCoords ac;
         ac.x_ = x;
         ac.y_ = y;
@@ -498,7 +533,7 @@ bool Raycaster::Render(float _timestep) {
   /*
 
   // Shut down after one loop - for profiling purposes
-  //if (nextTimestep == 0) return false;
+  if (nextTimestep == 0) return false;
 
   bool timeToUpdate = (currentTimestep != lastTimestep_);
   if (timeToUpdate) {

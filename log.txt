@@ -1,11 +1,18 @@
-Read data dimensionality: 1
-Read data num timesteps: 1
-Read x dimension: 128
-Read y dimension: 128
-Read z dimension: 128
 Opening 512 x 512 window
-OpenGL version: 4.2.0 NVIDIA 304.84
+OpenGL version: 4.2.0 NVIDIA 304.88
 Using GLEW 1.6.0
+Header reading complete
+Structure: 0
+Data dimensionality: 1
+Brick dims: 32 32 32
+Num bricks: 8 8 8
+Num timesteps: 32
+Padding width: 0
+Data size: 4
+
+Data offset: 44
+WARNING: InitAtlas() - already initialized
+Initializing Texture3D
 Creating vertex shader from source file shaders/cubeVert.glsl
 Creating fragment shader from source file shaders/cubeFrag.glsl
 Creating shader program
@@ -25,10 +32,2053 @@ Number of CL platforms: 1
 Number of CL devices: 2
 Device 0 name: GeForce GTX 690
 Device 1 name: GeForce GTX 690
-CL context set up properly
-Created CL program successfully
-Built CL program successfully
-Created CL kernel successfully
-Created CL command queue successfully
+size: 2560
 Starting rendering loop
-GLFW terminated
+Box index 0
+Brick index 4630
+Box index 1
+Brick index 4693
+Box index 2
+Brick index 5134
+Box index 3
+Brick index 5197
+Box index 4
+Brick index 8662
+Box index 5
+Brick index 8725
+Box index 6
+Brick index 9166
+Box index 7
+Brick index 9229
+Box index 8
+Brick index 4756
+Box index 9
+Brick index 4819
+Box index 10
+Brick index 5260
+Box index 11
+Brick index 5323
+Box index 12
+Brick index 8788
+Box index 13
+Brick index 8851
+Box index 14
+Brick index 9292
+Box index 15
+Brick index 9355
+Box index 16
+Brick index 5638
+Box index 17
+Brick index 5701
+Box index 18
+Brick index 6142
+Box index 19
+Brick index 6205
+Box index 20
+Brick index 9670
+Box index 21
+Brick index 9733
+Box index 22
+Brick index 10174
+Box index 23
+Brick index 10237
+Box index 24
+Brick index 5764
+Box index 25
+Brick index 5827
+Box index 26
+Brick index 6268
+Box index 27
+Brick index 6331
+Box index 28
+Brick index 9796
+Box index 29
+Brick index 9859
+Box index 30
+Brick index 10300
+Box index 31
+Brick index 10363
+Box index 32
+Brick index 12694
+Box index 33
+Brick index 12757
+Box index 34
+Brick index 13198
+Box index 35
+Brick index 13261
+Box index 36
+Brick index 16726
+Box index 37
+Brick index 16789
+Box index 38
+Brick index 17230
+Box index 39
+Brick index 17293
+Box index 40
+Brick index 12820
+Box index 41
+Brick index 12883
+Box index 42
+Brick index 13324
+Box index 43
+Brick index 13387
+Box index 44
+Brick index 16852
+Box index 45
+Brick index 16915
+Box index 46
+Brick index 17356
+Box index 47
+Brick index 17419
+Box index 48
+Brick index 13702
+Box index 49
+Brick index 13765
+Box index 50
+Brick index 14206
+Box index 51
+Brick index 14269
+Box index 52
+Brick index 17734
+Box index 53
+Brick index 17797
+Box index 54
+Brick index 18238
+Box index 55
+Brick index 18301
+Box index 56
+Brick index 13828
+Box index 57
+Brick index 13891
+Box index 58
+Brick index 14332
+Box index 59
+Brick index 14395
+Box index 60
+Brick index 17860
+Box index 61
+Brick index 17923
+Box index 62
+Brick index 18364
+Box index 63
+Brick index 18427
+Box index 64
+Brick index 4882
+Box index 65
+Brick index 4945
+Box index 66
+Brick index 5386
+Box index 67
+Brick index 5449
+Box index 68
+Brick index 8914
+Box index 69
+Brick index 8977
+Box index 70
+Brick index 9418
+Box index 71
+Brick index 9481
+Box index 72
+Brick index 5008
+Box index 73
+Brick index 5071
+Box index 74
+Brick index 5512
+Box index 75
+Brick index 5575
+Box index 76
+Brick index 9040
+Box index 77
+Brick index 9103
+Box index 78
+Brick index 9544
+Box index 79
+Brick index 9607
+Box index 80
+Brick index 5890
+Box index 81
+Brick index 5953
+Box index 82
+Brick index 6394
+Box index 83
+Brick index 6457
+Box index 84
+Brick index 9922
+Box index 85
+Brick index 9985
+Box index 86
+Brick index 10426
+Box index 87
+Brick index 10489
+Box index 88
+Brick index 6016
+Box index 89
+Brick index 6079
+Box index 90
+Brick index 6520
+Box index 91
+Brick index 6583
+Box index 92
+Brick index 10048
+Box index 93
+Brick index 10111
+Box index 94
+Brick index 10552
+Box index 95
+Brick index 10615
+Box index 96
+Brick index 12946
+Box index 97
+Brick index 13009
+Box index 98
+Brick index 13450
+Box index 99
+Brick index 13513
+Box index 100
+Brick index 16978
+Box index 101
+Brick index 17041
+Box index 102
+Brick index 17482
+Box index 103
+Brick index 17545
+Box index 104
+Brick index 13072
+Box index 105
+Brick index 13135
+Box index 106
+Brick index 13576
+Box index 107
+Brick index 13639
+Box index 108
+Brick index 17104
+Box index 109
+Brick index 17167
+Box index 110
+Brick index 17608
+Box index 111
+Brick index 17671
+Box index 112
+Brick index 13954
+Box index 113
+Brick index 14017
+Box index 114
+Brick index 14458
+Box index 115
+Brick index 14521
+Box index 116
+Brick index 17986
+Box index 117
+Brick index 18049
+Box index 118
+Brick index 18490
+Box index 119
+Brick index 18553
+Box index 120
+Brick index 14080
+Box index 121
+Brick index 14143
+Box index 122
+Brick index 14584
+Box index 123
+Brick index 14647
+Box index 124
+Brick index 18112
+Box index 125
+Brick index 18175
+Box index 126
+Brick index 18616
+Box index 127
+Brick index 18679
+Box index 128
+Brick index 6646
+Box index 129
+Brick index 6709
+Box index 130
+Brick index 7150
+Box index 131
+Brick index 7213
+Box index 132
+Brick index 10678
+Box index 133
+Brick index 10741
+Box index 134
+Brick index 11182
+Box index 135
+Brick index 11245
+Box index 136
+Brick index 6772
+Box index 137
+Brick index 6835
+Box index 138
+Brick index 7276
+Box index 139
+Brick index 7339
+Box index 140
+Brick index 10804
+Box index 141
+Brick index 10867
+Box index 142
+Brick index 11308
+Box index 143
+Brick index 11371
+Box index 144
+Brick index 7654
+Box index 145
+Brick index 7717
+Box index 146
+Brick index 8158
+Box index 147
+Brick index 8221
+Box index 148
+Brick index 11686
+Box index 149
+Brick index 11749
+Box index 150
+Brick index 12190
+Box index 151
+Brick index 12253
+Box index 152
+Brick index 7780
+Box index 153
+Brick index 7843
+Box index 154
+Brick index 8284
+Box index 155
+Brick index 8347
+Box index 156
+Brick index 11812
+Box index 157
+Brick index 11875
+Box index 158
+Brick index 12316
+Box index 159
+Brick index 12379
+Box index 160
+Brick index 14710
+Box index 161
+Brick index 14773
+Box index 162
+Brick index 15214
+Box index 163
+Brick index 15277
+Box index 164
+Brick index 18742
+Box index 165
+Brick index 18805
+Box index 166
+Brick index 19246
+Box index 167
+Brick index 19309
+Box index 168
+Brick index 14836
+Box index 169
+Brick index 14899
+Box index 170
+Brick index 15340
+Box index 171
+Brick index 15403
+Box index 172
+Brick index 18868
+Box index 173
+Brick index 18931
+Box index 174
+Brick index 19372
+Box index 175
+Brick index 19435
+Box index 176
+Brick index 15718
+Box index 177
+Brick index 15781
+Box index 178
+Brick index 16222
+Box index 179
+Brick index 16285
+Box index 180
+Brick index 19750
+Box index 181
+Brick index 19813
+Box index 182
+Brick index 20254
+Box index 183
+Brick index 20317
+Box index 184
+Brick index 15844
+Box index 185
+Brick index 15907
+Box index 186
+Brick index 16348
+Box index 187
+Brick index 16411
+Box index 188
+Brick index 19876
+Box index 189
+Brick index 19939
+Box index 190
+Brick index 20380
+Box index 191
+Brick index 20443
+Box index 192
+Brick index 6898
+Box index 193
+Brick index 6961
+Box index 194
+Brick index 7402
+Box index 195
+Brick index 7465
+Box index 196
+Brick index 10930
+Box index 197
+Brick index 10993
+Box index 198
+Brick index 11434
+Box index 199
+Brick index 11497
+Box index 200
+Brick index 7024
+Box index 201
+Brick index 7087
+Box index 202
+Brick index 7528
+Box index 203
+Brick index 7591
+Box index 204
+Brick index 11056
+Box index 205
+Brick index 11119
+Box index 206
+Brick index 11560
+Box index 207
+Brick index 11623
+Box index 208
+Brick index 7906
+Box index 209
+Brick index 7969
+Box index 210
+Brick index 8410
+Box index 211
+Brick index 8473
+Box index 212
+Brick index 11938
+Box index 213
+Brick index 12001
+Box index 214
+Brick index 12442
+Box index 215
+Brick index 12505
+Box index 216
+Brick index 8032
+Box index 217
+Brick index 8095
+Box index 218
+Brick index 8536
+Box index 219
+Brick index 8599
+Box index 220
+Brick index 12064
+Box index 221
+Brick index 12127
+Box index 222
+Brick index 12568
+Box index 223
+Brick index 12631
+Box index 224
+Brick index 14962
+Box index 225
+Brick index 15025
+Box index 226
+Brick index 15466
+Box index 227
+Brick index 15529
+Box index 228
+Brick index 18994
+Box index 229
+Brick index 19057
+Box index 230
+Brick index 19498
+Box index 231
+Brick index 19561
+Box index 232
+Brick index 15088
+Box index 233
+Brick index 15151
+Box index 234
+Brick index 15592
+Box index 235
+Brick index 15655
+Box index 236
+Brick index 19120
+Box index 237
+Brick index 19183
+Box index 238
+Brick index 19624
+Box index 239
+Brick index 19687
+Box index 240
+Brick index 15970
+Box index 241
+Brick index 16033
+Box index 242
+Brick index 16474
+Box index 243
+Brick index 16537
+Box index 244
+Brick index 20002
+Box index 245
+Brick index 20065
+Box index 246
+Brick index 20506
+Box index 247
+Brick index 20569
+Box index 248
+Brick index 16096
+Box index 249
+Brick index 16159
+Box index 250
+Brick index 16600
+Box index 251
+Brick index 16663
+Box index 252
+Brick index 20128
+Box index 253
+Brick index 20191
+Box index 254
+Brick index 20632
+Box index 255
+Brick index 20695
+Box index 256
+Brick index 20758
+Box index 257
+Brick index 20821
+Box index 258
+Brick index 21262
+Box index 259
+Brick index 21325
+Box index 260
+Brick index 24790
+Box index 261
+Brick index 24853
+Box index 262
+Brick index 25294
+Box index 263
+Brick index 25357
+Box index 264
+Brick index 20884
+Box index 265
+Brick index 20947
+Box index 266
+Brick index 21388
+Box index 267
+Brick index 21451
+Box index 268
+Brick index 24916
+Box index 269
+Brick index 24979
+Box index 270
+Brick index 25420
+Box index 271
+Brick index 25483
+Box index 272
+Brick index 21766
+Box index 273
+Brick index 21829
+Box index 274
+Brick index 22270
+Box index 275
+Brick index 22333
+Box index 276
+Brick index 25798
+Box index 277
+Brick index 25861
+Box index 278
+Brick index 26302
+Box index 279
+Brick index 26365
+Box index 280
+Brick index 21892
+Box index 281
+Brick index 21955
+Box index 282
+Brick index 22396
+Box index 283
+Brick index 22459
+Box index 284
+Brick index 25924
+Box index 285
+Brick index 25987
+Box index 286
+Brick index 26428
+Box index 287
+Brick index 26491
+Box index 288
+Brick index 28822
+Box index 289
+Brick index 28885
+Box index 290
+Brick index 29326
+Box index 291
+Brick index 29389
+Box index 292
+Brick index 32854
+Box index 293
+Brick index 32917
+Box index 294
+Brick index 33358
+Box index 295
+Brick index 33421
+Box index 296
+Brick index 28948
+Box index 297
+Brick index 29011
+Box index 298
+Brick index 29452
+Box index 299
+Brick index 29515
+Box index 300
+Brick index 32980
+Box index 301
+Brick index 33043
+Box index 302
+Brick index 33484
+Box index 303
+Brick index 33547
+Box index 304
+Brick index 29830
+Box index 305
+Brick index 29893
+Box index 306
+Brick index 30334
+Box index 307
+Brick index 30397
+Box index 308
+Brick index 33862
+Box index 309
+Brick index 33925
+Box index 310
+Brick index 34366
+Box index 311
+Brick index 34429
+Box index 312
+Brick index 29956
+Box index 313
+Brick index 30019
+Box index 314
+Brick index 30460
+Box index 315
+Brick index 30523
+Box index 316
+Brick index 33988
+Box index 317
+Brick index 34051
+Box index 318
+Brick index 34492
+Box index 319
+Brick index 34555
+Box index 320
+Brick index 21010
+Box index 321
+Brick index 21073
+Box index 322
+Brick index 21514
+Box index 323
+Brick index 21577
+Box index 324
+Brick index 25042
+Box index 325
+Brick index 25105
+Box index 326
+Brick index 25546
+Box index 327
+Brick index 25609
+Box index 328
+Brick index 21136
+Box index 329
+Brick index 21199
+Box index 330
+Brick index 21640
+Box index 331
+Brick index 21703
+Box index 332
+Brick index 25168
+Box index 333
+Brick index 25231
+Box index 334
+Brick index 25672
+Box index 335
+Brick index 25735
+Box index 336
+Brick index 22018
+Box index 337
+Brick index 22081
+Box index 338
+Brick index 22522
+Box index 339
+Brick index 22585
+Box index 340
+Brick index 26050
+Box index 341
+Brick index 26113
+Box index 342
+Brick index 26554
+Box index 343
+Brick index 26617
+Box index 344
+Brick index 22144
+Box index 345
+Brick index 22207
+Box index 346
+Brick index 22648
+Box index 347
+Brick index 22711
+Box index 348
+Brick index 26176
+Box index 349
+Brick index 26239
+Box index 350
+Brick index 26680
+Box index 351
+Brick index 26743
+Box index 352
+Brick index 29074
+Box index 353
+Brick index 29137
+Box index 354
+Brick index 29578
+Box index 355
+Brick index 29641
+Box index 356
+Brick index 33106
+Box index 357
+Brick index 33169
+Box index 358
+Brick index 33610
+Box index 359
+Brick index 33673
+Box index 360
+Brick index 29200
+Box index 361
+Brick index 29263
+Box index 362
+Brick index 29704
+Box index 363
+Brick index 29767
+Box index 364
+Brick index 33232
+Box index 365
+Brick index 33295
+Box index 366
+Brick index 33736
+Box index 367
+Brick index 33799
+Box index 368
+Brick index 30082
+Box index 369
+Brick index 30145
+Box index 370
+Brick index 30586
+Box index 371
+Brick index 30649
+Box index 372
+Brick index 34114
+Box index 373
+Brick index 34177
+Box index 374
+Brick index 34618
+Box index 375
+Brick index 34681
+Box index 376
+Brick index 30208
+Box index 377
+Brick index 30271
+Box index 378
+Brick index 30712
+Box index 379
+Brick index 30775
+Box index 380
+Brick index 34240
+Box index 381
+Brick index 34303
+Box index 382
+Brick index 34744
+Box index 383
+Brick index 34807
+Box index 384
+Brick index 22774
+Box index 385
+Brick index 22837
+Box index 386
+Brick index 23278
+Box index 387
+Brick index 23341
+Box index 388
+Brick index 26806
+Box index 389
+Brick index 26869
+Box index 390
+Brick index 27310
+Box index 391
+Brick index 27373
+Box index 392
+Brick index 22900
+Box index 393
+Brick index 22963
+Box index 394
+Brick index 23404
+Box index 395
+Brick index 23467
+Box index 396
+Brick index 26932
+Box index 397
+Brick index 26995
+Box index 398
+Brick index 27436
+Box index 399
+Brick index 27499
+Box index 400
+Brick index 23782
+Box index 401
+Brick index 23845
+Box index 402
+Brick index 24286
+Box index 403
+Brick index 24349
+Box index 404
+Brick index 27814
+Box index 405
+Brick index 27877
+Box index 406
+Brick index 28318
+Box index 407
+Brick index 28381
+Box index 408
+Brick index 23908
+Box index 409
+Brick index 23971
+Box index 410
+Brick index 24412
+Box index 411
+Brick index 24475
+Box index 412
+Brick index 27940
+Box index 413
+Brick index 28003
+Box index 414
+Brick index 28444
+Box index 415
+Brick index 28507
+Box index 416
+Brick index 30838
+Box index 417
+Brick index 30901
+Box index 418
+Brick index 31342
+Box index 419
+Brick index 31405
+Box index 420
+Brick index 34870
+Box index 421
+Brick index 34933
+Box index 422
+Brick index 35374
+Box index 423
+Brick index 35437
+Box index 424
+Brick index 30964
+Box index 425
+Brick index 31027
+Box index 426
+Brick index 31468
+Box index 427
+Brick index 31531
+Box index 428
+Brick index 34996
+Box index 429
+Brick index 35059
+Box index 430
+Brick index 35500
+Box index 431
+Brick index 35563
+Box index 432
+Brick index 31846
+Box index 433
+Brick index 31909
+Box index 434
+Brick index 32350
+Box index 435
+Brick index 32413
+Box index 436
+Brick index 35878
+Box index 437
+Brick index 35941
+Box index 438
+Brick index 36382
+Box index 439
+Brick index 36445
+Box index 440
+Brick index 31972
+Box index 441
+Brick index 32035
+Box index 442
+Brick index 32476
+Box index 443
+Brick index 32539
+Box index 444
+Brick index 36004
+Box index 445
+Brick index 36067
+Box index 446
+Brick index 36508
+Box index 447
+Brick index 36571
+Box index 448
+Brick index 23026
+Box index 449
+Brick index 23089
+Box index 450
+Brick index 23530
+Box index 451
+Brick index 23593
+Box index 452
+Brick index 27058
+Box index 453
+Brick index 27121
+Box index 454
+Brick index 27562
+Box index 455
+Brick index 27625
+Box index 456
+Brick index 23152
+Box index 457
+Brick index 23215
+Box index 458
+Brick index 23656
+Box index 459
+Brick index 23719
+Box index 460
+Brick index 27184
+Box index 461
+Brick index 27247
+Box index 462
+Brick index 27688
+Box index 463
+Brick index 27751
+Box index 464
+Brick index 24034
+Box index 465
+Brick index 24097
+Box index 466
+Brick index 24538
+Box index 467
+Brick index 24601
+Box index 468
+Brick index 28066
+Box index 469
+Brick index 28129
+Box index 470
+Brick index 28570
+Box index 471
+Brick index 28633
+Box index 472
+Brick index 24160
+Box index 473
+Brick index 24223
+Box index 474
+Brick index 24664
+Box index 475
+Brick index 24727
+Box index 476
+Brick index 28192
+Box index 477
+Brick index 28255
+Box index 478
+Brick index 28696
+Box index 479
+Brick index 28759
+Box index 480
+Brick index 31090
+Box index 481
+Brick index 31153
+Box index 482
+Brick index 31594
+Box index 483
+Brick index 31657
+Box index 484
+Brick index 35122
+Box index 485
+Brick index 35185
+Box index 486
+Brick index 35626
+Box index 487
+Brick index 35689
+Box index 488
+Brick index 31216
+Box index 489
+Brick index 31279
+Box index 490
+Brick index 31720
+Box index 491
+Brick index 31783
+Box index 492
+Brick index 35248
+Box index 493
+Brick index 35311
+Box index 494
+Brick index 35752
+Box index 495
+Brick index 35815
+Box index 496
+Brick index 32098
+Box index 497
+Brick index 32161
+Box index 498
+Brick index 32602
+Box index 499
+Brick index 32665
+Box index 500
+Brick index 36130
+Box index 501
+Brick index 36193
+Box index 502
+Brick index 36634
+Box index 503
+Brick index 36697
+Box index 504
+Brick index 32224
+Box index 505
+Brick index 32287
+Box index 506
+Brick index 32728
+Box index 507
+Brick index 32791
+Box index 508
+Brick index 36256
+Box index 509
+Brick index 36319
+Box index 510
+Brick index 36760
+Box index 511
+Brick index 36823
+Read brick 4630
+Value 0
+Read brick 4693
+Value 1
+Read brick 5134
+Value 2
+Read brick 5197
+Value 3
+Read brick 8662
+Value 4
+Read brick 8725
+Value 5
+Read brick 9166
+Value 6
+Read brick 9229
+Value 7
+Read brick 4756
+Value 8
+Read brick 4819
+Value 9
+Read brick 5260
+Value 10
+Read brick 5323
+Value 11
+Read brick 8788
+Value 12
+Read brick 8851
+Value 13
+Read brick 9292
+Value 14
+Read brick 9355
+Value 15
+Read brick 5638
+Value 16
+Read brick 5701
+Value 17
+Read brick 6142
+Value 18
+Read brick 6205
+Value 19
+Read brick 9670
+Value 20
+Read brick 9733
+Value 21
+Read brick 10174
+Value 22
+Read brick 10237
+Value 23
+Read brick 5764
+Value 24
+Read brick 5827
+Value 25
+Read brick 6268
+Value 26
+Read brick 6331
+Value 27
+Read brick 9796
+Value 28
+Read brick 9859
+Value 29
+Read brick 10300
+Value 30
+Read brick 10363
+Value 31
+Read brick 12694
+Value 32
+Read brick 12757
+Value 33
+Read brick 13198
+Value 34
+Read brick 13261
+Value 35
+Read brick 16726
+Value 36
+Read brick 16789
+Value 37
+Read brick 17230
+Value 38
+Read brick 17293
+Value 39
+Read brick 12820
+Value 40
+Read brick 12883
+Value 41
+Read brick 13324
+Value 42
+Read brick 13387
+Value 43
+Read brick 16852
+Value 44
+Read brick 16915
+Value 45
+Read brick 17356
+Value 46
+Read brick 17419
+Value 47
+Read brick 13702
+Value 48
+Read brick 13765
+Value 49
+Read brick 14206
+Value 50
+Read brick 14269
+Value 51
+Read brick 17734
+Value 52
+Read brick 17797
+Value 53
+Read brick 18238
+Value 54
+Read brick 18301
+Value 55
+Read brick 13828
+Value 56
+Read brick 13891
+Value 57
+Read brick 14332
+Value 58
+Read brick 14395
+Value 59
+Read brick 17860
+Value 60
+Read brick 17923
+Value 61
+Read brick 18364
+Value 62
+Read brick 18427
+Value 63
+Read brick 4882
+Value 64
+Read brick 4945
+Value 65
+Read brick 5386
+Value 66
+Read brick 5449
+Value 67
+Read brick 8914
+Value 68
+Read brick 8977
+Value 69
+Read brick 9418
+Value 70
+Read brick 9481
+Value 71
+Read brick 5008
+Value 72
+Read brick 5071
+Value 73
+Read brick 5512
+Value 74
+Read brick 5575
+Value 75
+Read brick 9040
+Value 76
+Read brick 9103
+Value 77
+Read brick 9544
+Value 78
+Read brick 9607
+Value 79
+Read brick 5890
+Value 80
+Read brick 5953
+Value 81
+Read brick 6394
+Value 82
+Read brick 6457
+Value 83
+Read brick 9922
+Value 84
+Read brick 9985
+Value 85
+Read brick 10426
+Value 86
+Read brick 10489
+Value 87
+Read brick 6016
+Value 88
+Read brick 6079
+Value 89
+Read brick 6520
+Value 90
+Read brick 6583
+Value 91
+Read brick 10048
+Value 92
+Read brick 10111
+Value 93
+Read brick 10552
+Value 94
+Read brick 10615
+Value 95
+Read brick 12946
+Value 96
+Read brick 13009
+Value 97
+Read brick 13450
+Value 98
+Read brick 13513
+Value 99
+Read brick 16978
+Value 100
+Read brick 17041
+Value 101
+Read brick 17482
+Value 102
+Read brick 17545
+Value 103
+Read brick 13072
+Value 104
+Read brick 13135
+Value 105
+Read brick 13576
+Value 106
+Read brick 13639
+Value 107
+Read brick 17104
+Value 108
+Read brick 17167
+Value 109
+Read brick 17608
+Value 110
+Read brick 17671
+Value 111
+Read brick 13954
+Value 112
+Read brick 14017
+Value 113
+Read brick 14458
+Value 114
+Read brick 14521
+Value 115
+Read brick 17986
+Value 116
+Read brick 18049
+Value 117
+Read brick 18490
+Value 118
+Read brick 18553
+Value 119
+Read brick 14080
+Value 120
+Read brick 14143
+Value 121
+Read brick 14584
+Value 122
+Read brick 14647
+Value 123
+Read brick 18112
+Value 124
+Read brick 18175
+Value 125
+Read brick 18616
+Value 126
+Read brick 18679
+Value 127
+Read brick 6646
+Value 128
+Read brick 6709
+Value 129
+Read brick 7150
+Value 130
+Read brick 7213
+Value 131
+Read brick 10678
+Value 132
+Read brick 10741
+Value 133
+Read brick 11182
+Value 134
+Read brick 11245
+Value 135
+Read brick 6772
+Value 136
+Read brick 6835
+Value 137
+Read brick 7276
+Value 138
+Read brick 7339
+Value 139
+Read brick 10804
+Value 140
+Read brick 10867
+Value 141
+Read brick 11308
+Value 142
+Read brick 11371
+Value 143
+Read brick 7654
+Value 144
+Read brick 7717
+Value 145
+Read brick 8158
+Value 146
+Read brick 8221
+Value 147
+Read brick 11686
+Value 148
+Read brick 11749
+Value 149
+Read brick 12190
+Value 150
+Read brick 12253
+Value 151
+Read brick 7780
+Value 152
+Read brick 7843
+Value 153
+Read brick 8284
+Value 154
+Read brick 8347
+Value 155
+Read brick 11812
+Value 156
+Read brick 11875
+Value 157
+Read brick 12316
+Value 158
+Read brick 12379
+Value 159
+Read brick 14710
+Value 160
+Read brick 14773
+Value 161
+Read brick 15214
+Value 162
+Read brick 15277
+Value 163
+Read brick 18742
+Value 164
+Read brick 18805
+Value 165
+Read brick 19246
+Value 166
+Read brick 19309
+Value 167
+Read brick 14836
+Value 168
+Read brick 14899
+Value 169
+Read brick 15340
+Value 170
+Read brick 15403
+Value 171
+Read brick 18868
+Value 172
+Read brick 18931
+Value 173
+Read brick 19372
+Value 174
+Read brick 19435
+Value 175
+Read brick 15718
+Value 176
+Read brick 15781
+Value 177
+Read brick 16222
+Value 178
+Read brick 16285
+Value 179
+Read brick 19750
+Value 180
+Read brick 19813
+Value 181
+Read brick 20254
+Value 182
+Read brick 20317
+Value 183
+Read brick 15844
+Value 184
+Read brick 15907
+Value 185
+Read brick 16348
+Value 186
+Read brick 16411
+Value 187
+Read brick 19876
+Value 188
+Read brick 19939
+Value 189
+Read brick 20380
+Value 190
+Read brick 20443
+Value 191
+Read brick 6898
+Value 192
+Read brick 6961
+Value 193
+Read brick 7402
+Value 194
+Read brick 7465
+Value 195
+Read brick 10930
+Value 196
+Read brick 10993
+Value 197
+Read brick 11434
+Value 198
+Read brick 11497
+Value 199
+Read brick 7024
+Value 200
+Read brick 7087
+Value 201
+Read brick 7528
+Value 202
+Read brick 7591
+Value 203
+Read brick 11056
+Value 204
+Read brick 11119
+Value 205
+Read brick 11560
+Value 206
+Read brick 11623
+Value 207
+Read brick 7906
+Value 208
+Read brick 7969
+Value 209
+Read brick 8410
+Value 210
+Read brick 8473
+Value 211
+Read brick 11938
+Value 212
+Read brick 12001
+Value 213
+Read brick 12442
+Value 214
+Read brick 12505
+Value 215
+Read brick 8032
+Value 216
+Read brick 8095
+Value 217
+Read brick 8536
+Value 218
+Read brick 8599
+Value 219
+Read brick 12064
+Value 220
+Read brick 12127
+Value 221
+Read brick 12568
+Value 222
+Read brick 12631
+Value 223
+Read brick 14962
+Value 224
+Read brick 15025
+Value 225
+Read brick 15466
+Value 226
+Read brick 15529
+Value 227
+Read brick 18994
+Value 228
+Read brick 19057
+Value 229
+Read brick 19498
+Value 230
+Read brick 19561
+Value 231
+Read brick 15088
+Value 232
+Read brick 15151
+Value 233
+Read brick 15592
+Value 234
+Read brick 15655
+Value 235
+Read brick 19120
+Value 236
+Read brick 19183
+Value 237
+Read brick 19624
+Value 238
+Read brick 19687
+Value 239
+Read brick 15970
+Value 240
+Read brick 16033
+Value 241
+Read brick 16474
+Value 242
+Read brick 16537
+Value 243
+Read brick 20002
+Value 244
+Read brick 20065
+Value 245
+Read brick 20506
+Value 246
+Read brick 20569
+Value 247
+Read brick 16096
+Value 248
+Read brick 16159
+Value 249
+Read brick 16600
+Value 250
+Read brick 16663
+Value 251
+Read brick 20128
+Value 252
+Read brick 20191
+Value 253
+Read brick 20632
+Value 254
+Read brick 20695
+Value 255
+Read brick 20758
+Value 256
+Read brick 20821
+Value 257
+Read brick 21262
+Value 258
+Read brick 21325
+Value 259
+Read brick 24790
+Value 260
+Read brick 24853
+Value 261
+Read brick 25294
+Value 262
+Read brick 25357
+Value 263
+Read brick 20884
+Value 264
+Read brick 20947
+Value 265
+Read brick 21388
+Value 266
+Read brick 21451
+Value 267
+Read brick 24916
+Value 268
+Read brick 24979
+Value 269
+Read brick 25420
+Value 270
+Read brick 25483
+Value 271
+Read brick 21766
+Value 272
+Read brick 21829
+Value 273
+Read brick 22270
+Value 274
+Read brick 22333
+Value 275
+Read brick 25798
+Value 276
+Read brick 25861
+Value 277
+Read brick 26302
+Value 278
+Read brick 26365
+Value 279
+Read brick 21892
+Value 280
+Read brick 21955
+Value 281
+Read brick 22396
+Value 282
+Read brick 22459
+Value 283
+Read brick 25924
+Value 284
+Read brick 25987
+Value 285
+Read brick 26428
+Value 286
+Read brick 26491
+Value 287
+Read brick 28822
+Value 288
+Read brick 28885
+Value 289
+Read brick 29326
+Value 290
+Read brick 29389
+Value 291
+Read brick 32854
+Value 292
+Read brick 32917
+Value 293
+Read brick 33358
+Value 294
+Read brick 33421
+Value 295
+Read brick 28948
+Value 296
+Read brick 29011
+Value 297
+Read brick 29452
+Value 298
+Read brick 29515
+Value 299
+Read brick 32980
+Value 300
+Read brick 33043
+Value 301
+Read brick 33484
+Value 302
+Read brick 33547
+Value 303
+Read brick 29830
+Value 304
+Read brick 29893
+Value 305
+Read brick 30334
+Value 306
+Read brick 30397
+Value 307
+Read brick 33862
+Value 308
+Read brick 33925
+Value 309
+Read brick 34366
+Value 310
+Read brick 34429
+Value 311
+Read brick 29956
+Value 312
+Read brick 30019
+Value 313
+Read brick 30460
+Value 314
+Read brick 30523
+Value 315
+Read brick 33988
+Value 316
+Read brick 34051
+Value 317
+Read brick 34492
+Value 318
+Read brick 34555
+Value 319
+Read brick 21010
+Value 320
+Read brick 21073
+Value 321
+Read brick 21514
+Value 322
+Read brick 21577
+Value 323
+Read brick 25042
+Value 324
+Read brick 25105
+Value 325
+Read brick 25546
+Value 326
+Read brick 25609
+Value 327
+Read brick 21136
+Value 328
+Read brick 21199
+Value 329
+Read brick 21640
+Value 330
+Read brick 21703
+Value 331
+Read brick 25168
+Value 332
+Read brick 25231
+Value 333
+Read brick 25672
+Value 334
+Read brick 25735
+Value 335
+Read brick 22018
+Value 336
+Read brick 22081
+Value 337
+Read brick 22522
+Value 338
+Read brick 22585
+Value 339
+Read brick 26050
+Value 340
+Read brick 26113
+Value 341
+Read brick 26554
+Value 342
+Read brick 26617
+Value 343
+Read brick 22144
+Value 344
+Read brick 22207
+Value 345
+Read brick 22648
+Value 346
+Read brick 22711
+Value 347
+Read brick 26176
+Value 348
+Read brick 26239
+Value 349
+Read brick 26680
+Value 350
+Read brick 26743
+Value 351
+Read brick 29074
+Value 352
+Read brick 29137
+Value 353
+Read brick 29578
+Value 354
+Read brick 29641
+Value 355
+Read brick 33106
+Value 356
+Read brick 33169
+Value 357
+Read brick 33610
+Value 358
+Read brick 33673
+Value 359
+Read brick 29200
+Value 360
+Read brick 29263
+Value 361
+Read brick 29704
+Value 362
+Read brick 29767
+Value 363
+Read brick 33232
+Value 364
+Read brick 33295
+Value 365
+Read brick 33736
+Value 366
+Read brick 33799
+Value 367
+Read brick 30082
+Value 368
+Read brick 30145
+Value 369
+Read brick 30586
+Value 370
+Read brick 30649
+Value 371
+Read brick 34114
+Value 372
+Read brick 34177
+Value 373
+Read brick 34618
+Value 374
+Read brick 34681
+Value 375
+Read brick 30208
+Value 376
+Read brick 30271
+Value 377
+Read brick 30712
+Value 378
+Read brick 30775
+Value 379
+Read brick 34240
+Value 380
+Read brick 34303
+Value 381
+Read brick 34744
+Value 382
+Read brick 34807
+Value 383
+Read brick 22774
+Value 384
+Read brick 22837
+Value 385
+Read brick 23278
+Value 386
+Read brick 23341
+Value 387
+Read brick 26806
+Value 388
+Read brick 26869
+Value 389
+Read brick 27310
+Value 390
+Read brick 27373
+Value 391
+Read brick 22900
+Value 392
+Read brick 22963
+Value 393
+Read brick 23404
+Value 394
+Read brick 23467
+Value 395
+Read brick 26932
+Value 396
+Read brick 26995
+Value 397
+Read brick 27436
+Value 398
+Read brick 27499
+Value 399
+Read brick 23782
+Value 400
+Read brick 23845
+Value 401
+Read brick 24286
+Value 402
+Read brick 24349
+Value 403
+Read brick 27814
+Value 404
+Read brick 27877
+Value 405
+Read brick 28318
+Value 406
+Read brick 28381
+Value 407
+Read brick 23908
+Value 408
+Read brick 23971
+Value 409
+Read brick 24412
+Value 410
+Read brick 24475
+Value 411
+Read brick 27940
+Value 412
+Read brick 28003
+Value 413
+Read brick 28444
+Value 414
+Read brick 28507
+Value 415
+Read brick 30838
+Value 416
+Read brick 30901
+Value 417
+Read brick 31342
+Value 418
+Read brick 31405
+Value 419
+Read brick 34870
+Value 420
+Read brick 34933
+Value 421
+Read brick 35374
+Value 422
+Read brick 35437
+Value 423
+Read brick 30964
+Value 424
+Read brick 31027
+Value 425
+Read brick 31468
+Value 426
+Read brick 31531
+Value 427
+Read brick 34996
+Value 428
+Read brick 35059
+Value 429
+Read brick 35500
+Value 430
+Read brick 35563
+Value 431
+Read brick 31846
+Value 432
+Read brick 31909
+Value 433
+Read brick 32350
+Value 434
+Read brick 32413
+Value 435
+Read brick 35878
+Value 436
+Read brick 35941
+Value 437
+Read brick 36382
+Value 438
+Read brick 36445
+Value 439
+Read brick 31972
+Value 440
+Read brick 32035
+Value 441
+Read brick 32476
+Value 442
+Read brick 32539
+Value 443
+Read brick 36004
+Value 444
+Read brick 36067
+Value 445
+Read brick 36508
+Value 446
+Read brick 36571
+Value 447
+Read brick 23026
+Value 448
+Read brick 23089
+Value 449
+Read brick 23530
+Value 450
+Read brick 23593
+Value 451
+Read brick 27058
+Value 452
+Read brick 27121
+Value 453
+Read brick 27562
+Value 454
+Read brick 27625
+Value 455
+Read brick 23152
+Value 456
+Read brick 23215
+Value 457
+Read brick 23656
+Value 458
+Read brick 23719
+Value 459
+Read brick 27184
+Value 460
+Read brick 27247
+Value 461
+Read brick 27688
+Value 462
+Read brick 27751
+Value 463
+Read brick 24034
+Value 464
+Read brick 24097
+Value 465
+Read brick 24538
+Value 466
+Read brick 24601
+Value 467
+Read brick 28066
+Value 468
+Read brick 28129
+Value 469
+Read brick 28570
+Value 470
+Read brick 28633
+Value 471
+Read brick 24160
+Value 472
+Read brick 24223
+Value 473
+Read brick 24664
+Value 474
+Read brick 24727
+Value 475
+Read brick 28192
+Value 476
+Read brick 28255
+Value 477
+Read brick 28696
+Value 478
+Read brick 28759
+Value 479
+Read brick 31090
+Value 480
+Read brick 31153
+Value 481
+Read brick 31594
+Value 482
+Read brick 31657
+Value 483
+Read brick 35122
+Value 484
+Read brick 35185
+Value 485
+Read brick 35626
+Value 486
+Read brick 35689
+Value 487
+Read brick 31216
+Value 488
+Read brick 31279
+Value 489
+Read brick 31720
+Value 490
+Read brick 31783
+Value 491
+Read brick 35248
+Value 492
+Read brick 35311
+Value 493
+Read brick 35752
+Value 494
+Read brick 35815
+Value 495
+Read brick 32098
+Value 496
+Read brick 32161
+Value 497
+Read brick 32602
+Value 498
+Read brick 32665
+Value 499
+Read brick 36130
+Value 500
+Read brick 36193
+Value 501
+Read brick 36634
+Value 502
+Read brick 36697
+Value 503
+Read brick 32224
+Value 504
+Read brick 32287
+Value 505
+Read brick 32728
+Value 506
+Read brick 32791
+Value 507
+Read brick 36256
+Value 508
+Read brick 36319
+Value 509
+Read brick 36760
+Value 510
+Read brick 36823
+Value 511

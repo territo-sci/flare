@@ -48,7 +48,7 @@ int main() {
 
   // Create brick manager and init (has to be done after init OpenGL!)
   BrickManager *brickManager= BrickManager::New();
-  brickManager->SetInFilename("/home/vsand/OpenSpace/testBricks.bdf");
+  brickManager->SetInFilename("/home/vsand/OpenSpace/output.tsp");
   if (!brickManager->ReadHeader()) exit(1);
   if (!brickManager->InitAtlas()) exit(1);
 
