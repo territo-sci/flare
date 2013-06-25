@@ -27,24 +27,21 @@
 using namespace osp;
 
 uint32_t ZOrder(uint16_t xPos, uint16_t yPos, uint16_t zPos) {
-  static const uint32_t MASKS[] =
-  {0x55555555, 0x33333333, 0x0F0F0F0F, 0x00FF00FF};
-  static const uint32_t SHIFTS[] = {1, 2, 4, 8};
-  uint32_t x = xPos;
-  uint32_t y = yPos;
-  uint32_t z = zPos;
+  uint32_t x = static_cast<uint32_t>(xPos);
+  uint32_t y = static_cast<uint32_t>(yPos);
+  uint32_t z = static_cast<uint32_t>(zPos);
   x = (x | (x << 16)) & 0x030000FF;
-  x = (x | (x << 8)) & 0x0300F00F;
-  x = (x | (x << 4)) & 0x030C30C3;
-  x = (x | (x << 2)) & 0x09249249;
+  x = (x | (x <<  8)) & 0x0300F00F;
+  x = (x | (x <<  4)) & 0x030C30C3;
+  x = (x | (x <<  2)) & 0x09249249;
   y = (y | (y << 16)) & 0x030000FF;
-  y = (y | (y << 8)) & 0x0300F00F;
-  y = (y | (y << 4)) & 0x030C30C3;
-  y = (y | (y << 2)) & 0x09249249;
+  y = (y | (y <<  8)) & 0x0300F00F;
+  y = (y | (y <<  4)) & 0x030C30C3;
+  y = (y | (y <<  2)) & 0x09249249;
   z = (z | (z << 16)) & 0x030000FF;
-  z = (z | (z << 8)) & 0x0300F00F;
-  z = (z | (z << 4)) & 0x030C30C3;
-  z = (z | (z << 2)) & 0x09249249;
+  z = (z | (z <<  8)) & 0x0300F00F;
+  z = (z | (z <<  4)) & 0x030C30C3;
+  z = (z | (z <<   2)) & 0x09249249;
   const uint32_t result = x | (y << 1) | (z << 2);
   return result;
 }
@@ -88,7 +85,7 @@ Raycaster::Raycaster()
 
   kernelConstants_.stepSize = 0.01f;
   kernelConstants_.intensity = 60.f;
-  kernelConstants_.numBoxesPerAxis = 8;
+  kernelConstants_.numBoxesPerAxis = 4;
 }
 
 Raycaster::~Raycaster() {
@@ -496,7 +493,7 @@ bool Raycaster::Render(float _timestep) {
 
         // Test hardcoded values
         unsigned int bricksPerBST = 1+2+4+8+16+32;
-        unsigned int firstOctreeLeaf = 1+8+64;
+        unsigned int firstOctreeLeaf = 1+8;
         unsigned int firstBSTLeaf = 1+2+4+8+16;
 
         unsigned int zOrderIdx = static_cast<unsigned int>(
@@ -516,6 +513,7 @@ bool Raycaster::Render(float _timestep) {
      }
     }
   }
+
 
   // Apply the brick list, update the texture atlas
   if (!brickManager_->UpdateAtlas()) return false;

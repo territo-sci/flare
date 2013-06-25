@@ -7,6 +7,7 @@
 #include <BrickManager.h>
 #include <Texture3D.h>
 #include <Utils.h>
+#include <boost/timer/timer.hpp>
 
 using namespace osp;
 
@@ -161,17 +162,6 @@ bool BrickManager::UpdateAtlas() {
 
 bool BrickManager::UpdateBrickList(unsigned int _brickIndex, 
                                    AtlasCoords _atlasCoords) {
-  /*
-  if (!ReadBrick(_brickIndex)) return false;
-
-  unsigned int xOffset = _atlasCoords.x_ * xBrickDim_;
-  unsigned int yOffset = _atlasCoords.y_ * yBrickDim_;
-  unsigned int zOffset = _atlasCoords.z_ * zBrickDim_;
-
-  if (!textureAtlas_->UpdateSubRegion(xOffset, yOffset, zOffset,
-                                      xBrickDim_, yBrickDim_, zBrickDim_,
-                                      brickBuffer_)) return false;
-  */
 
   brickList_[_brickIndex] = _atlasCoords;
 
@@ -203,7 +193,7 @@ bool BrickManager::UpdateBoxList(unsigned int _boxIndex,
 
 bool BrickManager::ReadBrick(unsigned int _brickIndex, 
                              BUFFER_INDEX _bufferIndex) {
-  
+
   if (!hasReadHeader_) {
     ERROR("ReadBrick() - Has not read header");
     return false;
@@ -234,8 +224,21 @@ bool BrickManager::ReadBrick(unsigned int _brickIndex,
     glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY));  
 
   // Read
+
+  real *buffer = new real[numVals];
+
   in_.seekg(offset);
+  /*
+  boost::timer::cpu_timer t;
+  t.start();
+  */
   in_.read(reinterpret_cast<char*>(brickBuffer_[_bufferIndex]), brickSize);
+  /*
+  t.stop();
+  double time = t.elapsed().wall / 1.0e9;
+  double mb = brickSize / 1048579.0;
+  INFO(mb << std::fixed << " MBs in " << time << " s, " << mb/time << "MB/s");
+  */
 
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);

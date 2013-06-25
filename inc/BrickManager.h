@@ -11,7 +11,6 @@
 #include <vector>
 #include <map>
 #include <fstream>
-#include <boost/timer/timer.hpp>
 
 #define real float
 
@@ -113,8 +112,6 @@ private:
 
   bool hasReadHeader_;
   bool atlasInitialized_;
-
-  boost::timer::cpu_timer timer_;
 
   // PBO
   unsigned int pboHandle_[2];
