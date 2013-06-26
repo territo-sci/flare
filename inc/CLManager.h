@@ -9,13 +9,14 @@
 #include <CL/cl.hpp>
 #include <map>
 #include <string>
+#include <KernelConstants.h>
+
 
 namespace osp {
 
 class Texture;
 class TransferFunction;
 class CLProgram;
-struct KernelConstants;
 
 class CLManager {
 public:

@@ -9,13 +9,13 @@
 #include <CL/cl.hpp>
 #include <map>
 #include <string>
+#include <KernelConstants.h>
 
 namespace osp {
 
 class CLManager;
 class TransferFunction;
 class Texture;
-struct KernelConstants;
 
 class CLProgram {
 public:
@@ -58,7 +58,7 @@ private:
   CLProgram();
   CLProgram(const CLProgram&);
 
-  char * ReadSource(std::string _fileName, int &_numChars);
+  char * ReadSource(std::string _fileName, int &_numChars) const;
 
   std::string programName_;
 

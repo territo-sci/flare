@@ -9,7 +9,6 @@
 #include <TransferFunction.h>
 #include <Texture.h>
 #include <Utils.h>
-#include <KernelConstants.h>
 
 using namespace osp;
 
@@ -153,14 +152,15 @@ bool CLProgram::AddKernelConstants(unsigned int _argNr,
 
 bool CLProgram::AddIntArray(unsigned int _argNr, int *_intArray, 
                             unsigned int _size, 
-                            CLManager::Permissions _permisssions) {
+                            cl_mem_flags _permissions) {
   if (memArgs_.find((cl_uint)_argNr) != memArgs_.end()) {
     memArgs_.erase((cl_uint)_argNr);
   }
 
   MemArg ma;
   ma.size_ = sizeof(cl_mem);
-  ma.mem_ = clCreateBuffer(clManager_->context_, CL_MEM_COPY_HOST_PTR,
+  ma.mem_ = clCreateBuffer(clManager_->context_, 
+                           _permissions | CL_MEM_COPY_HOST_PTR,
                            _size*sizeof(int),
                            _intArray,
                            &error_);
@@ -219,8 +219,8 @@ bool CLProgram::LaunchProgram() {
 
   error_ = clEnqueueNDRangeKernel(
     clManager_->commandQueues_[CLManager::EXECUTE], kernel_, 2, NULL,
-    globalSize_, localSize_, 0, NULL, NULL);
-  return (error == CL_SUCCESS);
+    globalSize, localSize, 0, NULL, NULL);
+  return (error_ == CL_SUCCESS);
 }
 
 bool CLProgram::FinishProgram() {
@@ -229,8 +229,9 @@ bool CLProgram::FinishProgram() {
 
   // Release shared OGL objects
   for (auto it=OGLTextures_.begin(); it!=OGLTextures_.end(); ++it) {
-    error_ = clEnqueueReleaseGLObjects(commandQueues_[EXECUTE], 1, 
-                                       &(it->second), 0, NULL, NULL);
+    error_ = clEnqueueReleaseGLObjects(
+      clManager_->commandQueues_[CLManager::EXECUTE], 1, 
+                                 &(it->second), 0, NULL, NULL);
     if (error_ != CL_SUCCESS) {
       ERROR("Failed to release GL object");
       ERROR("Failed object: " << it->first);
