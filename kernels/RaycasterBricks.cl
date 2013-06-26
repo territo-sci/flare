@@ -141,6 +141,7 @@ int BrickSize(int3 _boxCoords,
 }
 
 
+// Traverse one brick, sampling individual voxels
 float4 TraverseBrick(__global __read_only image3d_t _textureAtlas,
                      __global __read_only float *_tf,
                      int3 _brickAtlasCoords, int _numBoxesPerAxis, 
@@ -168,7 +169,7 @@ float4 TraverseBrick(__global __read_only image3d_t _textureAtlas,
   float3 atlasExit = localExitCoords/numBoxesPerAxisf + offset;
 
   float3 direction = atlasExit - atlasEntry;
-  float maxDistance = length(direction);
+  float maxDistance = length(atlasExit - atlasEntry);
   direction = normalize(direction);
 
   float localStepSize = _globalStepSize * (float)_brickSize;

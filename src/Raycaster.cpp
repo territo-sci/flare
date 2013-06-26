@@ -498,7 +498,8 @@ bool Raycaster::Render(float _timestep) {
 
         unsigned int zOrderIdx = static_cast<unsigned int>(
           ZOrder((uint16_t)x, (uint16_t)y, (uint16_t)z));
-
+        
+        currentTimestep = 0;
         unsigned int brickIndex = bricksPerBST*firstOctreeLeaf + 
                                   bricksPerBST*zOrderIdx +
                                   firstBSTLeaf+currentTimestep;
@@ -513,7 +514,6 @@ bool Raycaster::Render(float _timestep) {
      }
     }
   }
-
 
   // Apply the brick list, update the texture atlas
   if (!brickManager_->UpdateAtlas()) return false;

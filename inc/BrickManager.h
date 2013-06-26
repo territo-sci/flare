@@ -67,6 +67,8 @@ public:
   unsigned int PaddingWidth() const { return paddingWidth_; }
   unsigned int DataSize() const { return dataSize_; }
 
+  void Print();
+
 private:
 
   BrickManager();

@@ -245,3 +245,34 @@ bool BrickManager::ReadBrick(unsigned int _brickIndex,
    
   return true;
 }
+
+
+
+void BrickManager::Print() {
+
+    std::cout << "\nBRICK LIST " << std::endl;
+    std::cout << "Constructed from " << inFilename_ << std::endl;
+
+    std::cout << "Structure: " << structure_ << std::endl;
+    std::cout << "Data dimensionality: " << dataDimensionality_ << std::endl;
+    std::cout << "Brick dimensions: [" << xBrickDim_ << " " <<
+                                          yBrickDim_ << " " << 
+                                          zBrickDim_ << "]" << std::endl;
+    std::cout << "Num bricks: [" << xNumBricks_ << " " <<
+                                    yNumBricks_ << " " <<
+                                    zNumBricks_ << "]" << std::endl;
+    std::cout << "Num timesteps: " << numTimesteps_ << std::endl;
+    std::cout << "Padding width: " << paddingWidth_ << std::endl;
+    std::cout << "Data size: " << dataSize_ << std::endl;
+
+    std::cout << "Bricks: " << std::endl;
+    unsigned int i = 0;
+    for (auto it=boxList_.begin(); it!=boxList_.end(); it+=5) {
+      std::cout << "Box number: " << i++ << std::endl;
+      std::cout << "Brick index: " << *it << std::endl;
+      AtlasCoords ac = brickList_[*it];
+      std::cout << "Atlas coords: [" << ac.x_ << " " << ac.y_ << " " << 
+                                        ac.z_ << " " << ac.size_ << "]" <<
+                                        std::endl;
+    }
+}

@@ -13,7 +13,7 @@
 #include <iostream>
 #include <Animator.h>
 #include <BrickManager.h>
-
+#include <TSP.h>
 #include <VoxelDataHeader.h>
 #include <VoxelDataFrame.h>
 
@@ -45,6 +45,10 @@ int main() {
   // Create a WindowManager, open window to init GLEW and GLFW
   WindowManager *manager = WindowManager::New(width, height, "FlareApp");
   if (!manager->OpenWindow()) exit(1);
+
+  // Create TSP structure
+  TSP *tsp = TSP::New("/home/vsand/OpenSpace/output.tsp");
+  tsp->Construct();
 
   // Create brick manager and init (has to be done after init OpenGL!)
   BrickManager *brickManager= BrickManager::New();

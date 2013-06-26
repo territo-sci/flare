@@ -1,6 +1,5 @@
-#ifndef KERNELCONSTANTS_H
-#define KERNELCONSTANTS_H
-
+#ifndef KERNELCONSTANTS_H_
+#define KERNELCONSTANTS_H_
 
 /*
 Author: Victor Sand (victor.sand@gmail.com)

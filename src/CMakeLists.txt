@@ -36,11 +36,14 @@ add_executable(FlareApp
                Texture2D.cpp
                Texture3D.cpp
                VoxelDataHeader.cpp
-               CLHandler.cpp
                Animator.cpp
                MappingKey.cpp
                TransferFunction.cpp
+               TSP.cpp
                VDFReader.cpp
+               CLHandler.cpp
+               CLManager.cpp
+               CLProgram.cpp
                ShaderProgram.cpp)
 
 target_link_libraries(FlareApp
