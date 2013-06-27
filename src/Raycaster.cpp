@@ -12,13 +12,9 @@
 #include <Texture3D.h>
 #include <TextureAtlas.h>
 #include <BrickManager.h>
-#include <VDFReader.h>
-#include <VoxelDataHeader.h>
-#include <VoxelDataFrame.h>
 #include <Utils.h>
 #include <ShaderProgram.h>
 #include <glm/gtc/matrix_transform.hpp>
-#include <CLHandler.h>
 #include <TransferFunction.h>
 #include <Animator.h>
 #include <vector>
@@ -74,14 +70,11 @@ Raycaster::Raycaster()
     matricesInitialized_(false),
     framebuffersInitialized_(false),
     pingPongIndex_(true),
-    clHandler_(NULL),
     animator_(NULL),
     pingPong_(0),
     lastTimestep_(1),
     brickManager_(NULL),
     clManager_(NULL) {
-
-  clHandler_ = CLHandler::New();
 
   kernelConstants_.stepSize = 0.01f;
   kernelConstants_.intensity = 60.f;
@@ -89,7 +82,6 @@ Raycaster::Raycaster()
 }
 
 Raycaster::~Raycaster() {
-  if (clHandler_) delete clHandler_;
 }
 
 Raycaster * Raycaster::New() {
@@ -294,9 +286,9 @@ bool Raycaster::ReloadTransferFunctions() {
   INFO("Reloading transfer functions");
   if (!transferFunctions_[0]->ReadFile()) return false;
   if (!transferFunctions_[0]->ConstructTexture()) return false;
-  if (!clHandler_->AddTransferFunction(transferFunctionArg_, 
-                                        transferFunctions_[0])) 
-    return false;
+  if (!clManager_->AddTransferFunction("Raycaster",
+                                        transferFunctionArg_, 
+                                        transferFunctions_[0])) return false;
   return true;
 }
 
@@ -644,8 +636,9 @@ bool Raycaster::HandleKeyboard() {
     if (!UpdateKernelConfig()) 
       return false;
     INFO("Kernel config reloaded");
-    if (!clHandler_->AddConstants(constantsArg_, &kernelConstants_)) 
-      return false;
+    if (!clManager_->AddKernelConstants("Raycaster", 
+                                        constantsArg_, 
+                                        &kernelConstants_)) return false;
     INFO("Kernel constants reloaded");
     if (!ReloadTransferFunctions()) 
       return false;
@@ -658,7 +651,7 @@ bool Raycaster::HandleKeyboard() {
   if (KeyPressedNoRepeat('F')) animator_->ToggleFPSMode();
   if (KeyPressed('Z')) animator_->IncTimestep();
   if (KeyPressed('X')) animator_->DecTimestep();
-  if (KeyPressedNoRepeat('T')) clHandler_->ToggleTimers();
+  //if (KeyPressedNoRepeat('T')) cler_->ToggleTimers();
   return true;
 }
 

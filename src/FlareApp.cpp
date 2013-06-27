@@ -4,9 +4,7 @@
 #include <Texture2D.h>
 #include <Raycaster.h>
 #include <ShaderProgram.h>
-#include <VDFReader.h>
 #include <TransferFunction.h>
-#include <VoxelData.h>
 #include <string>
 #include <cstdlib>
 #include <vector>
@@ -14,20 +12,21 @@
 #include <Animator.h>
 #include <BrickManager.h>
 #include <TSP.h>
-#include <VoxelDataHeader.h>
-#include <VoxelDataFrame.h>
 #include <CLManager.h>
 
 using namespace osp;
 
 int main() {
 
+  // File to create TSP structure and then read data from
   std::string tspFileName = "/home/vsand/OpenSpace/output.tsp";
 
+  // Window dimensions
   unsigned int width = 512;
   unsigned int height = 512;
 
-  // Create a WindowManager, open window to init GLEW and GLFW
+  // Create a WindowManager, open window to init GLEW and GLFW.
+  // This has to be done before other OpenGL/CL stuff can be initialized.
   WindowManager *manager = WindowManager::New(width, height, "FlareApp");
   if (!manager->OpenWindow()) exit(1);
 
@@ -41,7 +40,7 @@ int main() {
   if (!brickManager->ReadHeader()) exit(1);
   if (!brickManager->InitAtlas()) exit(1);
 
-  // Create shaders for color cube and final textured quad
+  // Create shaders for color cube and output textured quad
   ShaderProgram *cubeShaderProgram = ShaderProgram::New();
   cubeShaderProgram->CreateShader(ShaderProgram::VERTEX,
                                   "shaders/cubeVert.glsl");

@@ -14,9 +14,6 @@ TODO: Iteratively break away parts from it into other classes.
 #include <vector>
 #include <glm/glm.hpp>
 #include <CL/cl.hpp>
-#include <VoxelData.h>
-#include <VoxelDataHeader.h>
-#include <VoxelDataFrame.h>
 #include <KernelConstants.h>
 #include <boost/timer/timer.hpp>
 
@@ -25,11 +22,8 @@ namespace osp {
 class ShaderProgram;
 class Texture2D;
 class Texture3D;
-class PixelBuffer;
-class CLHandler;
 class TransferFunction;
 class Animator;
-class VDFReader;
 class BrickManager;
 class CLManager;
 
@@ -82,19 +76,14 @@ public:
   Texture2D * QuadTexture() const { return quadTex_; }
 
   void SetKernelConfigFilename(const std::string &_filename);
-  void SetVoxelData(VoxelData<float> *_floatData);
-  void SetVoxelDataHeader(VoxelDataHeader *_voxelDataHeader);
-  void SetVoxelDataFrame(VoxelDataFrame<float> *_voxelDataFrame);
   void SetCubeFrontTexture(Texture2D *_cubeFrontTexture);
   void SetCubeBackTexture(Texture2D *_cubeBackTexture);
   void SetQuadTexture(Texture2D *_quadTexture);
-  void SetVolumeTexture(Texture3D *_volumeTexture);
   void SetCubeShaderProgram(ShaderProgram *_cubeShaderProgram);
   void SetQuadShaderProgram(ShaderProgram *_quadShaderProgram);
   void SetConfigFilename(std::string _configFilename);
   void SetKeyLastState(int, bool _pressed);
   void SetAnimator(Animator *_animator);
-  void SetVDFReader(VDFReader *_reader);
   void SetCLManager(CLManager *_clManager);
   void SetBrickManager(BrickManager *_brickManager);
 
@@ -140,15 +129,7 @@ private:
   std::map<int, bool> keysLastState_; 
   // Helper for pressing button without repeat
   bool KeyPressedNoRepeat(int _key);
-  CLHandler *clHandler_;
-  // Data to render
-  VoxelData<float> *voxelData_;
-  VoxelDataHeader *voxelDataHeader_;
-  VoxelDataFrame<float> *voxelDataFrame_;
-  VDFReader *reader_;
-  // Time since last frame was rendered, used to control animation speed
-  //float timeElapsed_;
-  //float animationRate_;
+  // Animator to control update rate and looping
   Animator * animator_;
   // Used to see if it is time to update frames 
   unsigned int lastTimestep_;
@@ -165,6 +146,7 @@ private:
   boost::timer::cpu_timer timer_;
   const double BYTES_PER_GB = 1073741824.0;
   
+  // Entry point for all things OpenCL
   CLManager *clManager_;
 
   // For the corresponding CL kernel

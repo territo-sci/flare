@@ -35,13 +35,10 @@ add_executable(FlareApp
                Texture1D.cpp
                Texture2D.cpp
                Texture3D.cpp
-               VoxelDataHeader.cpp
                Animator.cpp
                MappingKey.cpp
                TransferFunction.cpp
                TSP.cpp
-               VDFReader.cpp
-               CLHandler.cpp
                CLManager.cpp
                CLProgram.cpp
                ShaderProgram.cpp)

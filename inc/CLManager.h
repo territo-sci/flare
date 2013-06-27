@@ -11,7 +11,6 @@
 #include <string>
 #include <KernelConstants.h>
 
-
 namespace osp {
 
 class Texture;
@@ -22,31 +21,41 @@ class CLManager {
 public:
   static CLManager * New();
   ~CLManager();
-
+  
+  // Different queue indices for working with asynchronous uploads/executions
   enum QueueIndex { EXECUTE, TRANSFER, NUM_QUEUE_INDICES };
   enum TextureType { TEXTURE_1D, TEXTURE_2D, TEXTURE_3D };
   enum Permissions { READ_ONLY, WRITE_ONLY, READ_WRITE };
 
+  // These four functions should be run in this order
   bool InitPlatform();
   bool InitDevices();
   bool CreateContext();
   bool CreateCommandQueue();
+
+  // Name a program and create it from source text file
   bool CreateProgram(std::string _programName, std::string _fileName);
+  // Build program after creation
   bool BuildProgram(std::string _programName);
+  // Create kernel after building program
   bool CreateKernel(std::string _programName);
 
+  // Add an OpenGL texture to a program
   bool AddTexture(std::string _programName, unsigned int _argNr,
                   Texture *_texture, TextureType _textureType,
                   Permissions _permissions);
+  // Add (update) transfer function
   bool AddTransferFunction(std::string _programName, unsigned int _argNr,
                            TransferFunction *_transferFunction);
+  // Add (update) kernel constants
   bool AddKernelConstants(std::string _programName, unsigned int _argNr,
                           KernelConstants *_kernelConstants);
+  // Add (update) array of integers
   bool AddIntArray(std::string _programName, unsigned int _argNr,
                    int *_intArray, unsigned int _size,
                    Permissions _permissions);
   
-  // Aquire any shared textures, set up kernel arguments ets
+  // Aquire any shared textures, set up kernel arguments etc
   bool PrepareProgram(std::string _programName);
 
   // Launch program kernel (returns immediately)
