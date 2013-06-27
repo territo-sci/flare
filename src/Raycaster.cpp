@@ -22,7 +22,7 @@
 #include <TransferFunction.h>
 #include <Animator.h>
 #include <vector>
-#include <pthread.h>
+#include <CLManager.h>
 
 using namespace osp;
 
@@ -45,7 +45,6 @@ uint32_t ZOrder(uint16_t xPos, uint16_t yPos, uint16_t zPos) {
   const uint32_t result = x | (y << 1) | (z << 2);
   return result;
 }
-
 
 Raycaster::Raycaster() 
   : Renderer(),
@@ -79,7 +78,8 @@ Raycaster::Raycaster()
     animator_(NULL),
     pingPong_(0),
     lastTimestep_(1),
-    brickManager_(NULL) {
+    brickManager_(NULL),
+    clManager_(NULL) {
 
   clHandler_ = CLHandler::New();
 
@@ -360,13 +360,9 @@ void Raycaster::SetQuadTexture(Texture2D *_quadTexture) {
   quadTex_ = _quadTexture;
 }
 
-//void Raycaster::SetVolumeTexture(Texture3D *_volumeTexture) {
-//  volumeTex_ = _volumeTexture;
-//}
-
-//void Raycaster::SetVDFReader(VDFReader *_reader) {
-//  reader_ = _reader;
-//}
+void Raycaster::SetCLManager(CLManager *_clManager) {
+  clManager_ = _clManager;
+}
 
 void Raycaster::SetCubeShaderProgram(ShaderProgram *_cubeShaderProgram) {
   cubeShaderProgram_ = _cubeShaderProgram;
@@ -499,7 +495,6 @@ bool Raycaster::Render(float _timestep) {
         unsigned int zOrderIdx = static_cast<unsigned int>(
           ZOrder((uint16_t)x, (uint16_t)y, (uint16_t)z));
         
-        currentTimestep = 0;
         unsigned int brickIndex = bricksPerBST*firstOctreeLeaf + 
                                   bricksPerBST*zOrderIdx +
                                   firstBSTLeaf+currentTimestep;
@@ -518,15 +513,15 @@ bool Raycaster::Render(float _timestep) {
   // Apply the brick list, update the texture atlas
   if (!brickManager_->UpdateAtlas()) return false;
 
-  // Bind box list to kernel
-  if (!clHandler_->AddBoxList(boxListArg_, brickManager_->BoxList())) {
-    return false;
-  }
+  if (!clManager_->AddIntArray("Raycaster", boxListArg_,
+                              &(brickManager_->BoxList()[0]),
+                              brickManager_->BoxList().size(),
+                              CLManager::READ_WRITE)) return false;
 
-  if (!clHandler_->PrepareRaycaster()) return false;
-  if (!clHandler_->LaunchRaycaster()) return false;
-  if (!clHandler_->FinishRaycaster()) return false;
 
+  if (!clManager_->PrepareProgram("Raycaster")) return false;
+  if (!clManager_->LaunchProgram("Raycaster")) return false;
+  if (!clManager_->FinishProgram("Raycaster")) return false;
 
   /*
 
@@ -623,6 +618,7 @@ bool Raycaster::ReloadShaders() {
 
 bool Raycaster::ReloadConfig() {
   INFO("Reloading config");
+  WARNING("UNIMPLEMENTED");
   return true;
   //return ReadShaderConfig(configFilename_);
 }
@@ -638,7 +634,6 @@ bool Raycaster::HandleMouse() {
 // Don't forget to add keys to look for in window manager
 // TODO proper keyboard handling class
 bool Raycaster::HandleKeyboard() {
-
   if (KeyPressedNoRepeat('R')) {
     if (!ReloadConfig()) 
       return false;
@@ -664,7 +659,6 @@ bool Raycaster::HandleKeyboard() {
   if (KeyPressed('Z')) animator_->IncTimestep();
   if (KeyPressed('X')) animator_->DecTimestep();
   if (KeyPressedNoRepeat('T')) clHandler_->ToggleTimers();
-
   return true;
 }
 
@@ -701,62 +695,49 @@ bool Raycaster::KeyLastState(int _key) const {
 }
 
 bool Raycaster::InitCL() {
-  if (!clHandler_->InitPlatform()) 
-    return false;
-  if (!clHandler_->InitDevices()) 
-    return false;
-  if (!clHandler_->CreateContext()) 
-    return false;
-  // TODO move out
-  if (!clHandler_->CreateProgram("kernels/RaycasterBricks.cl")) 
-    return false;
-  if (!clHandler_->BuildProgram()) 
-    return false;
-  if (!clHandler_->CreateKernel()) 
-    return false;
-  if (!clHandler_->CreateCommandQueues()) 
-    return false;
-  //if (!clHandler_->InitBuffers(voxelVolumeArg_, voxelData_))
-  //  return false;
-  if (!clHandler_->AddTexture(cubeFrontArg_, cubeFrontTex_, 
-                              CLHandler::TEXTURE_2D,  CLHandler::READ_ONLY)) 
-    return false;
-  if (!clHandler_->AddTexture(cubeBackArg_, cubeBackTex_, 
-                              CLHandler::TEXTURE_2D, CLHandler::READ_ONLY)) 
-    return false;
-  if (!clHandler_->AddTexture(quadArg_, quadTex_, CLHandler::TEXTURE_2D, 
-                              CLHandler::WRITE_ONLY)) 
-    return false;
-  if (!clHandler_->AddTexture(textureAtlasArg_, brickManager_->TextureAtlas(),
-                              CLHandler::TEXTURE_3D, CLHandler::READ_ONLY))
-    return false;
-  if (!clHandler_->AddConstants(constantsArg_, &kernelConstants_)) 
-    return false;
-  if (!clHandler_->AddTransferFunction(transferFunctionArg_, 
-                                       transferFunctions_[0]))
-    return false;
 
-  for (unsigned int i=0; i<brickManager_->BoxList().size()/4; ++i) {
-    //INFO(brickManager_->BoxList()[4*i+3]);
+  if (!clManager_) {
+    ERROR("InitCL() - No CL manager has been set");
+    return false;
   }
-  INFO("size: " << brickManager_->BoxList().size());
+  
+  if (!clManager_->InitPlatform()) return false;
+  if (!clManager_->InitDevices()) return false;
+  if (!clManager_->CreateContext()) return false;
+  if (!clManager_->CreateCommandQueue()) return false;
 
-  //if (!clHandler_->AddBoxList(boxListArg_, brickManager_->BoxList()))
-  //  return false;
+  // Rendering part of raycaster
+  if (!clManager_->CreateProgram("Raycaster", 
+                                "kernels/RaycasterBricks.cl")) return false;
+  if (!clManager_->BuildProgram("Raycaster")) return false;
+  if (!clManager_->CreateKernel("Raycaster")) return false;
+
+  if (!clManager_->AddTexture("Raycaster", cubeFrontArg_, cubeFrontTex_, 
+                              CLManager::TEXTURE_2D,  
+                              CLManager::READ_ONLY)) return false;
+
+  if (!clManager_->AddTexture("Raycaster", cubeBackArg_, cubeBackTex_, 
+                              CLManager::TEXTURE_2D, 
+                              CLManager::READ_ONLY)) return false;
+
+  if (!clManager_->AddTexture("Raycaster", quadArg_, quadTex_, 
+                              CLManager::TEXTURE_2D, 
+                              CLManager::WRITE_ONLY)) return false;
+
+  if (!clManager_->AddTexture("Raycaster", textureAtlasArg_, 
+                              brickManager_->TextureAtlas(),
+                              CLManager::TEXTURE_3D, 
+                              CLManager::READ_ONLY)) return false;
+
+  if (!clManager_->AddKernelConstants("Raycaster", constantsArg_, 
+                                      &kernelConstants_)) return false;
+
+  if (!clManager_->AddTransferFunction("Raycaster", transferFunctionArg_, 
+                                       transferFunctions_[0])) return false;
+
   return true;
 }
 
-//void Raycaster::SetVoxelData(VoxelData<float> *_voxelData) {
-//  voxelData_ = _voxelData;
-//}
-
-//void Raycaster::SetVoxelDataHeader(VoxelDataHeader *_voxelDataHeader) {
-//  voxelDataHeader_ = _voxelDataHeader;
-//}
-
-//void Raycaster::SetVoxelDataFrame(VoxelDataFrame<float> *_voxelDataFrame) {
-//  voxelDataFrame_ = _voxelDataFrame;
-//}
 
 void Raycaster::SetKernelConfigFilename(const std::string &_filename) {
   kernelConfigFilename_ = _filename;

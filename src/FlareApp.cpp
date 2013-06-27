@@ -16,28 +16,13 @@
 #include <TSP.h>
 #include <VoxelDataHeader.h>
 #include <VoxelDataFrame.h>
+#include <CLManager.h>
 
 using namespace osp;
 
 int main() {
 
-  //std::string filename = 
-  //  "/home/vsand/OpenSpace/enlilTestData_256_256_256.vdf";
-
-  // Read data
-  /*
-  VoxelData<float> *floatData = new VoxelData<float>();
-  VDFReader *reader = VDFReader::New();
-  reader->SetVoxelData(floatData);
-  if (!reader->Read(filename)) exit(1);
-
-  VoxelDataHeader *voxelDataHeader = VoxelDataHeader::New();
-  VoxelDataFrame<float> *voxelDataFrame = VoxelDataFrame<float>::New();
-  reader->Init(filename, voxelDataHeader, voxelDataFrame);
-  if (!reader->ReadHeader()) exit(1);
-  // TODO temp, move into Reader class
-  reader->ReadTimestep(0);
-  */
+  std::string tspFileName = "/home/vsand/OpenSpace/output.tsp";
 
   unsigned int width = 512;
   unsigned int height = 512;
@@ -46,17 +31,17 @@ int main() {
   WindowManager *manager = WindowManager::New(width, height, "FlareApp");
   if (!manager->OpenWindow()) exit(1);
 
-  // Create TSP structure
-  TSP *tsp = TSP::New("/home/vsand/OpenSpace/output.tsp");
+  // Create TSP structure from file
+  TSP *tsp = TSP::New(tspFileName);
   tsp->Construct();
 
   // Create brick manager and init (has to be done after init OpenGL!)
   BrickManager *brickManager= BrickManager::New();
-  brickManager->SetInFilename("/home/vsand/OpenSpace/output.tsp");
+  brickManager->SetInFilename(tspFileName);
   if (!brickManager->ReadHeader()) exit(1);
   if (!brickManager->InitAtlas()) exit(1);
 
-  // Create shaders
+  // Create shaders for color cube and final textured quad
   ShaderProgram *cubeShaderProgram = ShaderProgram::New();
   cubeShaderProgram->CreateShader(ShaderProgram::VERTEX,
                                   "shaders/cubeVert.glsl");
@@ -71,7 +56,7 @@ int main() {
                                   "shaders/quadFrag.glsl");
   quadShaderProgram->CreateProgram();
 
-  // Create two textures to hold the raycaster's cube
+  // Create two textures to hold the color cube
   std::vector<unsigned int> dimensions(2);
   dimensions[0] = width;
   dimensions[1] = height;
@@ -95,6 +80,9 @@ int main() {
   animator->SetNumTimesteps(brickManager->NumTimesteps());
   animator->SetRefreshInterval(0.05f);
 
+  // Create CL manager
+  CLManager *clManager = CLManager::New();
+
   // Create a raycaster and set it up
   Raycaster * raycaster = Raycaster::New();
   raycaster->SetWinWidth(width);
@@ -109,15 +97,13 @@ int main() {
   raycaster->SetCubeShaderProgram(cubeShaderProgram);
   raycaster->SetQuadShaderProgram(quadShaderProgram);
   if (!raycaster->InitFramebuffers()) exit(1);
-  //raycaster->SetVDFReader(reader);
-  //raycaster->SetVoxelData(floatData);
-  //raycaster->SetVoxelDataFrame(voxelDataFrame);
-  //raycaster->SetVoxelDataHeader(voxelDataHeader);
   raycaster->SetAnimator(animator);
   raycaster->AddTransferFunction(transferFunction);
   raycaster->SetKernelConfigFilename("config/kernelConstants.txt");
   if (!raycaster->UpdateKernelConfig()) exit(1);
-  if (!raycaster->InitCL()) exit(1);
+  // Tie CL manager to renderer
+  raycaster->SetCLManager(clManager);
+  if (!raycaster->InitCL()) return false;
 
   // Go!
   manager->SetRenderer(raycaster);
@@ -125,6 +111,8 @@ int main() {
   if (!manager->StartLoop()) exit(0);
 
   // Clean up, like a good citizen
+  delete clManager;
+  delete tsp;
   delete brickManager;
   delete cubeFrontTex;
   delete cubeBackTex;

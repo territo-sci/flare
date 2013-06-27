@@ -31,6 +31,7 @@ class TransferFunction;
 class Animator;
 class VDFReader;
 class BrickManager;
+class CLManager;
 
 class Raycaster : public Renderer {
 public:
@@ -94,7 +95,7 @@ public:
   void SetKeyLastState(int, bool _pressed);
   void SetAnimator(Animator *_animator);
   void SetVDFReader(VDFReader *_reader);
-
+  void SetCLManager(CLManager *_clManager);
   void SetBrickManager(BrickManager *_brickManager);
 
 private:
@@ -163,6 +164,8 @@ private:
   BrickManager *brickManager_;
   boost::timer::cpu_timer timer_;
   const double BYTES_PER_GB = 1073741824.0;
+  
+  CLManager *clManager_;
 
   // For the corresponding CL kernel
   static const unsigned int cubeFrontArg_ = 0;
