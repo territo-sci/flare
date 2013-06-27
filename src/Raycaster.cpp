@@ -699,6 +699,12 @@ bool Raycaster::InitCL() {
   if (!clManager_->CreateContext()) return false;
   if (!clManager_->CreateCommandQueue()) return false;
 
+  // TSP traversal part or raycaster
+  if (!clManager_->CreateProgram("TSPTraversal",
+                                 "kernels/TSPTraversal.cl")) return false;
+  if (!clManager_->BuildProgram("TSPTraversal")) return false;
+  if (!clManager_->CreateKernel("TSPTraversal")) return false;
+
   // Rendering part of raycaster
   if (!clManager_->CreateProgram("Raycaster", 
                                 "kernels/RaycasterBricks.cl")) return false;
@@ -727,6 +733,7 @@ bool Raycaster::InitCL() {
 
   if (!clManager_->AddTransferFunction("Raycaster", transferFunctionArg_, 
                                        transferFunctions_[0])) return false;
+
 
   return true;
 }
