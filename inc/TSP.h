@@ -28,14 +28,14 @@ public:
   static TSP * New(const std::string &_inFilename);
   ~TSP();
   bool Construct();
-  unsigned int * Data() { return &data_[0]; }
+  int * Data() { return &data_[0]; }
 private:
   TSP();
   TSP(const std::string &_inFilename);
   TSP(const TSP&);
   std::string inFilename_;
   // Holds the actual structure
-  std::vector<unsigned int> data_;
+  std::vector<int> data_;
 };
 
 }

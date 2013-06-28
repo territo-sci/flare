@@ -46,10 +46,10 @@ bool TSP::Construct() {
   in.read(reinterpret_cast<char*>(&paddingWidth), s);
   in.read(reinterpret_cast<char*>(&dataSize), s);
 
-  unsigned int numLevels = log(xNumBricks)/log(2) + 1;
-  unsigned int numOctreeNodes = (pow(8, numLevels) - 1) / 7;
-  unsigned int numBSTNodes = numTimesteps * 2 - 1;
-  unsigned int numTotalNodes = numOctreeNodes * numBSTNodes;
+  int numLevels = log((int)xNumBricks)/log(2) + 1;
+  int numOctreeNodes = (pow(8, numLevels) - 1) / 7;
+  int numBSTNodes = (int)numTimesteps * 2 - 1;
+  int numTotalNodes = numOctreeNodes * numBSTNodes;
 
   INFO("TSP construction, num total nodes: " << numTotalNodes);
 
@@ -57,7 +57,7 @@ bool TSP::Construct() {
   data_.resize(numTotalNodes*NUM_DATA);
 
   // Loop over levels in octree skeleton
-  for (unsigned int level=0; level<numLevels; ++level) {
+  for (int level=0; level<numLevels; ++level) {
     INFO("Visiting level " << level);
     
     // First index of this level
@@ -65,43 +65,43 @@ bool TSP::Construct() {
     // 1 for level 1
     // 9 for level 2
     // etc
-    unsigned int firstLevelIndex = (pow(8, level) - 1) / 7;
+    int firstLevelIndex = (pow(8, level) - 1) / 7;
 
     // Position of first child for this level
     // Equals number of nodes up to this point
-    unsigned int firstChildOfLevel = (pow(8, level+1) - 1) / 7;
+    int firstChildOfLevel = (pow(8, level+1) - 1) / 7;
     // Offset between children
     // For level 0, the children at level 1 are 1 octree node apart
     // For level 1, the children at level 2 are 8 octree nodes apart 
     // etc
-    unsigned int childrenOffset = pow(8, level);
+    int childrenOffset = pow(8, level);
 
     // For each level, loop over all octree nodes
-    unsigned int numNodesInLevel = pow(8, level);
-    for (unsigned int OTNode=0; OTNode<numNodesInLevel; ++OTNode) {
+    int numNodesInLevel = pow(8, level);
+    for (int OTNode=0; OTNode<numNodesInLevel; ++OTNode) {
       //INFO("Visiting node " << OTNode << " at level " << level);
 
       // Octree node child index
-      unsigned int OTChild;
+      int OTChild;
       if (level == numLevels - 1) {
-        OTChild = 0; // Leaf
+        OTChild = -1; // Leaf
       } else {
         OTChild = firstChildOfLevel+OTNode*childrenOffset;
       }
       //INFO("Child: " << OTChild);
         
       // At every octree node (root of BST), save index to child
-      unsigned int OTNodeIndex = firstLevelIndex + OTNode;
-      unsigned int OTChildIndex = numBSTNodes*OTChild*NUM_DATA;
+      int OTNodeIndex = firstLevelIndex + OTNode;
+      int OTChildIndex = numBSTNodes*OTChild*NUM_DATA;
       data_[numBSTNodes*NUM_DATA*OTNodeIndex+CHILD_INDEX] = OTChildIndex;
 
       // For each octree node, loop over BST nodes
-      for (unsigned int BSTNode=0; BSTNode<numBSTNodes; ++BSTNode) {
+      for (int BSTNode=0; BSTNode<numBSTNodes; ++BSTNode) {
         //INFO("Visiting BST node " << BSTNode);
          
-        unsigned int BSTNodeIndex = numBSTNodes*OTNodeIndex + BSTNode;
+        int BSTNodeIndex = numBSTNodes*OTNodeIndex + BSTNode;
         if (BSTNode != 0) { // If not root
-          unsigned int BSTChildIndex = 0;
+          int BSTChildIndex = -1;
           if (BSTNode < (numTimesteps) - 1) {  // If not leaf
             BSTChildIndex = numBSTNodes*OTNodeIndex + BSTNode*2 - 1;
           }
