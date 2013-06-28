@@ -16,6 +16,7 @@ TODO: Iteratively break away parts from it into other classes.
 #include <CL/cl.hpp>
 #include <KernelConstants.h>
 #include <boost/timer/timer.hpp>
+#include <TSP.h>
 
 namespace osp {
 
@@ -86,6 +87,7 @@ public:
   void SetAnimator(Animator *_animator);
   void SetCLManager(CLManager *_clManager);
   void SetBrickManager(BrickManager *_brickManager);
+  void SetTSP(TSP *_tsp);
 
 private:
   Raycaster();
@@ -145,6 +147,8 @@ private:
   BrickManager *brickManager_;
   boost::timer::cpu_timer timer_;
   const double BYTES_PER_GB = 1073741824.0;
+
+  TSP *tsp_;
   
   // Entry point for all things OpenCL
   CLManager *clManager_;
@@ -157,6 +161,12 @@ private:
   static const unsigned int constantsArg_ = 4;
   static const unsigned int transferFunctionArg_ = 5; 
   static const unsigned int boxListArg_ = 6;
+
+  static const unsigned int tspCubeFrontArg_ = 0;
+  static const unsigned int tspCubeBackArg_ = 1;
+  static const unsigned int tspConstantsArg_ = 2;
+  static const unsigned int tspTSPArg_ = 3;
+  static const unsigned int tspBrickListArg_ = 4;
 
 };
 

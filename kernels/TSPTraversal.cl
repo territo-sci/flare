@@ -3,8 +3,9 @@ struct TraversalConstants {
   int numTimesteps_;
   int numValuesPerNode_;
   int numBSTNodesPerOT_;
-  float temporalTolerance_;
-  float spatialTolerance_;
+  int timestep_;
+  int temporalTolerance_;
+  int spatialTolerance_;
 };
 
 // Intersect a ray specifiec by origin and direction
@@ -88,39 +89,46 @@ int ChildNodeIndex(int _bstNodeIndex,
 }
 
 // Return the brick index that a BST node represents
-int BrickIndex(int _bstNodeIndex, int _numValuesPerNode, int *_tsp) {
+int BrickIndex(int _bstNodeIndex, int _numValuesPerNode, 
+               __global __read_only int *_tsp) {
   return _tsp[_bstNodeIndex*_numValuesPerNode + 0];
 }
 
 // Checks if a BST node is a leaf ot not
-bool IsBSTLeaf(int _bstNodeIndex, int _numValuesPerNode, int *_tsp) {
+bool IsBSTLeaf(int _bstNodeIndex, int _numValuesPerNode, 
+               __global __read_only int *_tsp) {
   return (_tsp[_bstNodeIndex*_numValuesPerNode + 1] == -1);
 }
 
 // Checks if an OT node is a leaf or not
-bool IsOctreeLeaf(int _otNodeIndex, int _numValuesPerNode, int *_tsp) {
+bool IsOctreeLeaf(int _otNodeIndex, int _numValuesPerNode, 
+                  __global __read_only int *_tsp) {
   // CHILD_INDEX is at offset 1, and -1 represents leaf
   return (_tsp[_otNodeIndex*_numValuesPerNode + 1] == -1);
 }
 
 // Return OT child index given current node and child number (0-7)
 int OTChildIndex(int _otNodeIndex, int _numValuesPerNode, int _numBSTNodes,
-                 int _child, int *_tsp) {
+                 int _child, 
+                 __global __read_only int *_tsp) {
   int firstChild = _tsp[_otNodeIndex*_numValuesPerNode + 1];
   return firstChild + _numValuesPerNode*_numBSTNodes*_child;
 }
 
 // Increment the count for a brick
-void AddToList(int _brickIndex, int *_brickList) {
+void AddToList(int _brickIndex, 
+               __global int *_brickList) {
   _brickList[_brickIndex]++;
 }
 
-float TemporalError(int _bstNodeIndex, int _numValuesPerNode, int *_tsp) {
-  return _tsp[_bstNodeIndex*_numValuesPerNode + 3];
+float TemporalError(int _bstNodeIndex, int _numValuesPerNode, 
+                    __global __read_only int *_tsp) {
+  return (float)(_tsp[_bstNodeIndex*_numValuesPerNode + 3]);
 }
 
-float SpatialError(int _bstNodeIndex, int _numValuesPerNode, int *_tsp) {
-  return _tsp[_bstNodeIndex*_numValuesPerNode + 2];
+float SpatialError(int _bstNodeIndex, int _numValuesPerNode, 
+                   __global __read_only int *_tsp) {
+  return (float)(_tsp[_bstNodeIndex*_numValuesPerNode + 2]);
 }
 
 
@@ -129,9 +137,9 @@ float SpatialError(int _bstNodeIndex, int _numValuesPerNode, int *_tsp) {
 bool TraverseBST(int _otNodeIndex,
                  int *_brickIndex, 
                  int _timestep,
-                 struct TraversalConstants *_constants,
-                 int *_brickList,
-                 int *_tsp) {
+                 __constant struct TraversalConstants *_constants,
+                 __global int *_brickList,
+                 __global __read_only int *_tsp) {
 
   // Start at the root of the current BST
   int bstNodeIndex = _otNodeIndex;
@@ -146,16 +154,18 @@ bool TraverseBST(int _otNodeIndex,
                               _constants->numValuesPerNode_,
                               _tsp);
     if (TemporalError(bstNodeIndex, _constants->numValuesPerNode_,
-                      _tsp) <= _constants->temporalTolerance_) {
+                      _tsp) == _constants->temporalTolerance_) {
       
       // If the ot node is a leaf, we can't do any better spatially so we 
       // return the current brick
+      // TODO float and <= errors
+      // TEST pick one specific level
       if (IsOctreeLeaf(_otNodeIndex, _constants->numValuesPerNode_, _tsp)) {
         return true;
 
       // All is well!
       } else if (SpatialError(bstNodeIndex, _constants->numValuesPerNode_,
-                 _tsp) <= _constants->spatialTolerance_) {
+                 _tsp) == _constants->spatialTolerance_) {
         return true;
          
       // If spatial failed and the BST node is a leaf
@@ -251,10 +261,9 @@ void UpdateOffset(float3 *_offset, float _boxDim, int _child) {
 // Traverse one ray through the volume, build brick list
 void TraverseOctree(float3 _rayO, 
                     float3 _rayD,
-                    int _timestep,
-                    struct TraversalConstants *_constants,
-                    int *_brickList,
-                    int *_tsp) {
+                    __constant struct TraversalConstants *_constants,
+                    __global int *_brickList,
+                    __global __read_only int *_tsp) {
 
   float boxDim, boxMid, boxMin;
   int otNode, level;
@@ -291,7 +300,7 @@ void TraverseOctree(float3 _rayO,
       int brickIndex;
       bool bstSuccess = TraverseBST(otNodeIndex, 
                                     &brickIndex,
-                                    _timestep,
+                                    _constants->timestep_,
                                     _constants,
                                     _brickList,
                                     _tsp);
@@ -355,7 +364,6 @@ void TraverseOctree(float3 _rayO,
 __kernel void TSPTraversal(__global __read_only image2d_t _cubeFront,
                            __global __read_only image2d_t _cubeBack,
                            __constant struct TraversalConstants *_constants,
-                           __global __read_only float *_tf,
                            __global __read_only int *_tsp,
                            __global int *_brickList) {
 
@@ -372,7 +380,7 @@ __kernel void TSPTraversal(__global __read_only image2d_t _cubeFront,
     // Figure out ray direction 
     float3 direction = normalize(cubeBackColor-cubeFrontColor).xyz;
 
-    // Traverse structure, write to brick list
-    Traverse(cubeFrontColor.xyz, direction, _tf, _tsp, _brickList);
+    TraverseOctree(cubeFrontColor.xyz, direction, 
+                   _constants,  _brickList, _tsp);
 
 }

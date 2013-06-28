@@ -46,6 +46,9 @@ public:
   bool AddKernelConstants(unsigned int _argNr, 
                           KernelConstants *_kernelConstants);
 
+  bool AddTraversalConstants(unsigned int _argNr,
+                             TraversalConstants *_traversalConstants);
+
   bool AddIntArray(unsigned int _argNr, int *_intArray, unsigned int _size,
                    cl_mem_flags _permissions);
 

@@ -102,6 +102,7 @@ int main() {
   if (!raycaster->UpdateKernelConfig()) exit(1);
   // Tie CL manager to renderer
   raycaster->SetCLManager(clManager);
+  raycaster->SetTSP(tsp);
   if (!raycaster->InitCL()) return false;
 
   // Go!

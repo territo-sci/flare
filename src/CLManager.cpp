@@ -226,6 +226,17 @@ bool CLManager::AddKernelConstants(std::string _programName,
                                                      _kernelConstants);
 }
 
+bool CLManager::AddTraversalConstants(std::string _programName,
+                                      unsigned int _argNr,
+                                      TraversalConstants *_traversalConstants){
+  if (clPrograms_.find(_programName) == clPrograms_.end()) {
+    ERROR("Program " << _programName << " not found");
+    return false;
+  } 
+  return clPrograms_[_programName]->AddTraversalConstants(_argNr,
+                                                       _traversalConstants);
+}
+
 
 bool CLManager::AddIntArray(std::string _programName, unsigned int _argNr,
                             int *_intArray, unsigned int _size,

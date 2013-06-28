@@ -102,7 +102,7 @@ bool TSP::Construct() {
         int BSTNodeIndex = numBSTNodes*OTNodeIndex + BSTNode;
         if (BSTNode != 0) { // If not root
           int BSTChildIndex = -1;
-          if (BSTNode < (numTimesteps) - 1) {  // If not leaf
+          if (BSTNode < (numTimesteps-1)) {  // If not leaf
             BSTChildIndex = numBSTNodes*OTNodeIndex + BSTNode*2 - 1;
           }
           data_[NUM_DATA*BSTNodeIndex + CHILD_INDEX] = BSTChildIndex*NUM_DATA;
@@ -110,8 +110,14 @@ bool TSP::Construct() {
         } 
 
         data_[NUM_DATA*BSTNodeIndex + BRICK_INDEX] = BSTNodeIndex;
-        data_[NUM_DATA*BSTNodeIndex + SPATIAL_ERR] = level;
-        data_[NUM_DATA*BSTNodeIndex + TEMPORAL_ERR] = 1;
+        data_[NUM_DATA*BSTNodeIndex + SPATIAL_ERR] = numLevels-1-level;
+        // TODO test
+        if (BSTNode == (numTimesteps-1)) {
+         data_[NUM_DATA*BSTNodeIndex + TEMPORAL_ERR] = 0;
+        } else {
+         data_[NUM_DATA*BSTNodeIndex + TEMPORAL_ERR] = 1;
+        }
+
         
         /* 
         INFO("Visited BSTNodeIndex " << BSTNodeIndex);

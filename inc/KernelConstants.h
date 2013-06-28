@@ -8,11 +8,22 @@ Simple struct to gather constants used in kernel
 
 namespace osp {
 
-typedef struct {
+struct KernelConstants {
   float stepSize;
   float intensity;
   int numBoxesPerAxis;
-} KernelConstants;
+};
+
+struct TraversalConstants {
+  int numTimesteps_;
+  int numValuesPerNode_;
+  int numBSTNodesPerOT_;
+  // TODO change to float
+  // TODO get rid of timestep
+  int timestep_;
+  int temporalTolerance_;
+  int spatialTolerance_;
+};
 
 }
 

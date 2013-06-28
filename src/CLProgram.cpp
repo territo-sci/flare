@@ -150,6 +150,27 @@ bool CLProgram::AddKernelConstants(unsigned int _argNr,
 }
 
 
+bool CLProgram::AddTraversalConstants(unsigned int _argNr,
+                                  TraversalConstants *_traversalConstants) {
+  // Delete any old data already bound to argument index
+  if (memArgs_.find((cl_uint)_argNr) != memArgs_.end()) {
+    memArgs_.erase((cl_uint)_argNr);
+  }
+
+  MemArg mka;
+  mka.size_ = sizeof(cl_mem);
+  mka.mem_ = clCreateBuffer(clManager_->context_,
+                            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
+                            sizeof(TraversalConstants),
+                            _traversalConstants,
+                            &error_);
+
+  if (error_ != CL_SUCCESS) return false;
+  memArgs_.insert(std::make_pair((cl_uint)_argNr, mka));
+  return true;
+}
+
+
 bool CLProgram::AddIntArray(unsigned int _argNr, int *_intArray, 
                             unsigned int _size, 
                             cl_mem_flags _permissions) {

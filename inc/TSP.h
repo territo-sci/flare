@@ -29,6 +29,7 @@ public:
   ~TSP();
   bool Construct();
   int * Data() { return &data_[0]; }
+  unsigned int Size() { return data_.size(); }
 private:
   TSP();
   TSP(const std::string &_inFilename);

@@ -50,6 +50,9 @@ public:
   // Add (update) kernel constants
   bool AddKernelConstants(std::string _programName, unsigned int _argNr,
                           KernelConstants *_kernelConstants);
+  // Add (update) traversal constants
+  bool AddTraversalConstants(std::string _programName, unsigned int _argNr,
+                             TraversalConstants *_traversalConstants);
   // Add (update) array of integers
   bool AddIntArray(std::string _programName, unsigned int _argNr,
                    int *_intArray, unsigned int _size,

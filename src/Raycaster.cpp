@@ -19,6 +19,7 @@
 #include <Animator.h>
 #include <vector>
 #include <CLManager.h>
+#include <KernelConstants.h>
 
 using namespace osp;
 
@@ -356,6 +357,10 @@ void Raycaster::SetCLManager(CLManager *_clManager) {
   clManager_ = _clManager;
 }
 
+void Raycaster::SetTSP(TSP *_tsp) {
+  tsp_ = _tsp;
+}
+
 void Raycaster::SetCubeShaderProgram(ShaderProgram *_cubeShaderProgram) {
   cubeShaderProgram_ = _cubeShaderProgram;
 }
@@ -501,6 +506,13 @@ bool Raycaster::Render(float _timestep) {
      }
     }
   }
+
+  TraversalConstants tc;
+  tc.numTimesteps_ = 32;
+  tc.numValuesPerNode_ = 4;
+  tc.numBSTNodesPerOT_ = 63;
+  tc.temporalTolerance_ = 0;
+  tc.spatialTolerance_ = 0; 
 
   // Apply the brick list, update the texture atlas
   if (!brickManager_->UpdateAtlas()) return false;
@@ -704,6 +716,21 @@ bool Raycaster::InitCL() {
                                  "kernels/TSPTraversal.cl")) return false;
   if (!clManager_->BuildProgram("TSPTraversal")) return false;
   if (!clManager_->CreateKernel("TSPTraversal")) return false;
+
+  if (!clManager_->AddTexture("TSPTraversal", tspCubeFrontArg_, 
+                              cubeFrontTex_, CLManager::TEXTURE_2D,
+                              CLManager::READ_ONLY)) return false;
+
+  if (!clManager_->AddTexture("TSPTraversal", tspCubeBackArg_,
+                              cubeBackTex_, CLManager::TEXTURE_2D,
+                              CLManager::READ_ONLY)) return false;
+
+  if (!clManager_->AddIntArray("TSPTraversal", tspTSPArg_,
+                               tsp_->Data(),
+                               tsp_->Size(),
+                               CLManager::READ_WRITE)) return false;
+                                
+
 
   // Rendering part of raycaster
   if (!clManager_->CreateProgram("Raycaster", 
