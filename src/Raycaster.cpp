@@ -476,39 +476,7 @@ bool Raycaster::Render(float _timestep) {
 
   // TODO temp test
 
-  // Construct the brick and box lists
-  unsigned int xnb = brickManager_->XNumBricks();
-  unsigned int ynb = brickManager_->YNumBricks();
-  unsigned int znb = brickManager_->ZNumBricks();
-  for (unsigned int z=0; z<znb; ++z) {
-    for (unsigned int y=0; y<ynb; ++y) {
-      for (unsigned int x=0; x<xnb; ++x) {
-        // Index for the box to put the brick in
-        unsigned int boxIndex = (x+y*xnb+z*xnb*ynb);
-
-        // Test hardcoded values
-        unsigned int bricksPerBST = 1+2+4+8+16+32;
-        unsigned int firstOctreeLeaf = 1+8;
-        unsigned int firstBSTLeaf = 1+2+4+8+16;
-
-        unsigned int zOrderIdx = static_cast<unsigned int>(
-          ZOrder((uint16_t)x, (uint16_t)y, (uint16_t)z));
-        
-        unsigned int brickIndex = bricksPerBST*firstOctreeLeaf + 
-                                  bricksPerBST*zOrderIdx +
-                                  firstBSTLeaf+currentTimestep;
-
-        BrickManager::AtlasCoords ac;
-        ac.x_ = x;
-        ac.y_ = y;
-        ac.z_ = z;
-        ac.size_ = 1;
-        brickManager_->UpdateBrickList(brickIndex, ac);
-        brickManager_->UpdateBoxList(boxIndex, brickIndex);
-     }
-    }
-  }
-
+  // TODO temp
   TraversalConstants tc;
   tc.numTimesteps_ = 32;
   tc.numValuesPerNode_ = 4;
@@ -543,12 +511,46 @@ bool Raycaster::Render(float _timestep) {
                               brickRequest.size()*sizeof(int),
                               true)) return false;
 
-  INFO(" ");
+  // We now how a "histogram" of bricks to be put in the atlas
+  // Build a list from the histogram. The list takes at most the number
+  // of bricks in total as index.
+  std::vector<int> brickList(pow(brickManager_->XNumBricks(), 3), -1);
+  unsigned int index = 0;
   for (unsigned int i=0; i<brickRequest.size(); ++i) {
-    if (brickRequest[i] != 0) {
-      INFO(i << ": " << brickRequest[i]);
+    if (brickRequest[i] > 0) {
+      brickList[index++] = i;
+      if (index >= brickRequest.size()) {
+        ERROR("Failed to build brick list, request list too large");
+        return false;
+      }
     }
   }
+
+  // Construct the brick and box lists
+  // TODO this is backwards!
+  unsigned int reqIdx = 0;
+  unsigned int xnb = brickManager_->XNumBricks();
+  unsigned int ynb = brickManager_->YNumBricks();
+  unsigned int znb = brickManager_->ZNumBricks();
+  for (unsigned int z=0; z<znb; ++z) {
+    for (unsigned int y=0; y<ynb; ++y) {
+      for (unsigned int x=0; x<xnb; ++x) {
+        // Index for the box to put the brick in
+        unsigned int boxIndex = (x+y*xnb+z*xnb*ynb);
+
+        unsigned int brickIndex = (unsigned int)brickList[reqIdx++]; 
+
+        BrickManager::AtlasCoords ac;
+        ac.x_ = x;
+        ac.y_ = y;
+        ac.z_ = z;
+        ac.size_ = 1;
+        brickManager_->UpdateBrickList(brickIndex, ac);
+        brickManager_->UpdateBoxList(boxIndex, brickIndex);
+     }
+    }
+  }
+
 
   // Apply the brick list, update the texture atlas
   if (!brickManager_->UpdateAtlas()) return false;

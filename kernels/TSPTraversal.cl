@@ -91,8 +91,8 @@ int OTChildIndex(int _otNodeIndex, int _numValuesPerNode, int _numBSTNodes,
 
 // Increment the count for a brick
 void AddToList(int _brickIndex, 
-               __global volatile int *_brickList) {
-  atomic_inc(&_brickList[_brickIndex]);
+               __global volatile int *_reqList) {
+  atomic_inc(&_reqList[_brickIndex]);
 }
 
 int TemporalError(int _bstNodeIndex, int _numValuesPerNode, 
@@ -112,7 +112,7 @@ bool TraverseBST(int _otNodeIndex,
                  int *_brickIndex, 
                  int _timestep,
                  __constant struct TraversalConstants *_constants,
-                 __global volatile int *_brickList,
+                 __global volatile int *_reqList,
                  __global __read_only int *_tsp) {
   
   // Start at the root of the current BST
@@ -120,8 +120,6 @@ bool TraverseBST(int _otNodeIndex,
   bool bstRoot = true;
   int timespanStart = 0;
   int timespanEnd = _constants->numTimesteps_;
-
-  //AddToList(_otNodeIndex, _brickList);
 
   // Rely on structure for termination
   while (true) {
@@ -131,13 +129,12 @@ bool TraverseBST(int _otNodeIndex,
                               _tsp);
 
     // If temporal error is ok
+    // TODO float and <= errors
     if (TemporalError(bstNodeIndex, _constants->numValuesPerNode_,
                       _tsp) == _constants->temporalTolerance_) {
       
       // If the ot node is a leaf, we can't do any better spatially so we 
       // return the current brick
-      // TODO float and <= errors
-      // TEST pick one specific level
       if (IsOctreeLeaf(_otNodeIndex, _constants->numValuesPerNode_, _tsp)) {
         return true;
 
@@ -246,7 +243,7 @@ void TraverseOctree(float3 _rayO,
                     float3 _rayD,
                     float _maxDist,
                     __constant struct TraversalConstants *_constants,
-                    __global volatile int *_brickList,
+                    __global volatile int *_reqList,
                     __global __read_only int *_tsp) {
  
   // Choose a stepsize that guarantees that we don't miss any bricks
@@ -276,12 +273,12 @@ void TraverseOctree(float3 _rayO,
                                     &brickIndex,
                                     _constants->timestep_,
                                     _constants,
-                                    _brickList,
+                                    _reqList,
                                     _tsp);
       if (bstSuccess) {
 
         // Add the found brick to brick list
-        AddToList(brickIndex, _brickList);
+        AddToList(brickIndex, _reqList);
         // We are now done with this node, so go to next
         foundBrick = true;
         break;
@@ -291,7 +288,7 @@ void TraverseOctree(float3 _rayO,
       } else if (IsOctreeLeaf(otNodeIndex, 
                               _constants->numValuesPerNode_, _tsp)) {
         
-        AddToList(brickIndex, _brickList);
+        AddToList(brickIndex, _reqList);
         // We are now done with this node, so go to next
         foundBrick = true;
         break;
@@ -330,7 +327,7 @@ __kernel void TSPTraversal(__global __read_only image2d_t _cubeFront,
                            __global __read_only image2d_t _cubeBack,
                            __constant struct TraversalConstants *_constants,
                            __global __read_only int *_tsp,
-                           __global int *_brickList) {
+                           __global int *_reqList) {
     
     // Kernel should be launched in 2D with one work item per pixel
     int2 intCoords = (int2)(get_global_id(0), get_global_id(1));
@@ -348,7 +345,7 @@ __kernel void TSPTraversal(__global __read_only image2d_t _cubeFront,
     float3 direction = normalize(cubeBackColor.xyz-cubeFrontColor.xyz);
 
     TraverseOctree(cubeFrontColor.xyz, direction, maxDist,
-                   _constants,  _brickList, _tsp);
+                   _constants,  _reqList, _tsp);
 
     return;
 
