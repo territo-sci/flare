@@ -170,24 +170,39 @@ bool CLProgram::AddTraversalConstants(unsigned int _argNr,
   return true;
 }
 
-
-bool CLProgram::AddIntArray(unsigned int _argNr, int *_intArray, 
-                            unsigned int _size, 
-                            cl_mem_flags _permissions) {
+bool CLProgram::AddBuffer(unsigned int _argNr,
+                          void *_hostPtr,
+                          unsigned int _sizeInBytes,
+                          cl_mem_flags _allocMode,
+                          cl_mem_flags _permissions) {
   if (memArgs_.find((cl_uint)_argNr) != memArgs_.end()) {
     memArgs_.erase((cl_uint)_argNr);
   }
-
   MemArg ma;
   ma.size_ = sizeof(cl_mem);
-  ma.mem_ = clCreateBuffer(clManager_->context_, 
-                           _permissions | CL_MEM_COPY_HOST_PTR,
-                           _size*sizeof(int),
-                           _intArray,
+  ma.mem_ = clCreateBuffer(clManager_->context_,
+                           _allocMode | _permissions,
+                           (size_t)_sizeInBytes,
+                           _hostPtr,
                            &error_);
   if (error_ != CL_SUCCESS) return false;
   memArgs_.insert(std::make_pair((cl_uint)_argNr, ma));
   return true;
+}
+
+bool CLProgram::ReadBuffer(unsigned int _argNr,
+                           void *_hostPtr,
+                           unsigned int _sizeInBytes,
+                           cl_bool _blocking) {
+  if (memArgs_.find((cl_uint)_argNr) == memArgs_.end()) {
+    ERROR("ReadArray(): Could not find mem arg " << _argNr);
+    return false;
+  }
+  error_ = clEnqueueReadBuffer(
+    clManager_->commandQueues_[CLManager::EXECUTE],
+    memArgs_[(cl_uint)_argNr].mem_, _blocking, 0, _sizeInBytes,
+    _hostPtr, 0, NULL, NULL);
+  return (error_ == CL_SUCCESS);
 }
 
 bool CLProgram::PrepareProgram() {

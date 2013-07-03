@@ -8,6 +8,7 @@
 #include <CLManager.h>
 #include <CLProgram.h>
 #include <TransferFunction.h>
+#include <TSP.h>
 #include <Texture.h>
 #include <Utils.h>
 #include <sstream>
@@ -161,21 +162,8 @@ bool CLManager::CreateKernel(std::string _programName) {
 bool CLManager::AddTexture(std::string _programName, unsigned int _argNr,
                            Texture *_texture, TextureType _textureType,
                            Permissions _permissions) {
-  cl_mem_flags flag;
-  switch (_permissions) {
-    case CLManager::READ_ONLY:
-      flag = CL_MEM_READ_ONLY;
-      break;
-    case CLManager::WRITE_ONLY:
-      flag = CL_MEM_WRITE_ONLY;
-      break;
-    case CLManager::READ_WRITE:
-      flag = CL_MEM_READ_WRITE;
-      break;
-    default:
-      ERROR("Unknown permission type");
-      return false;
-  }
+
+  cl_mem_flags flag = ConvertPermissions(_permissions);
 
   GLuint GLTextureType;
   switch (_textureType) {
@@ -238,15 +226,30 @@ bool CLManager::AddTraversalConstants(std::string _programName,
 }
 
 
-bool CLManager::AddIntArray(std::string _programName, unsigned int _argNr,
-                            int *_intArray, unsigned int _size,
-                            Permissions _permissions) {
+bool CLManager::AddBuffer(std::string _programName, unsigned int _argNr,
+                          void *_hostPtr, unsigned int _sizeInBytes,
+                          AllocMode _allocMode, Permissions _permissions) {
   if (clPrograms_.find(_programName) == clPrograms_.end()) {
     ERROR("Program " << _programName << " not found");
     return false;
   }
-  return clPrograms_[_programName]->AddIntArray(_argNr, _intArray,
-                                              _size, _permissions);
+  cl_mem_flags allocMode = ConvertAllocMode(_allocMode);
+  cl_mem_flags permissions = ConvertPermissions(_permissions);
+
+  return clPrograms_[_programName]->
+    AddBuffer(_argNr, _hostPtr, _sizeInBytes, allocMode, permissions);
+}
+
+bool CLManager::ReadBuffer(std::string _programName, unsigned int _argNr,
+                           void *_hostPtr, unsigned int _sizeInBytes,
+                           bool _blocking) {
+  if (clPrograms_.find(_programName) == clPrograms_.end()) {
+    ERROR("Program " << _programName << " not found");
+    return false;
+  }
+  cl_bool blocking = _blocking ? CL_TRUE : CL_FALSE;
+  return clPrograms_[_programName]->
+    ReadBuffer(_argNr, _hostPtr, _sizeInBytes, blocking);
 }
 
 
@@ -290,6 +293,34 @@ bool CLManager::CheckSuccess(cl_int _error, std::string _location) const {
     ERROR(_location);
     ERROR(ErrorString(_error));
     return false;
+  }
+}
+
+cl_mem_flags CLManager::ConvertPermissions(Permissions _p) {
+  switch (_p) {
+  case READ_WRITE:
+    return CL_MEM_READ_WRITE;
+  case READ_ONLY:
+    return CL_MEM_READ_ONLY;
+  case WRITE_ONLY:
+    return CL_MEM_WRITE_ONLY;
+  default:
+    ERROR("Unknown permission type, using READ_WRITE");
+    return CL_MEM_READ_WRITE;
+  }
+}
+
+cl_mem_flags CLManager::ConvertAllocMode(AllocMode _am) {
+  switch (_am) {
+  case USE_HOST_PTR:
+    return CL_MEM_USE_HOST_PTR;
+  case ALLOC_HOST_PTR:
+    return CL_MEM_ALLOC_HOST_PTR;
+  case COPY_HOST_PTR:
+    return CL_MEM_COPY_HOST_PTR;
+  default:
+    ERROR("Unknown alloc mode, using COPY_HOST_PTR");
+    return CL_MEM_COPY_HOST_PTR;
   }
 }
 

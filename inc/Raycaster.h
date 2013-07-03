@@ -142,12 +142,11 @@ private:
   std::string kernelConfigFilename_;
   // Transfer functions
   std::vector<TransferFunction*> transferFunctions_;
-
-  // TODO work in progress
+ 
+  // Brick manager with access to brick data
   BrickManager *brickManager_;
-  boost::timer::cpu_timer timer_;
-  const double BYTES_PER_GB = 1073741824.0;
 
+  // TSP tree structure (not actual data)
   TSP *tsp_;
   
   // Entry point for all things OpenCL
@@ -167,6 +166,10 @@ private:
   static const unsigned int tspConstantsArg_ = 2;
   static const unsigned int tspTSPArg_ = 3;
   static const unsigned int tspBrickListArg_ = 4;
+  
+  // Timer and timer constants 
+  boost::timer::cpu_timer timer_;
+  const double BYTES_PER_GB = 1073741824.0;
 
 };
 

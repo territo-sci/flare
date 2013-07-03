@@ -16,6 +16,7 @@ namespace osp {
 class Texture;
 class TransferFunction;
 class CLProgram;
+class TSP;
 
 class CLManager {
 public:
@@ -26,6 +27,7 @@ public:
   enum QueueIndex { EXECUTE, TRANSFER, NUM_QUEUE_INDICES };
   enum TextureType { TEXTURE_1D, TEXTURE_2D, TEXTURE_3D };
   enum Permissions { READ_ONLY, WRITE_ONLY, READ_WRITE };
+  enum AllocMode { USE_HOST_PTR, ALLOC_HOST_PTR, COPY_HOST_PTR };
 
   // These four functions should be run in this order
   bool InitPlatform();
@@ -53,10 +55,15 @@ public:
   // Add (update) traversal constants
   bool AddTraversalConstants(std::string _programName, unsigned int _argNr,
                              TraversalConstants *_traversalConstants);
-  // Add (update) array of integers
-  bool AddIntArray(std::string _programName, unsigned int _argNr,
-                   int *_intArray, unsigned int _size,
-                   Permissions _permissions);
+
+  bool AddBuffer(std::string _programName, unsigned int _argNr,
+                 void *_hostPtr, unsigned int _sizeInBytes,
+                 AllocMode _allocMode, Permissions _permissions);
+
+  bool ReadBuffer(std::string _programName, unsigned int _argNr,
+                  void *_hostPtr, unsigned int _sizeInBytes,
+                  bool _blocking);
+
   
   // Aquire any shared textures, set up kernel arguments etc
   bool PrepareProgram(std::string _programName);
@@ -84,6 +91,10 @@ private:
   bool CheckSuccess(cl_int _error, std::string _location) const;
   // Translate cl_int enum to readable string
   std::string ErrorString(cl_int _error) const;
+  // Convert CLManager::Permissions to cl_mem_flags
+  cl_mem_flags ConvertPermissions(Permissions _permissions);
+  // Conver CLManager::AllocMode to cl_mem_flags
+  cl_mem_flags ConvertAllocMode(AllocMode _allocMode);
 
   static const unsigned int MAX_PLATFORMS = 32;
   static const unsigned int MAX_DEVICES = 32;

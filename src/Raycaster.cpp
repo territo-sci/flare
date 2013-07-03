@@ -472,6 +472,8 @@ bool Raycaster::Render(float _timestep) {
     nextTimestep = 1;
   }
 
+  currentTimestep = 0;
+
   // TODO temp test
 
   // Construct the brick and box lists
@@ -511,17 +513,52 @@ bool Raycaster::Render(float _timestep) {
   tc.numTimesteps_ = 32;
   tc.numValuesPerNode_ = 4;
   tc.numBSTNodesPerOT_ = 63;
+  tc.timestep_ = currentTimestep;
   tc.temporalTolerance_ = 0;
   tc.spatialTolerance_ = 0; 
+
+  if (!clManager_->AddTraversalConstants("TSPTraversal",
+                                         tspConstantsArg_,
+                                         &tc)) return false;
+
+  // TODO TEST
+  std::vector<int> brickRequest(tsp_->NumTotalNodes(), 0);
+  if (!clManager_->AddBuffer("TSPTraversal", tspBrickListArg_,
+                             reinterpret_cast<void*>(&brickRequest[0]), 
+                             brickRequest.size()*sizeof(int),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_WRITE)) return false;
+  if (!clManager_->AddBuffer("TSPTraversal", tspTSPArg_,
+                             reinterpret_cast<void*>(tsp_->Data()), 
+                             tsp_->Size()*sizeof(int),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false; 
+
+  if (!clManager_->PrepareProgram("TSPTraversal")) return false;
+  if (!clManager_->LaunchProgram("TSPTraversal")) return false;
+  if (!clManager_->FinishProgram("TSPTraversal")) return false;
+
+  if (!clManager_->ReadBuffer("TSPTraversal", tspBrickListArg_,
+                              reinterpret_cast<void*>(&brickRequest[0]),
+                              brickRequest.size()*sizeof(int),
+                              true)) return false;
+
+  INFO(" ");
+  for (unsigned int i=0; i<brickRequest.size(); ++i) {
+    if (brickRequest[i] != 0) {
+      INFO(i << ": " << brickRequest[i]);
+    }
+  }
 
   // Apply the brick list, update the texture atlas
   if (!brickManager_->UpdateAtlas()) return false;
 
-  if (!clManager_->AddIntArray("Raycaster", boxListArg_,
-                              &(brickManager_->BoxList()[0]),
-                              brickManager_->BoxList().size(),
-                              CLManager::READ_WRITE)) return false;
-
+  if (!clManager_->
+    AddBuffer("Raycaster", boxListArg_,
+              reinterpret_cast<void*>(&(brickManager_->BoxList()[0])),
+              brickManager_->BoxList().size()*sizeof(int),
+              CLManager::COPY_HOST_PTR,
+              CLManager::READ_ONLY)) return false;
 
   if (!clManager_->PrepareProgram("Raycaster")) return false;
   if (!clManager_->LaunchProgram("Raycaster")) return false;
@@ -725,12 +762,11 @@ bool Raycaster::InitCL() {
                               cubeBackTex_, CLManager::TEXTURE_2D,
                               CLManager::READ_ONLY)) return false;
 
-  if (!clManager_->AddIntArray("TSPTraversal", tspTSPArg_,
-                               tsp_->Data(),
-                               tsp_->Size(),
-                               CLManager::READ_WRITE)) return false;
-                                
-
+  if (!clManager_->AddBuffer("TSPTraversal", tspTSPArg_,
+                             reinterpret_cast<void*>(tsp_->Data()),
+                             tsp_->Size()*sizeof(int),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false;
 
   // Rendering part of raycaster
   if (!clManager_->CreateProgram("Raycaster", 

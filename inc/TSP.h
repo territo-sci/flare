@@ -27,9 +27,17 @@ public:
 
   static TSP * New(const std::string &_inFilename);
   ~TSP();
+  
   bool Construct();
+
   int * Data() { return &data_[0]; }
   unsigned int Size() { return data_.size(); }
+
+  unsigned int BrickDim() const { return brickDim_; }
+  unsigned int NumBricksPerAxis() const { return numBricksPerAxis_; }
+  unsigned int NumTimesteps() const { return numTimesteps_; }
+  unsigned int NumTotalNodes() const { return numTotalNodes_; }
+
 private:
   TSP();
   TSP(const std::string &_inFilename);
@@ -37,6 +45,12 @@ private:
   std::string inFilename_;
   // Holds the actual structure
   std::vector<int> data_;
+
+  unsigned int brickDim_;
+  unsigned int numBricksPerAxis_;
+  unsigned int numTimesteps_;
+  unsigned int numTotalNodes_;
+
 };
 
 }

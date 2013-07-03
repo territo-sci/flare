@@ -49,9 +49,17 @@ public:
   bool AddTraversalConstants(unsigned int _argNr,
                              TraversalConstants *_traversalConstants);
 
-  bool AddIntArray(unsigned int _argNr, int *_intArray, unsigned int _size,
-                   cl_mem_flags _permissions);
+  bool AddBuffer(unsigned int _argNr, 
+                 void *_hostPtr, 
+                 unsigned int _sizeInBytes, 
+                 cl_mem_flags _allocMode,
+                 cl_mem_flags _permissions);
 
+  bool ReadBuffer(unsigned int _argNr,
+                  void *_hostPtr,
+                  unsigned int _sizeInBytes,
+                  cl_bool _blocking);
+   
   bool PrepareProgram();
   bool LaunchProgram();
   bool FinishProgram();

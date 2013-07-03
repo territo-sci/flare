@@ -82,7 +82,7 @@ bool IntersectBox(float3 _boundsMin, float3 _boundsMax,
                    float *_tMinOut, float *_tMaxOut) {
 
   float _tMin, _tMax, tYMin, tYMax, tZMin, tZMax;
-  float divx = (_rayD.x == 0.0) ? 1e20 : 1.0/_rayD.x;
+  float divx = 1.0/_rayD.x;
   if (divx >= 0.0) {
     _tMin = (_boundsMin.x - _rayO.x) * divx;
     _tMax = (_boundsMax.x - _rayO.x) * divx;
@@ -90,7 +90,7 @@ bool IntersectBox(float3 _boundsMin, float3 _boundsMax,
     _tMin = (_boundsMax.x - _rayO.x) * divx;
     _tMax = (_boundsMin.x - _rayO.x) * divx;
   }
-  float divy = (_rayD.y == 0.0) ? 1e20 : 1.0/_rayD.y;
+  float divy = 1.0/_rayD.y;
   if (divy >= 0.0) {
     tYMin = (_boundsMin.y - _rayO.y) * divy;
     tYMax = (_boundsMax.y - _rayO.y) * divy;
@@ -101,7 +101,7 @@ bool IntersectBox(float3 _boundsMin, float3 _boundsMax,
   if ( (_tMin > tYMax || tYMin > _tMax) ) return false;
   if (tYMin > _tMin) _tMin = tYMin;
   if (tYMax < _tMax) _tMax = tYMax;
-  float divz = (_rayD.z == 0.0) ? 1e20 : 1.0/_rayD.z;
+  float divz = 1.0/_rayD.z;
   if (divz >= 0.0) {
     tZMin = (_boundsMin.z - _rayO.z) * divz;
     tZMax = (_boundsMax.z - _rayO.z) * divz;
@@ -228,6 +228,7 @@ Raycaster(__global __read_only image2d_t _cubeFront,
   direction = normalize(direction);
   float3 origin = cubeFrontColor.xyz - 0.001 * direction;
 
+
   // Keep track of distance traversed
   float traversed = 0.0;
 
@@ -236,6 +237,12 @@ Raycaster(__global __read_only image2d_t _cubeFront,
   float3 samplePoint = cubeFrontColor.xyz;
   float4 color = (float4)(0.0, 0.0, 0.0, 0.0);
    
+  // TODO temp
+  float a, b;
+  if (IntersectBox((float3)(0.0), (float3)(1.0), origin, direction, &a, &b)) {
+    color += (float4)(0.0, 0.0, 0.08, 1.0);
+  }
+
   while (traversed < maxDistance) {
 
     int numBoxesPerAxis = _constants->numBoxesPerAxis;
@@ -255,6 +262,7 @@ Raycaster(__global __read_only image2d_t _cubeFront,
     // Intersect ray with box
     float tMin, tMax;
     IntersectBox(minCorner, maxCorner, origin, direction, &tMin, &tMax);
+    
     float3 brickEntry = origin + tMin*direction;
     // TODO calculate BRICK exit
     float3 brickExit = origin + tMax*direction;
