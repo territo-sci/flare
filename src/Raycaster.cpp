@@ -77,9 +77,7 @@ Raycaster::Raycaster()
     brickManager_(NULL),
     clManager_(NULL) {
 
-  kernelConstants_.stepSize = 0.01f;
-  kernelConstants_.intensity = 60.f;
-  kernelConstants_.numBoxesPerAxis = 4;
+
 }
 
 Raycaster::~Raycaster() {
@@ -306,9 +304,9 @@ bool Raycaster::UpdateKernelConfig() {
       in >> variable;
       in >> value;
       if (variable == "stepSize") {
-        kernelConstants_.stepSize = value;
+        kernelConstants_.stepsize_ = value;
       } else if (variable == "intensity") {
-        kernelConstants_.intensity = value;
+        kernelConstants_.intensity_ = value;
       } else {
         ERROR("Invalid variable name: " << variable);
         return false;
@@ -316,7 +314,7 @@ bool Raycaster::UpdateKernelConfig() {
     }
   }
   if (brickManager_) {
-    kernelConstants_.numBoxesPerAxis = brickManager_->XNumBricks();
+    kernelConstants_.numBoxesPerAxis_ = brickManager_->XNumBricks();
   }
   return true;
 }
@@ -472,7 +470,7 @@ bool Raycaster::Render(float _timestep) {
     nextTimestep = 1;
   }
 
-  currentTimestep = 0;
+ INFO("Current timestep " << currentTimestep);
 
   // TODO temp test
 
@@ -484,6 +482,14 @@ bool Raycaster::Render(float _timestep) {
   tc.timestep_ = currentTimestep;
   tc.temporalTolerance_ = 0;
   tc.spatialTolerance_ = 0; 
+  
+  kernelConstants_.numTimesteps_ = 32;
+  kernelConstants_.numValuesPerNode_ = 4;
+  kernelConstants_.numBSTNodesPerOT_ = 63;
+  kernelConstants_.numBoxesPerAxis_ = 4;
+  kernelConstants_.timestep_ = currentTimestep;
+  kernelConstants_.temporalTolerance_ = 0;
+  kernelConstants_.spatialTolerance_ = 0;
 
   if (!clManager_->AddTraversalConstants("TSPTraversal",
                                          tspConstantsArg_,
@@ -506,65 +512,46 @@ bool Raycaster::Render(float _timestep) {
   if (!clManager_->LaunchProgram("TSPTraversal")) return false;
   if (!clManager_->FinishProgram("TSPTraversal")) return false;
 
+  // The next kernel needs this one
+  if (!clManager_->ReleaseBuffer("TSPTraversal", tspTSPArg_)) return false;
+
   if (!clManager_->ReadBuffer("TSPTraversal", tspBrickListArg_,
                               reinterpret_cast<void*>(&brickRequest[0]),
                               brickRequest.size()*sizeof(int),
                               true)) return false;
-
-  // We now how a "histogram" of bricks to be put in the atlas
-  // Build a list from the histogram. The list takes at most the number
-  // of bricks in total as index.
-  std::vector<int> brickList(pow(brickManager_->XNumBricks(), 3), -1);
-  unsigned int index = 0;
-  for (unsigned int i=0; i<brickRequest.size(); ++i) {
-    if (brickRequest[i] > 0) {
-      brickList[index++] = i;
-      if (index >= brickRequest.size()) {
-        ERROR("Failed to build brick list, request list too large");
-        return false;
-      }
-    }
-  }
-
-  // Construct the brick and box lists
-  // TODO this is backwards!
-  unsigned int reqIdx = 0;
-  unsigned int xnb = brickManager_->XNumBricks();
-  unsigned int ynb = brickManager_->YNumBricks();
-  unsigned int znb = brickManager_->ZNumBricks();
-  for (unsigned int z=0; z<znb; ++z) {
-    for (unsigned int y=0; y<ynb; ++y) {
-      for (unsigned int x=0; x<xnb; ++x) {
-        // Index for the box to put the brick in
-        unsigned int boxIndex = (x+y*xnb+z*xnb*ynb);
-
-        unsigned int brickIndex = (unsigned int)brickList[reqIdx++]; 
-
-        BrickManager::AtlasCoords ac;
-        ac.x_ = x;
-        ac.y_ = y;
-        ac.z_ = z;
-        ac.size_ = 1;
-        brickManager_->UpdateBrickList(brickIndex, ac);
-        brickManager_->UpdateBoxList(boxIndex, brickIndex);
-     }
-    }
-  }
-
-
+  
+  // Build a brick list from the request list
+  if (!brickManager_->BuildBrickList(brickRequest)) return false;
   // Apply the brick list, update the texture atlas
   if (!brickManager_->UpdateAtlas()) return false;
 
+  // When the texture atlas contains the correct bricks, run second pass
+                                    
+  if (!clManager_->AddKernelConstants("RaycasterTSP", constantsArg_, 
+                                      &kernelConstants_)) return false;
+
+  if (!clManager_->AddTransferFunction("RaycasterTSP", transferFunctionArg_, 
+                                       transferFunctions_[0])) return false;
+
+
   if (!clManager_->
-    AddBuffer("Raycaster", boxListArg_,
-              reinterpret_cast<void*>(&(brickManager_->BoxList()[0])),
-              brickManager_->BoxList().size()*sizeof(int),
+    AddBuffer("RaycasterTSP", brickListArg_,
+              reinterpret_cast<void*>(&(brickManager_->BrickList()[0])),
+              brickManager_->BrickList().size()*sizeof(int),
               CLManager::COPY_HOST_PTR,
               CLManager::READ_ONLY)) return false;
+              
+  if (!clManager_->AddBuffer("RaycasterTSP", tspArg_,
+                             reinterpret_cast<void*>(tsp_->Data()), 
+                             tsp_->Size()*sizeof(int),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false; 
 
-  if (!clManager_->PrepareProgram("Raycaster")) return false;
-  if (!clManager_->LaunchProgram("Raycaster")) return false;
-  if (!clManager_->FinishProgram("Raycaster")) return false;
+  if (!clManager_->PrepareProgram("RaycasterTSP")) return false;
+  if (!clManager_->LaunchProgram("RaycasterTSP")) return false;
+  if (!clManager_->FinishProgram("RaycasterTSP")) return false;
+
+  
 
   /*
 
@@ -740,6 +727,8 @@ bool Raycaster::KeyLastState(int _key) const {
 
 bool Raycaster::InitCL() {
 
+  INFO("Initializing OpenCL");
+
   if (!clManager_) {
     ERROR("InitCL() - No CL manager has been set");
     return false;
@@ -771,6 +760,7 @@ bool Raycaster::InitCL() {
                              CLManager::READ_ONLY)) return false;
 
   // Rendering part of raycaster
+  /*
   if (!clManager_->CreateProgram("Raycaster", 
                                 "kernels/RaycasterBricks.cl")) return false;
   if (!clManager_->BuildProgram("Raycaster")) return false;
@@ -798,7 +788,42 @@ bool Raycaster::InitCL() {
 
   if (!clManager_->AddTransferFunction("Raycaster", transferFunctionArg_, 
                                        transferFunctions_[0])) return false;
+  */
 
+  // TEST
+  if (!clManager_->CreateProgram("RaycasterTSP",
+                                "kernels/RaycasterTSP.cl")) return false;
+  if (!clManager_->BuildProgram("RaycasterTSP")) return false;
+  if (!clManager_->CreateKernel("RaycasterTSP")) return false;
+
+  if (!clManager_->AddTexture("RaycasterTSP", cubeFrontArg_, cubeFrontTex_, 
+                              CLManager::TEXTURE_2D,  
+                              CLManager::READ_ONLY)) return false;
+
+  if (!clManager_->AddTexture("RaycasterTSP", cubeBackArg_, cubeBackTex_, 
+                              CLManager::TEXTURE_2D, 
+                              CLManager::READ_ONLY)) return false;
+
+  if (!clManager_->AddTexture("RaycasterTSP", quadArg_, quadTex_, 
+                              CLManager::TEXTURE_2D, 
+                              CLManager::WRITE_ONLY)) return false;
+
+  if (!clManager_->AddTexture("RaycasterTSP", textureAtlasArg_, 
+                              brickManager_->TextureAtlas(),
+                              CLManager::TEXTURE_3D, 
+                              CLManager::READ_ONLY)) return false;
+
+  if (!clManager_->AddKernelConstants("RaycasterTSP", constantsArg_, 
+                                      &kernelConstants_)) return false;
+
+  if (!clManager_->AddTransferFunction("RaycasterTSP", transferFunctionArg_, 
+                                       transferFunctions_[0])) return false;
+
+  if (!clManager_->AddBuffer("RaycasterTSP", tspArg_,
+                             reinterpret_cast<void*>(tsp_->Data()),
+                             tsp_->Size()*sizeof(int),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false;
 
   return true;
 }

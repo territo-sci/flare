@@ -78,7 +78,7 @@ bool BrickManager::ReadHeader() {
 
   // Allocate box list and brick buffer
   // The box list keeps track of 1 brick index, 3 coordinate and 1 size value
-  boxList_.resize(xNumBricks_*yNumBricks_*zNumBricks_*5);
+  //boxList_.resize(xNumBricks_*yNumBricks_*zNumBricks_*5);
   brickBuffer_[EVEN] = new real[xBrickDim_*yBrickDim_*zBrickDim_];
   brickBuffer_[ODD] = new real[xBrickDim_*yBrickDim_*zBrickDim_];
 
@@ -113,28 +113,118 @@ bool BrickManager::InitAtlas() {
 
 }
 
+bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
 
+  int numBricks = 0;
+
+  // Assume the brick request list has the correct size
+  // TODO init step
+  brickList_.resize(_brickRequest.size()*3);
+
+  // For every non-zero entry in the request list, assign a texture atlas
+  // coordinate. For zero entries, signal "no brick" using -1.
+  int xCoord = 0;
+  int yCoord = 0;
+  int zCoord = 0;
+  for (unsigned int i=0; i<_brickRequest.size(); ++i) {
+    if (_brickRequest[i] > 0) {
+
+        
+      if (xCoord >= xNumBricks_ || 
+          yCoord >= yNumBricks_ || 
+          zCoord >= zNumBricks_) {
+        ERROR("atlas coord too large!");
+        return false;
+      }
+
+      brickList_[3*i + 0] = xCoord;
+      brickList_[3*i + 1] = yCoord;
+      brickList_[3*i + 2] = zCoord;
+      
+      numBricks++;
+
+      // Update atlas coordinate
+      xCoord++;
+      if (xCoord == xNumBricks_) {
+        xCoord = 0;
+        yCoord++;
+        if (yCoord == yNumBricks_) {
+          yCoord = 0;
+          zCoord++;
+        }
+      }
+
+
+    } else {
+
+      brickList_[3*i + 0] = -1;
+      brickList_[3*i + 1] = -1;
+      brickList_[3*i + 2] = -1;
+    
+    }
+  }
+
+
+  return true;
+
+}
 bool BrickManager::UpdateAtlas() {
+
+  // TEST non-alternating
+  unsigned int brickIndex = 0;
+  while (brickIndex < brickList_.size()/3) {
+    while (brickList_[3*brickIndex] == -1 &&
+           brickIndex < brickList_.size()/3) {
+      brickIndex++;
+    }
+    if (brickIndex == brickList_.size()/3) return true;
+    ReadBrick(brickIndex, EVEN);
+    unsigned int x = static_cast<unsigned int>(brickList_[3*brickIndex+0]);
+    unsigned int y = static_cast<unsigned int>(brickList_[3*brickIndex+1]);
+    unsigned int z = static_cast<unsigned int>(brickList_[3*brickIndex+2]);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[EVEN]);
+    if (!textureAtlas_->UpdateSubRegion(x*xBrickDim_,
+                                        y*yBrickDim_,
+                                        z*zBrickDim_,
+                                        xBrickDim_,
+                                        yBrickDim_,
+                                        zBrickDim_,
+                                        0)) return false;
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    brickIndex++;
+  }
+  // END TEST
+
+  /*
 
   // Update all bricks in the brick list
   // TODO caching and size control structure
-  // TODO possibly repoint instead of reuploading
 
   // Read first brick into mapped buffer
-  if (!ReadBrick(boxList_[0], EVEN)) return false;
+  unsigned int brickIndex = 0;
+  while (brickList_[3*brickIndex] == -1) {
+    brickIndex++;
+  }
+  if (!ReadBrick(brickIndex, EVEN)) return false;
 
-  // Loop over all bricks in box list
-  unsigned int numBoxes = xNumBricks_*yNumBricks_*zNumBricks_;
-  for (unsigned int i=0; i<numBoxes; ++i) {
- 
-    BUFFER_INDEX bufIndex = (i % 2 == 0) ? EVEN : ODD;
-    BUFFER_INDEX nextIndex = (bufIndex == EVEN) ? ODD : EVEN;
+  bool even = true;
+
+  // Loop over all bricks
+  while (brickIndex < brickList_.size()/3) {
+    
+    BUFFER_INDEX bufIndex = (even) ? EVEN : ODD;
+    BUFFER_INDEX nextIndex = (even) ? ODD : EVEN;
      
     // Lookup the target atlas coordinates
-    unsigned int brickIndex = boxList_[5*i];
-    unsigned int x = boxList_[5*i+1];
-    unsigned int y = boxList_[5*i+2];
-    unsigned int z = boxList_[5*i+3];
+    if (brickList_[3*brickIndex+0] < 0 ||
+        brickList_[3*brickIndex+1] < 0 ||
+        brickList_[3*brickIndex+2] < 0) {
+      ERROR("Trying to read invalid brick position (-1)");
+      return false;
+    }
+    unsigned int x = static_cast<unsigned int>(brickList_[3*brickIndex+0]);
+    unsigned int y = static_cast<unsigned int>(brickList_[3*brickIndex+1]);
+    unsigned int z = static_cast<unsigned int>(brickList_[3*brickIndex+2]);
 
     // Upload the brick to the right place
     // The 0 argument enables upload from bound buffer
@@ -149,47 +239,22 @@ bool BrickManager::UpdateAtlas() {
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     // Read the next brick from file to the brick buffer
-    if (i < numBoxes-1) {
-      unsigned int nextBrickIndex = boxList_[5*(i+1)];
-      if (!ReadBrick(nextBrickIndex, nextIndex)) return false;
+    even = !even;
+    brickIndex++;
+    while (brickList_[3*brickIndex] == -1 &&
+           brickIndex < brickList_.size()/3) {
+      brickIndex++;
+    }
+    if (brickIndex != brickList_.size()/3) {
+      if (!ReadBrick(brickIndex, nextIndex)) return false;
     }
     
   }
 
-  return true;
-
-}
-
-bool BrickManager::UpdateBrickList(unsigned int _brickIndex, 
-                                   AtlasCoords _atlasCoords) {
-
-  brickList_[_brickIndex] = _atlasCoords;
+  */
 
   return true;
 }
-
-bool BrickManager::InAtlas(unsigned int _brickIndex, 
-                           AtlasCoords &_atlasCoords) {
-  if (brickList_.find(_brickIndex) != brickList_.end()) {
-    _atlasCoords = brickList_[_brickIndex];
-    return true;
-  } else {
-    return false;
-  }
-}
-
-
-bool BrickManager::UpdateBoxList(unsigned int _boxIndex, 
-                                 unsigned int _brickIndex) {
-  // Update the box list with the corresponding brick informatioon
-  boxList_[5*_boxIndex] = _brickIndex;
-  boxList_[5*_boxIndex+1] = brickList_[_brickIndex].x_;
-  boxList_[5*_boxIndex+2] = brickList_[_brickIndex].y_;
-  boxList_[5*_boxIndex+3] = brickList_[_brickIndex].z_;
-  boxList_[5*_boxIndex+4] = brickList_[_brickIndex].size_;  
-  return true;
-}
-
 
 bool BrickManager::ReadBrick(unsigned int _brickIndex, 
                              BUFFER_INDEX _bufferIndex) {
@@ -242,14 +307,13 @@ bool BrickManager::ReadBrick(unsigned int _brickIndex,
 
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-   
   return true;
 }
 
 
 
+/*
 void BrickManager::Print() {
-
     std::cout << "\nBRICK LIST " << std::endl;
     std::cout << "Constructed from " << inFilename_ << std::endl;
 
@@ -276,3 +340,4 @@ void BrickManager::Print() {
                                         std::endl;
     }
 }
+    */

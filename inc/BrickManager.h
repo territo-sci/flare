@@ -23,14 +23,6 @@ public:
   static BrickManager * New();
   ~BrickManager();
 
-  // Coordinates in texture atlas plus relative size of brick
-  struct AtlasCoords {
-    int x_;
-    int y_;
-    int z_;
-    int size_;
-  };
-
   enum BUFFER_INDEX { EVEN = 0, ODD };
 
   void SetInFilename(const std::string &_inFilename);
@@ -40,18 +32,10 @@ public:
 
   bool InitAtlas();
 
-  // Update the brick list. This does not apply the changes.
-  bool UpdateBrickList(unsigned int _brickIndex, AtlasCoords _atlasCoords);
-  // See if a certain brick is present in the atlas. If it is, put its
-  // coordnates in the referenced argument.
-  bool InAtlas(unsigned int _brickIndex, AtlasCoords &_atlasCoords);
-  // Apply changed upload bricks in brick list to texture
+  bool BuildBrickList(std::vector<int> _brickRequest);
   bool UpdateAtlas();
 
-  // The box list maps one brick index to each box in the volume
-  bool UpdateBoxList(unsigned int _boxIndex, unsigned int _brickIndex);
-  
-  std::vector<int> BoxList() { return boxList_; }
+  std::vector<int> BrickList() { return brickList_; }
   Texture3D * TextureAtlas() { return textureAtlas_; }
 
   // Header accessors
@@ -66,8 +50,6 @@ public:
   unsigned int NumTimesteps() const { return numTimesteps_; }
   unsigned int PaddingWidth() const { return paddingWidth_; }
   unsigned int DataSize() const { return dataSize_; }
-
-  void Print();
 
 private:
 
@@ -95,10 +77,7 @@ private:
   // Texture where the actual atlas is kept
   Texture3D *textureAtlas_;
 
-  // Keeps track of which bricks are in the texture atlas, and at what coords
-  std::map<unsigned int, AtlasCoords> brickList_;
-  // Keeps track of which bricks belongs to which boxes
-  std::vector<int> boxList_;
+  std::vector<int> brickList_;
 
   // Filestream to read from
   // Opened in the ReadHeader() function and closed in destructor

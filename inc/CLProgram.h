@@ -59,6 +59,8 @@ public:
                   void *_hostPtr,
                   unsigned int _sizeInBytes,
                   cl_bool _blocking);
+
+  bool ReleaseBuffer(unsigned int _argNr);
    
   bool PrepareProgram();
   bool LaunchProgram();

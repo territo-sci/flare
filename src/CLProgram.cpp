@@ -195,15 +195,25 @@ bool CLProgram::ReadBuffer(unsigned int _argNr,
                            unsigned int _sizeInBytes,
                            cl_bool _blocking) {
   if (memArgs_.find((cl_uint)_argNr) == memArgs_.end()) {
-    ERROR("ReadArray(): Could not find mem arg " << _argNr);
+    ERROR("ReadBuffer(): Could not find mem arg " << _argNr);
     return false;
   }
   error_ = clEnqueueReadBuffer(
     clManager_->commandQueues_[CLManager::EXECUTE],
     memArgs_[(cl_uint)_argNr].mem_, _blocking, 0, _sizeInBytes,
     _hostPtr, 0, NULL, NULL);
-  return (error_ == CL_SUCCESS);
+  return clManager_->CheckSuccess(error_, "ReadBuffer");
 }
+
+bool CLProgram::ReleaseBuffer(unsigned int _argNr) {
+  if (memArgs_.find((cl_uint)_argNr) == memArgs_.end()) {
+    ERROR("ReleaseBuffer(): Could not find mem arg " << _argNr);
+    return false;
+  }
+  error_ = clReleaseMemObject(memArgs_[(cl_uint)_argNr].mem_);
+  return clManager_->CheckSuccess(error_, "ReleaseBuffer");
+}
+
 
 bool CLProgram::PrepareProgram() {
 
@@ -213,7 +223,7 @@ bool CLProgram::PrepareProgram() {
       clManager_->commandQueues_[CLManager::EXECUTE], 1, 
       &(it->second), 0, NULL, NULL);
 
-    if (error_ != CL_SUCCESS) {
+    if (!clManager_->CheckSuccess(error_, "PrepareProgram")) {
       ERROR("Failed to enqueue GL object aqcuisition");
       ERROR("Failing object: " << it->first);
       return false;
@@ -226,7 +236,7 @@ bool CLProgram::PrepareProgram() {
                             it->first,
                             (it->second).size_,
                             &((it->second).mem_));
-    if (error_ != CL_SUCCESS) {
+    if (!clManager_->CheckSuccess(error_, "PrepareProgram")) {
       ERROR("Failed to set kernel argument " << it->first);
       return false;
     }
@@ -238,8 +248,8 @@ bool CLProgram::PrepareProgram() {
                             it->first,
                             sizeof(cl_mem),
                             &(it->second));
-    if (error_ != CL_SUCCESS) {
-      ERROR("Failed to set texture kernel argument " << it->first);
+    if (!clManager_->CheckSuccess(error_, "PrepareProgram")) {
+      ERROR("Failed to set texture kernel arg " << it->first);
       return false;
     }
   }

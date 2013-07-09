@@ -252,13 +252,24 @@ bool CLManager::ReadBuffer(std::string _programName, unsigned int _argNr,
     ReadBuffer(_argNr, _hostPtr, _sizeInBytes, blocking);
 }
 
+bool CLManager::ReleaseBuffer(std::string _programName, unsigned int _argNr) {
+  if (clPrograms_.find(_programName) == clPrograms_.end()) {
+    ERROR("Program " << _programName << " not found");
+    return false;
+  }
+  return clPrograms_[_programName]->ReleaseBuffer(_argNr);
+}
 
 bool CLManager::PrepareProgram(std::string _programName) {
   if (clPrograms_.find(_programName) == clPrograms_.end()) {
     ERROR("Program " << _programName << " not found");
     return false;
   }
-  return clPrograms_[_programName]->PrepareProgram();
+  if (!clPrograms_[_programName]->PrepareProgram()) {
+    ERROR("Error when preparing program " << _programName);
+    return false;
+  }
+  return true;
 }
 
 
@@ -267,7 +278,11 @@ bool CLManager::LaunchProgram(std::string _programName) {
     ERROR("Program " << _programName << " not found");
     return false;
   }
-  return clPrograms_[_programName]->LaunchProgram();
+  if (!clPrograms_[_programName]->LaunchProgram()) {
+    ERROR("Error when launching program " << _programName);
+    return false;
+  }
+  return true;
 }
 
 
@@ -276,7 +291,11 @@ bool CLManager::FinishProgram(std::string _programName) {
     ERROR("Program " << _programName << " not found");
     return false;
   }
-  return clPrograms_[_programName]->FinishProgram();
+  if (!clPrograms_[_programName]->FinishProgram()) {
+    ERROR("Error when finishing program " << _programName);
+    return false;
+  }
+  return true;
 }
 
 

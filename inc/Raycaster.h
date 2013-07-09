@@ -159,13 +159,15 @@ private:
   static const unsigned int textureAtlasArg_ = 3;
   static const unsigned int constantsArg_ = 4;
   static const unsigned int transferFunctionArg_ = 5; 
-  static const unsigned int boxListArg_ = 6;
+  static const unsigned int tspArg_ = 6;
+  static const unsigned int brickListArg_ = 7;
 
   static const unsigned int tspCubeFrontArg_ = 0;
   static const unsigned int tspCubeBackArg_ = 1;
   static const unsigned int tspConstantsArg_ = 2;
   static const unsigned int tspTSPArg_ = 3;
   static const unsigned int tspBrickListArg_ = 4;
+
   
   // Timer and timer constants 
   boost::timer::cpu_timer timer_;

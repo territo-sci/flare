@@ -57,14 +57,14 @@ bool TSP::Construct() {
   numTotalNodes_ = (unsigned int)numTotalNodes;
 
 
-  INFO("TSP construction, num total nodes: " << numTotalNodes);
+  //INFO("TSP construction, num total nodes: " << numTotalNodes);
 
   // Allocate space for TSP structure
   data_.resize(numTotalNodes*NUM_DATA);
 
   // Loop over levels in octree skeleton
   for (int level=0; level<numLevels; ++level) {
-    INFO("Visiting level " << level);
+    //INFO("Visiting level " << level);
     
     // First index of this level
     // 0 for level 0
@@ -137,13 +137,13 @@ bool TSP::Construct() {
   }
 
 
-  for (int i=0; i<data_.size()/NUM_DATA; ++i) {
-    INFO(i);
-    INFO("Brick index " << data_[NUM_DATA*i + BRICK_INDEX]);
-    INFO("Child index " << data_[NUM_DATA*i + CHILD_INDEX]);
-    INFO("Spatial err " << data_[NUM_DATA*i + SPATIAL_ERR]);
-    INFO("Tempor. err " << data_[NUM_DATA*i + TEMPORAL_ERR]);
-  }
+  //for (int i=0; i<data_.size()/NUM_DATA; ++i) {
+  //  INFO(i);
+  //  INFO("Brick index " << data_[NUM_DATA*i + BRICK_INDEX]);
+  //  INFO("Child index " << data_[NUM_DATA*i + CHILD_INDEX]);
+  //  INFO("Spatial err " << data_[NUM_DATA*i + SPATIAL_ERR]);
+  //  INFO("Tempor. err " << data_[NUM_DATA*i + TEMPORAL_ERR]);
+  //}
 
   in.close();
 

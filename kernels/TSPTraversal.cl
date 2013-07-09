@@ -8,6 +8,24 @@ struct TraversalConstants {
   int spatialTolerance_;
 };
 
+// Turn normalized [0..1] cartesian coordinates 
+// to normalized spherical [0..1] coordinates
+float3 CartesianToSpherical(float3 _cartesian) {
+  // Put cartesian in [-1..1] range first
+  _cartesian = (float3)(-1.0) + 2.0* _cartesian;
+  float r = length(_cartesian);
+  float theta, phi;
+  if (r == 0.0) {
+    theta = phi = 0.0;
+  } else {
+    theta = acospi(_cartesian.z/r);
+    phi = (M_PI + atan2(_cartesian.y, _cartesian.x)) / (2.0*M_PI);
+  }
+  r = r / native_sqrt(3.0);
+  // Sampler ignores w component
+  return (float3)(r, theta, phi);
+}
+
 // Return index to the octree root (same index as BST root at that OT node)
 int OctreeRootNodeIndex() {
   return 0;
@@ -45,9 +63,6 @@ int ChildNodeIndex(int _bstNodeIndex,
                    int _numValuesPerNode,
                    bool _bstRoot,
                    __global __read_only int *_tsp) {
-  // TODO just return left
-  return LeftBST(_bstNodeIndex, _numValuesPerNode, _bstRoot, _tsp);
-  
   // Choose left or right child
   int middle = *_timespanStart + (*_timespanEnd - *_timespanStart)/2; 
   if (_timestep <= middle) {
@@ -304,6 +319,7 @@ void TraverseOctree(float3 _rayO,
         float boxMid = boxDim;
 
         // Check which child encloses P
+        float3 sphericalP = CartesianToSpherical(P);
         child = EnclosingChild(P, boxMid, offset);
 
         // Update offset

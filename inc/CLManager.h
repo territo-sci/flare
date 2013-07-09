@@ -64,6 +64,8 @@ public:
                   void *_hostPtr, unsigned int _sizeInBytes,
                   bool _blocking);
 
+  bool ReleaseBuffer(std::string _programName, unsigned int _argNr);
+
   
   // Aquire any shared textures, set up kernel arguments etc
   bool PrepareProgram(std::string _programName);
