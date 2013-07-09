@@ -189,8 +189,7 @@ void SampleAtlas(float4 *_color,
   // Find the texture atlas coordinates for the point
   float3 atlasCoords = AtlasCoords(_coords, _brickIndex, 
                                    _boxesPerAxis, _brickList);
-  float3 spherical = atlasCoords;///CartesianToSpherical(atlasCoords);
-  float4 a4 = (float4)(spherical.x, spherical.y, spherical.z, 1.0);
+  float4 a4 = (float4)(atlasCoords.x, atlasCoords.y, atlasCoords.z, 1.0);
   // Sample the atlas
   float sample = read_imagef(_textureAtlas, _atlasSampler, a4).x;
   // Composition
@@ -358,9 +357,9 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
       if (bstSuccess || 
           IsOctreeLeaf(otNodeIndex, _constants->numValuesPerNode_, _tsp)) {
 
-        //float3 sphericalP = CartesianToSpherical(cartesianP);
+        float3 sphericalP = CartesianToSpherical(cartesianP);
         // Sample the brick
-        SampleAtlas(&color, cartesianP, brickIndex, 
+        SampleAtlas(&color, sphericalP, brickIndex, 
                     _constants->numBoxesPerAxis_, // TODO calculate
                     atlasSampler, _textureAtlas,
                     _transferFunction, _brickList); 
@@ -378,7 +377,8 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
         float boxMid = boxDim;
 
         // Check which child encloses the sample point
-        child = EnclosingChild(cartesianP, boxMid, offset);
+        float3 sphericalP = CartesianToSpherical(cartesianP);
+        child = EnclosingChild(sphericalP, boxMid, offset);
        
         // Update offset for next level
         UpdateOffset(&offset, boxDim, child);

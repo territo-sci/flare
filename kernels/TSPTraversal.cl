@@ -104,7 +104,7 @@ int OTChildIndex(int _otNodeIndex, int _numValuesPerNode, int _numBSTNodes,
   return firstChild + _numBSTNodes*_child;
 }
 
-// Increment the count for a brick
+// Increment the count for a brick in the request list
 void AddToList(int _brickIndex, 
                __global volatile int *_reqList) {
   atomic_inc(&_reqList[_brickIndex]);
@@ -139,6 +139,7 @@ bool TraverseBST(int _otNodeIndex,
   // Rely on structure for termination
   while (true) {
   
+    // Update brick index (regardless if we use it or not)
     *_brickIndex = BrickIndex(bstNodeIndex, 
                               _constants->numValuesPerNode_,
                               _tsp);
@@ -273,7 +274,6 @@ void TraverseOctree(float3 _rayO,
     float3 offset = (float3)(0.0);
     float boxDim = 1.0;
     int child;
-    bool foundBrick = false;
 
     // Init the octree node index to the root
     int otNodeIndex = OctreeRootNodeIndex();
@@ -295,7 +295,6 @@ void TraverseOctree(float3 _rayO,
         // Add the found brick to brick list
         AddToList(brickIndex, _reqList);
         // We are now done with this node, so go to next
-        foundBrick = true;
         break;
         
       // If the BST lookup failed but the octree node is a leaf, 
@@ -305,7 +304,6 @@ void TraverseOctree(float3 _rayO,
         
         AddToList(brickIndex, _reqList);
         // We are now done with this node, so go to next
-        foundBrick = true;
         break;
 
       // If the BST lookup failed and we can traverse the octree,
@@ -320,7 +318,7 @@ void TraverseOctree(float3 _rayO,
 
         // Check which child encloses P
         float3 sphericalP = CartesianToSpherical(P);
-        child = EnclosingChild(P, boxMid, offset);
+        child = EnclosingChild(sphericalP, boxMid, offset);
 
         // Update offset
         UpdateOffset(&offset, boxDim, child);
