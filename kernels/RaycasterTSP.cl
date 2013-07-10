@@ -8,6 +8,7 @@ struct KernelConstants {
   int timestep_;
   int temporalTolerance_;
   int spatialTolerance_;
+  int rootLevel_;
 };
 
         
@@ -75,7 +76,6 @@ int LeftBST(int _bstNodeIndex, int _numValuesPerNode,
   }
 }
 
-
 // Return index to right BST child (high timespan)
 int RightBST(int _bstNodeIndex, int _numValuesPerNode,
              bool _bstRoot, __global __read_only int *_tsp) {
@@ -85,7 +85,6 @@ int RightBST(int _bstNodeIndex, int _numValuesPerNode,
     return _tsp[_bstNodeIndex*_numValuesPerNode + 1] + 1;
   }
 }
-
 
 // Return child node index given a BST node, a time span and a timestep
 // Updates timespan
@@ -149,7 +148,7 @@ int SpatialError(int _bstNodeIndex, int _numValuesPerNode,
 
 // Converts a global coordinate [0..1] to a box coordinate [0..boxesPerAxis]
 int3 BoxCoords(float3 _globalCoords, int _boxesPerAxis) {
-  int3 boxCoords = convert_int3((_globalCoords * (float)(_boxesPerAxis)));
+  int3 boxCoords = convert_int3((_globalCoords * (float)_boxesPerAxis));
   return clamp (boxCoords, (int3)(0, 0, 0), (int3)(_boxesPerAxis-1));
 }
 
@@ -162,6 +161,36 @@ int3 AtlasBoxCoords(int _brickIndex,
   return (int3)(x, y, z);
 }
 
+// Convert a global coordinate to a local in-box coordinate, given
+// the number of boxes (of this size) per axis and the box coordinates
+float3 InBoxCoords(float3 _globalCoords, int3 _boxCoords, int _boxesPerAxis) {
+  return (_globalCoords - convert_float3(_boxCoords)/(float)_boxesPerAxis) 
+         * (float)_boxesPerAxis;
+}
+
+float3 AtlasCoords(float3 _globalCoords, int _brickIndex, int _boxesPerAxis,
+                   int _level, __global __read_only int *_brickList) {
+
+  // Use current octree level to calculate dividing factor for coordinates
+  int divisor = (int)pow(2.0, _level);
+ 
+  // Calculate box coordinates, taking current subdivision level into account
+  int3 boxCoords = BoxCoords(_globalCoords, _boxesPerAxis/divisor);
+
+  // Calculate local in-box coordinates for the point
+  float3 inBoxCoords = InBoxCoords(_globalCoords, boxCoords, 
+                                   _boxesPerAxis/divisor);
+
+  // Fetch atlas box coordinates
+  int3 atlasBoxCoords = AtlasBoxCoords(_brickIndex, _brickList);
+
+  // Transform coordinates to atlas coordinates
+  return inBoxCoords/(float)_boxesPerAxis +
+         convert_float3(atlasBoxCoords)/(float)_boxesPerAxis;
+}
+
+
+/*
 // Convert a global coordinate [0..1] to a texture atlas coordinate [0..1]
 float3 AtlasCoords(float3 _globalCoords, int _brickIndex, 
                    int _boxesPerAxis,
@@ -174,13 +203,12 @@ float3 AtlasCoords(float3 _globalCoords, int _brickIndex,
   int3 diff = boxCoords-atlasBoxCoords;
   return _globalCoords - convert_float3(diff)/(float)(_boxesPerAxis);
 }
+*/
 
 
 // Sample atlas
-void SampleAtlas(float4 *_color, 
-                 float3 _coords,
-                 int _brickIndex,
-                 int _boxesPerAxis,
+void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
+                 int _boxesPerAxis, int _level,
                  const sampler_t _atlasSampler,
                  __global __read_only image3d_t _textureAtlas,
                  __global __read_only float *_transferFunction,
@@ -188,7 +216,11 @@ void SampleAtlas(float4 *_color,
 
   // Find the texture atlas coordinates for the point
   float3 atlasCoords = AtlasCoords(_coords, _brickIndex, 
-                                   _boxesPerAxis, _brickList);
+                                   _boxesPerAxis, _level, _brickList);
+
+  int3 boxCoords = BoxCoords(_coords, _boxesPerAxis);
+  
+ 
   float4 a4 = (float4)(atlasCoords.x, atlasCoords.y, atlasCoords.z, 1.0);
   // Sample the atlas
   float sample = read_imagef(_textureAtlas, _atlasSampler, a4).x;
@@ -326,6 +358,7 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
   float traversed = 0;
   // Cumulative color for ray to return
   float4 color = (float4)(0.0);
+
  
   // Sampler for texture atlas
   const sampler_t atlasSampler = CLK_FILTER_LINEAR |
@@ -334,18 +367,19 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
 
   // Traverse until sample point is outside of volume
   while (traversed < _maxDist) {
-  
+
     // Reset octree traversal variables
     float3 offset = (float3)(0.0);
     float boxDim = 1.0;
     bool foundBrick = false;
     int child;
+    int level = _constants->rootLevel_;
 
     int otNodeIndex = OctreeRootNodeIndex();
 
     // Rely on finding a leaf for loop termination
     while (true) {
-        
+
       // Traverse BST to get a brick index, and see if the found brick
       // is good enough
       int brickIndex;
@@ -360,11 +394,10 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
         float3 sphericalP = CartesianToSpherical(cartesianP);
         // Sample the brick
         SampleAtlas(&color, sphericalP, brickIndex, 
-                    _constants->numBoxesPerAxis_, // TODO calculate
+                    _constants->numBoxesPerAxis_, level, 
                     atlasSampler, _textureAtlas,
                     _transferFunction, _brickList); 
         break;
-
 
       } else {
            
@@ -386,6 +419,8 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
         // Update index to new node
         otNodeIndex = OTChildIndex(otNodeIndex, _constants->numValuesPerNode_,
                                    _constants->numBSTNodesPerOT_, child, _tsp);
+        
+        level--;
 
       }
 

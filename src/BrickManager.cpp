@@ -128,7 +128,6 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
   int zCoord = 0;
   for (unsigned int i=0; i<_brickRequest.size(); ++i) {
     if (_brickRequest[i] > 0) {
-
         
       if (xCoord >= xNumBricks_ || 
           yCoord >= yNumBricks_ || 
@@ -163,7 +162,6 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
     
     }
   }
-
 
   return true;
 

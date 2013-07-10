@@ -116,11 +116,21 @@ bool TSP::Construct() {
         data_[NUM_DATA*BSTNodeIndex + BRICK_INDEX] = BSTNodeIndex;
         data_[NUM_DATA*BSTNodeIndex + SPATIAL_ERR] = numLevels-1-level;
         // TODO test
-        if (BSTNode == (numTimesteps-1)) {
-         data_[NUM_DATA*BSTNodeIndex + TEMPORAL_ERR] = 0;
+        int tempErr;
+        if (BSTNode == 0) {
+          tempErr = 5;
+        } else if (BSTNode < 3) {
+          tempErr = 4;
+        } else if (BSTNode < 7) {
+          tempErr = 3;
+        } else if (BSTNode < 15) {
+          tempErr = 2;
+        } else if (BSTNode < 31) {
+          tempErr = 1;
         } else {
-         data_[NUM_DATA*BSTNodeIndex + TEMPORAL_ERR] = 1;
+          tempErr = 0;
         }
+        data_[NUM_DATA*BSTNodeIndex + TEMPORAL_ERR] = tempErr;
         
         BSTChild += 2;
         /* 
@@ -137,13 +147,13 @@ bool TSP::Construct() {
   }
 
 
-  //for (int i=0; i<data_.size()/NUM_DATA; ++i) {
-  //  INFO(i);
-  //  INFO("Brick index " << data_[NUM_DATA*i + BRICK_INDEX]);
-  //  INFO("Child index " << data_[NUM_DATA*i + CHILD_INDEX]);
-  //  INFO("Spatial err " << data_[NUM_DATA*i + SPATIAL_ERR]);
-  //  INFO("Tempor. err " << data_[NUM_DATA*i + TEMPORAL_ERR]);
-  //}
+  for (int i=0; i<data_.size()/NUM_DATA; ++i) {
+    INFO(i);
+    INFO("Brick index " << data_[NUM_DATA*i + BRICK_INDEX]);
+    INFO("Child index " << data_[NUM_DATA*i + CHILD_INDEX]);
+    INFO("Spatial err " << data_[NUM_DATA*i + SPATIAL_ERR]);
+    INFO("Tempor. err " << data_[NUM_DATA*i + TEMPORAL_ERR]);
+  }
 
   in.close();
 

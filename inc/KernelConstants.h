@@ -18,6 +18,7 @@ struct KernelConstants {
   int timestep_;
   int temporalTolerance_;
   int spatialTolerance_;
+  int rootLevel_;
 };
 
 struct TraversalConstants {

@@ -470,8 +470,6 @@ bool Raycaster::Render(float _timestep) {
     nextTimestep = 1;
   }
 
- INFO("Current timestep " << currentTimestep);
-
   // TODO temp test
 
   // TODO temp
@@ -481,7 +479,7 @@ bool Raycaster::Render(float _timestep) {
   tc.numBSTNodesPerOT_ = 63;
   tc.timestep_ = currentTimestep;
   tc.temporalTolerance_ = 0;
-  tc.spatialTolerance_ = 0; 
+  tc.spatialTolerance_ = 2; 
   
   kernelConstants_.numTimesteps_ = 32;
   kernelConstants_.numValuesPerNode_ = 4;
@@ -489,7 +487,8 @@ bool Raycaster::Render(float _timestep) {
   kernelConstants_.numBoxesPerAxis_ = 4;
   kernelConstants_.timestep_ = currentTimestep;
   kernelConstants_.temporalTolerance_ = 0;
-  kernelConstants_.spatialTolerance_ = 0;
+  kernelConstants_.spatialTolerance_ = 2;
+  kernelConstants_.rootLevel_ = 2;
 
   if (!clManager_->AddTraversalConstants("TSPTraversal",
                                          tspConstantsArg_,
@@ -519,7 +518,7 @@ bool Raycaster::Render(float _timestep) {
                               reinterpret_cast<void*>(&brickRequest[0]),
                               brickRequest.size()*sizeof(int),
                               true)) return false;
-  
+
   // Build a brick list from the request list
   if (!brickManager_->BuildBrickList(brickRequest)) return false;
   // Apply the brick list, update the texture atlas
