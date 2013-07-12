@@ -472,30 +472,50 @@ bool Raycaster::Render(float _timestep) {
 
   // TODO temp test
 
-  // TODO temp
-  TraversalConstants tc;
-  tc.numTimesteps_ = 32;
-  tc.numValuesPerNode_ = 4;
-  tc.numBSTNodesPerOT_ = 63;
-  tc.timestep_ = currentTimestep;
-  tc.temporalTolerance_ = 0;
-  tc.spatialTolerance_ = 0; 
-  
-  kernelConstants_.numTimesteps_ = 32;
-  kernelConstants_.numValuesPerNode_ = 4;
-  kernelConstants_.numBSTNodesPerOT_ = 63;
-  kernelConstants_.numBoxesPerAxis_ = 4;
-  kernelConstants_.timestep_ = currentTimestep;
-  kernelConstants_.temporalTolerance_ = 0;
-  kernelConstants_.spatialTolerance_ = 0;
-  kernelConstants_.rootLevel_ = 2;
+  int temporalTolerance = 0;
+  int spatialTolerance = 0;
 
+  // TODO temp
+  traversalConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
+  traversalConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
+  traversalConstants_.numBSTNodesPerOT_ = (int)tsp_->NumBSTNodesPerOT();
+  traversalConstants_.timestep_ = currentTimestep;
+  traversalConstants_.temporalTolerance_ = temporalTolerance;
+  traversalConstants_.spatialTolerance_ = spatialTolerance; 
+  
+  kernelConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
+  kernelConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
+  kernelConstants_.numBSTNodesPerOT_ = (int)tsp_->NumBSTNodesPerOT();
+  kernelConstants_.numBoxesPerAxis_ = (int)tsp_->NumBricksPerAxis();
+  kernelConstants_.timestep_ = currentTimestep;
+  kernelConstants_.temporalTolerance_ = temporalTolerance;
+  kernelConstants_.spatialTolerance_ = spatialTolerance;
+  kernelConstants_.rootLevel_ = (int)tsp_->NumOTLevels() - 1;
+  /*
+  INFO("Traversal constants:");
+  INFO("numTimesteps_ " << traversalConstants_.numTimesteps_);
+  INFO("numValuesPerNode_ " << traversalConstants_.numValuesPerNode_);
+  INFO("numBSTNodesPerOT_ " << traversalConstants_.numBSTNodesPerOT_);
+  INFO("timestep_ " << traversalConstants_.timestep_);
+  INFO("temporalTolerance_ " << traversalConstants_.temporalTolerance_);
+  INFO("spatialTolerance_ " << traversalConstants_.spatialTolerance_);
+
+  INFO("Kernel constants:");
+  INFO("numTimesteps_ " << kernelConstants_.numTimesteps_);
+  INFO("numValuesPerNode_ " << kernelConstants_.numValuesPerNode_);
+  INFO("numBSTNodesPerOT_ " << kernelConstants_.numBSTNodesPerOT_);
+  INFO("numBoxesPerAxis_ " << kernelConstants_.numBoxesPerAxis_);
+  INFO("timestep_ " << kernelConstants_.timestep_);
+  INFO("temporalTolerance_ " << kernelConstants_.temporalTolerance_);
+  INFO("spatialTolerance_ " << kernelConstants_.spatialTolerance_);
+  INFO("rootLevel_ " << kernelConstants_.rootLevel_);
+  */
   if (!clManager_->AddTraversalConstants("TSPTraversal",
                                          tspConstantsArg_,
-                                         &tc)) return false;
-
+                                         &traversalConstants_)) return false;
   // TODO TEST
   std::vector<int> brickRequest(tsp_->NumTotalNodes(), 0);
+
   if (!clManager_->AddBuffer("TSPTraversal", tspBrickListArg_,
                              reinterpret_cast<void*>(&brickRequest[0]), 
                              brickRequest.size()*sizeof(int),
@@ -506,9 +526,10 @@ bool Raycaster::Render(float _timestep) {
                              tsp_->Size()*sizeof(int),
                              CLManager::COPY_HOST_PTR,
                              CLManager::READ_ONLY)) return false; 
-
+  
   if (!clManager_->PrepareProgram("TSPTraversal")) return false;
-  if (!clManager_->LaunchProgram("TSPTraversal")) return false;
+  if (!clManager_->LaunchProgram("TSPTraversal", 
+                                 512, 512, 16, 16)) return false;
   if (!clManager_->FinishProgram("TSPTraversal")) return false;
 
   // The next kernel needs this one
@@ -519,12 +540,14 @@ bool Raycaster::Render(float _timestep) {
                               brickRequest.size()*sizeof(int),
                               true)) return false;
 
+
   // Build a brick list from the request list
   if (!brickManager_->BuildBrickList(brickRequest)) return false;
   // Apply the brick list, update the texture atlas
   if (!brickManager_->UpdateAtlas()) return false;
 
   // When the texture atlas contains the correct bricks, run second pass
+
                                     
   if (!clManager_->AddKernelConstants("RaycasterTSP", constantsArg_, 
                                       &kernelConstants_)) return false;
@@ -547,7 +570,8 @@ bool Raycaster::Render(float _timestep) {
                              CLManager::READ_ONLY)) return false; 
 
   if (!clManager_->PrepareProgram("RaycasterTSP")) return false;
-  if (!clManager_->LaunchProgram("RaycasterTSP")) return false;
+  if (!clManager_->LaunchProgram("RaycasterTSP",
+                                 512, 512, 16, 16)) return false;
   if (!clManager_->FinishProgram("RaycasterTSP")) return false;
 
   

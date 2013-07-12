@@ -37,6 +37,9 @@ public:
   unsigned int NumBricksPerAxis() const { return numBricksPerAxis_; }
   unsigned int NumTimesteps() const { return numTimesteps_; }
   unsigned int NumTotalNodes() const { return numTotalNodes_; }
+  unsigned int NumValuesPerNode() const { return NUM_DATA; }
+  unsigned int NumBSTNodesPerOT() const { return numBSTNodesPerOT_; }
+  unsigned int NumOTLevels() const { return numOTLevels_; }
 
 private:
   TSP();
@@ -50,6 +53,8 @@ private:
   unsigned int numBricksPerAxis_;
   unsigned int numTimesteps_;
   unsigned int numTotalNodes_;
+  unsigned int numBSTNodesPerOT_;
+  unsigned int numOTLevels_;
 
 };
 

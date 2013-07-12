@@ -71,7 +71,9 @@ public:
   bool PrepareProgram(std::string _programName);
 
   // Launch program kernel (returns immediately)
-  bool LaunchProgram(std::string _programName);
+  bool LaunchProgram(std::string _programName, 
+                     unsigned int _gx, unsigned int _gy,
+                     unsigned int _lx, unsigned int _ly);
 
   // Wait for kernel to finish, releaste any shared resources
   bool FinishProgram(std::string _programName);

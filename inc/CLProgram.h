@@ -63,7 +63,8 @@ public:
   bool ReleaseBuffer(unsigned int _argNr);
    
   bool PrepareProgram();
-  bool LaunchProgram();
+  bool LaunchProgram(unsigned int _gx, unsigned int _gy,
+                     unsigned int _lx, unsigned int _ly);
   bool FinishProgram();
 
 private:

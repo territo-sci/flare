@@ -129,15 +129,16 @@ bool TraverseBST(int _otNodeIndex,
                  __constant struct TraversalConstants *_constants,
                  __global volatile int *_reqList,
                  __global __read_only int *_tsp) {
-  
+
   // Start at the root of the current BST
   int bstNodeIndex = _otNodeIndex;
   bool bstRoot = true;
   int timespanStart = 0;
   int timespanEnd = _constants->numTimesteps_;
+ 
 
-  // Rely on structure for termination
-  while (true) {
+   // Rely on structure for termination
+   while (true) {
   
     // Update brick index (regardless if we use it or not)
     *_brickIndex = BrickIndex(bstNodeIndex, 
@@ -261,7 +262,7 @@ void TraverseOctree(float3 _rayO,
                     __constant struct TraversalConstants *_constants,
                     __global volatile int *_reqList,
                     __global __read_only int *_tsp) {
- 
+
   // Choose a stepsize that guarantees that we don't miss any bricks
   // TODO dynamic depending on brick dimensions
   float stepsize = 0.1;
@@ -282,14 +283,18 @@ void TraverseOctree(float3 _rayO,
     // Rely on finding a leaf for loop termination 
     while (true) {
 
+  
       // See if the BST tree is good enough
-      int brickIndex;
+      int brickIndex = 0;
       bool bstSuccess = TraverseBST(otNodeIndex, 
                                     &brickIndex,
                                     _constants->timestep_,
                                     _constants,
                                     _reqList,
                                     _tsp);
+
+
+
       if (bstSuccess) {
 
         // Add the found brick to brick list
@@ -301,7 +306,6 @@ void TraverseOctree(float3 _rayO,
       // add the brick anyway (it is the BST leaf)
       } else if (IsOctreeLeaf(otNodeIndex, 
                               _constants->numValuesPerNode_, _tsp)) {
-        
         AddToList(brickIndex, _reqList);
         // We are now done with this node, so go to next
         break;
@@ -324,8 +328,15 @@ void TraverseOctree(float3 _rayO,
         UpdateOffset(&offset, boxDim, child);
 
         // Update node index to new node
+        int oldIndex = otNodeIndex;
         otNodeIndex = OTChildIndex(otNodeIndex, _constants->numValuesPerNode_,
                                    _constants->numBSTNodesPerOT_, child, _tsp);
+
+        if (otNodeIndex == 36855) {
+          AddToList(oldIndex, _reqList);
+          AddToList(1337, _reqList);
+        }
+
       } 
 
     } // while traversing

@@ -97,7 +97,7 @@ bool CLProgram::AddTexture(unsigned int _argNr, Texture *_texture,
       return false;
   }
 
-  if (error_ != CL_SUCCESS) return false;
+  if (!clManager_->CheckSuccess(error_, "AddTexture")) return false;
  
   OGLTextures_.insert(std::make_pair((cl_uint)_argNr, texture));
 
@@ -164,7 +164,6 @@ bool CLProgram::AddTraversalConstants(unsigned int _argNr,
                             sizeof(TraversalConstants),
                             _traversalConstants,
                             &error_);
-
   if (error_ != CL_SUCCESS) return false;
   memArgs_.insert(std::make_pair((cl_uint)_argNr, mka));
   return true;
@@ -185,7 +184,9 @@ bool CLProgram::AddBuffer(unsigned int _argNr,
                            (size_t)_sizeInBytes,
                            _hostPtr,
                            &error_);
-  if (error_ != CL_SUCCESS) return false;
+  if (!clManager_->CheckSuccess(error_, "AddBuffer")) {
+    return false;
+  }
   memArgs_.insert(std::make_pair((cl_uint)_argNr, ma));
   return true;
 }
@@ -258,32 +259,38 @@ bool CLProgram::PrepareProgram() {
 }
 
 
-bool CLProgram::LaunchProgram() {
-  // TODO don't hardcode
-  size_t globalSize[] = { 512, 512 };
-  size_t localSize[] = { 16, 16 };
+bool CLProgram::LaunchProgram(unsigned int _gx, unsigned int _gy,
+                              unsigned int _lx, unsigned int _ly) {
+  size_t globalSize[] = { _gx, _gy };
+  size_t localSize[] = { _lx, _ly };
 
   error_ = clEnqueueNDRangeKernel(
     clManager_->commandQueues_[CLManager::EXECUTE], kernel_, 2, NULL,
     globalSize, localSize, 0, NULL, NULL);
-  return (error_ == CL_SUCCESS);
+  return clManager_->CheckSuccess(error_, "LaunchProgram()");
 }
 
 bool CLProgram::FinishProgram() {
+
   // Make sure kernel is done
-  clFinish(clManager_->commandQueues_[CLManager::EXECUTE]);
+  error_ = clFinish(clManager_->commandQueues_[CLManager::EXECUTE]);
+  if (!clManager_->CheckSuccess(error_, "FinishProgram, clFinish")) {
+    ERROR("Failed to finish program");
+    return false;
+  }
 
   // Release shared OGL objects
   for (auto it=OGLTextures_.begin(); it!=OGLTextures_.end(); ++it) {
     error_ = clEnqueueReleaseGLObjects(
       clManager_->commandQueues_[CLManager::EXECUTE], 1, 
                                  &(it->second), 0, NULL, NULL);
-    if (error_ != CL_SUCCESS) {
+    if (!clManager_->CheckSuccess(error_, "FinishProgram, release GL objs")) {
       ERROR("Failed to release GL object");
       ERROR("Failed object: " << it->first);
       return false;
     }
   }
+
   return true;
 }
 

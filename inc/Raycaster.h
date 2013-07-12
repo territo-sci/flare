@@ -139,6 +139,7 @@ private:
   unsigned int pingPongIndex_;
   // Kernel constants
   KernelConstants kernelConstants_;
+  TraversalConstants traversalConstants_;
   std::string kernelConfigFilename_;
   // Transfer functions
   std::vector<TransferFunction*> transferFunctions_;

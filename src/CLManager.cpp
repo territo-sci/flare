@@ -273,12 +273,14 @@ bool CLManager::PrepareProgram(std::string _programName) {
 }
 
 
-bool CLManager::LaunchProgram(std::string _programName) {
+bool CLManager::LaunchProgram(std::string _programName, 
+                              unsigned int _gx, unsigned int _gy,
+                              unsigned int _lx, unsigned int _ly) {
   if (clPrograms_.find(_programName) == clPrograms_.end()) {
     ERROR("Program " << _programName << " not found");
     return false;
   }
-  if (!clPrograms_[_programName]->LaunchProgram()) {
+  if (!clPrograms_[_programName]->LaunchProgram(_gx, _gy, _lx, _ly)) {
     ERROR("Error when launching program " << _programName);
     return false;
   }

@@ -105,6 +105,8 @@ int main() {
   raycaster->SetTSP(tsp);
   if (!raycaster->InitCL()) return false;
 
+
+
   // Go!
   manager->SetRenderer(raycaster);
   // We expect a false return from the loop, so exit with normal code

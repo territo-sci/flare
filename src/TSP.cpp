@@ -51,10 +51,16 @@ bool TSP::Construct() {
   int numBSTNodes = (int)numTimesteps * 2 - 1;
   int numTotalNodes = numOctreeNodes * numBSTNodes;
 
+  INFO("numLevels: " << numLevels);
+  INFO("numOctreeNodes: " << numOctreeNodes);
+  INFO("numTotalNodes: " << numTotalNodes);
+
   brickDim_ = (unsigned int)xBrickDim;
   numBricksPerAxis_ = (unsigned int)xNumBricks;
   numTimesteps_ = (unsigned int)numTimesteps;
   numTotalNodes_ = (unsigned int)numTotalNodes;
+  numOTLevels_ = (unsigned int)numLevels;
+  numBSTNodesPerOT_ = (unsigned int)numBSTNodes;
 
 
   //INFO("TSP construction, num total nodes: " << numTotalNodes);
@@ -66,6 +72,8 @@ bool TSP::Construct() {
   for (int level=0; level<numLevels; ++level) {
     //INFO("Visiting level " << level);
     
+
+    INFO("level " << level);
     // First index of this level
     // 0 for level 0
     // 1 for level 1
@@ -77,10 +85,7 @@ bool TSP::Construct() {
     // Equals number of nodes up to this point
     int firstChildOfLevel = (pow(8, level+1) - 1) / 7;
     // Offset between children
-    // For level 0, the children at level 1 are 1 octree node apart
-    // For level 1, the children at level 2 are 8 octree nodes apart 
-    // etc
-    int childrenOffset = pow(8, level);
+    int childrenOffset = 8; 
 
     // For each level, loop over all octree nodes
     int numNodesInLevel = pow(8, level);
@@ -89,10 +94,11 @@ bool TSP::Construct() {
 
       int OTNodeIndex = firstLevelIndex + OTNode;
 
+      int OTChild;
       if (level == numLevels - 1) { // If leaf
         data_[numBSTNodes*OTNodeIndex*NUM_DATA+CHILD_INDEX] = -1;
       } else {
-        int OTChild = firstChildOfLevel+OTNode*childrenOffset;
+        OTChild = firstChildOfLevel+OTNode*childrenOffset;
         data_[numBSTNodes*NUM_DATA*OTNodeIndex+CHILD_INDEX] = 
           numBSTNodes*OTChild;
       }
@@ -101,6 +107,7 @@ bool TSP::Construct() {
       int BSTChild = 1;
       for (int BSTNode=0; BSTNode<numBSTNodes; ++BSTNode) {
         //INFO("Visiting BST node " << BSTNode);
+        
 
         int BSTNodeIndex = numBSTNodes*OTNodeIndex + BSTNode;
         if (BSTNode != 0) { // If not root
@@ -110,7 +117,6 @@ bool TSP::Construct() {
           } else {
             data_[NUM_DATA*BSTNodeIndex+CHILD_INDEX] = -1;
           }
-          //INFO("Child " << BSTChildIndex);
         } 
 
         data_[NUM_DATA*BSTNodeIndex + BRICK_INDEX] = BSTNodeIndex;
@@ -133,27 +139,21 @@ bool TSP::Construct() {
         data_[NUM_DATA*BSTNodeIndex + TEMPORAL_ERR] = tempErr;
         
         BSTChild += 2;
-        /* 
+        /*
         INFO("Visited BSTNodeIndex " << BSTNodeIndex);
         INFO("data[" << NUM_DATA*BSTNodeIndex + BRICK_INDEX << "] = " << BSTNodeIndex);
-        INFO("data[" << NUM_DATA*BSTNodeIndex + SPATIAL_ERR << "] = " << level);
-        INFO("data[" << NUM_DATA*BSTNodeIndex + TEMPORAL_ERR << "] = " << 1);
-        */
-
+        INFO("data[" << NUM_DATA*BSTNodeIndex + CHILD_INDEX << "] = " << data_[NUM_DATA*BSTNodeIndex+CHILD_INDEX]);
+        INFO("data[" << NUM_DATA*BSTNodeIndex + SPATIAL_ERR << "] = " << data_[NUM_DATA*BSTNodeIndex+SPATIAL_ERR]);
+        INFO("data[" << NUM_DATA*BSTNodeIndex + TEMPORAL_ERR << "] = " << data_[NUM_DATA*BSTNodeIndex+TEMPORAL_ERR]);
+       */
       }
+
           
     }
 
   }
 
 
-  for (int i=0; i<data_.size()/NUM_DATA; ++i) {
-    INFO(i);
-    INFO("Brick index " << data_[NUM_DATA*i + BRICK_INDEX]);
-    INFO("Child index " << data_[NUM_DATA*i + CHILD_INDEX]);
-    INFO("Spatial err " << data_[NUM_DATA*i + SPATIAL_ERR]);
-    INFO("Tempor. err " << data_[NUM_DATA*i + TEMPORAL_ERR]);
-  }
 
   in.close();
 
