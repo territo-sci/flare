@@ -491,6 +491,7 @@ bool Raycaster::Render(float _timestep) {
   kernelConstants_.temporalTolerance_ = temporalTolerance;
   kernelConstants_.spatialTolerance_ = spatialTolerance;
   kernelConstants_.rootLevel_ = (int)tsp_->NumOTLevels() - 1;
+  kernelConstants_.paddedBrickDim_ = (int)tsp_->PaddedBrickDim();
   /*
   INFO("Traversal constants:");
   INFO("numTimesteps_ " << traversalConstants_.numTimesteps_);

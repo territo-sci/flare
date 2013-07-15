@@ -66,7 +66,6 @@ bool Texture3D::UpdateSubRegion(unsigned int _xOffset,
                                 float *_data) {
 
   glGetError();
-  
   glBindTexture(GL_TEXTURE_3D, handle_);
   glTexSubImage3D(GL_TEXTURE_3D,
                   0,
@@ -81,7 +80,6 @@ bool Texture3D::UpdateSubRegion(unsigned int _xOffset,
                   _data);
   glBindTexture(GL_TEXTURE_3D, 0);
   
-
   return (CheckGLError("Texture3D::UpdateSubRegion") == GL_NO_ERROR);
 }
 

@@ -9,6 +9,7 @@ struct KernelConstants {
   int temporalTolerance_;
   int spatialTolerance_;
   int rootLevel_;
+  int paddedBrickDim_;
 };
 
         
@@ -163,14 +164,20 @@ int3 AtlasBoxCoords(int _brickIndex,
 
 // Convert a global coordinate to a local in-box coordinate, given
 // the number of boxes (of this size) per axis and the box coordinates
-float3 InBoxCoords(float3 _globalCoords, int3 _boxCoords, int _boxesPerAxis) {
+float3 InBoxCoords(float3 _globalCoords, int3 _boxCoords, 
+                   int _boxesPerAxis, int _paddedBrickDim) {
+  // Calculate [0.0 1.0] box coordinates
   float3 inbox = (_globalCoords - convert_float3(_boxCoords)/(float)_boxesPerAxis) 
          * (float)_boxesPerAxis;
-  return clamp(inbox, (float3)(0.01), (float3)(0.99));
+  // Map to padding range 
+  float low = 1.0/(float)_paddedBrickDim;
+  float high = (float)(_paddedBrickDim-1)/(float)_paddedBrickDim;
+  return (float3)(low) + inbox * ((float3)(high)-(float3)(low));
 }
 
 float3 AtlasCoords(float3 _globalCoords, int _brickIndex, int _boxesPerAxis,
-                   int _level, __global __read_only int *_brickList) {
+                   int _paddedBrickDim, int _level, 
+                   __global __read_only int *_brickList) {
 
   // Use current octree level to calculate dividing factor for coordinates
   int divisor = (int)pow(2.0, _level);
@@ -180,7 +187,8 @@ float3 AtlasCoords(float3 _globalCoords, int _brickIndex, int _boxesPerAxis,
 
   // Calculate local in-box coordinates for the point
   float3 inBoxCoords = InBoxCoords(_globalCoords, boxCoords, 
-                                   _boxesPerAxis/divisor);
+                                   _boxesPerAxis/divisor,
+                                   _paddedBrickDim*divisor);
 
   // Fetch atlas box coordinates
   int3 atlasBoxCoords = AtlasBoxCoords(_brickIndex, _brickList);
@@ -209,7 +217,7 @@ float3 AtlasCoords(float3 _globalCoords, int _brickIndex,
 
 // Sample atlas
 void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
-                 int _boxesPerAxis, int _level,
+                 int _boxesPerAxis, int _paddedBrickDim, int _level,
                  const sampler_t _atlasSampler,
                  __global __read_only image3d_t _textureAtlas,
                  __global __read_only float *_transferFunction,
@@ -217,7 +225,8 @@ void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
 
   // Find the texture atlas coordinates for the point
   float3 atlasCoords = AtlasCoords(_coords, _brickIndex, 
-                                   _boxesPerAxis, _level, _brickList);
+                                   _boxesPerAxis, _paddedBrickDim,
+                                   _level, _brickList);
 
   int3 boxCoords = BoxCoords(_coords, _boxesPerAxis);
   
@@ -226,8 +235,9 @@ void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
   // Sample the atlas
   float sample = read_imagef(_textureAtlas, _atlasSampler, a4).x;
   // Composition
-  float4 tf = TransferFunction(_transferFunction, sample);
-  *_color += (1.0 - _color->w)*tf;
+  //float4 tf = TransferFunction(_transferFunction, sample);
+  //*_color += (1.0 - _color->w)*tf;
+  *_color += (float4)(sample);
 }
 
 
@@ -395,7 +405,9 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
         float3 sphericalP = CartesianToSpherical(cartesianP);
         // Sample the brick
         SampleAtlas(&color, sphericalP, brickIndex, 
-                    _constants->numBoxesPerAxis_, level, 
+                    _constants->numBoxesPerAxis_, 
+                    _constants->paddedBrickDim_,
+                    level, 
                     atlasSampler, _textureAtlas,
                     _transferFunction, _brickList); 
         break;

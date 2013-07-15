@@ -34,6 +34,7 @@ public:
   unsigned int Size() { return data_.size(); }
 
   unsigned int BrickDim() const { return brickDim_; }
+  unsigned int PaddedBrickDim() const { return paddedBrickDim_; }
   unsigned int NumBricksPerAxis() const { return numBricksPerAxis_; }
   unsigned int NumTimesteps() const { return numTimesteps_; }
   unsigned int NumTotalNodes() const { return numTotalNodes_; }
@@ -50,6 +51,7 @@ private:
   std::vector<int> data_;
 
   unsigned int brickDim_;
+  unsigned int paddedBrickDim_;
   unsigned int numBricksPerAxis_;
   unsigned int numTimesteps_;
   unsigned int numTotalNodes_;

@@ -74,6 +74,11 @@ private:
   unsigned int paddingWidth_;
   unsigned int dataSize_;
 
+  unsigned int numBricks_;
+  unsigned int brickDim_;
+  unsigned int paddedBrickDim_;
+  unsigned int atlasDim_;
+
   // Texture where the actual atlas is kept
   Texture3D *textureAtlas_;
 

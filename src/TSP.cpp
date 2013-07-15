@@ -56,6 +56,7 @@ bool TSP::Construct() {
   INFO("numTotalNodes: " << numTotalNodes);
 
   brickDim_ = (unsigned int)xBrickDim;
+  paddedBrickDim_ = brickDim_ + 2*paddingWidth;
   numBricksPerAxis_ = (unsigned int)xNumBricks;
   numTimesteps_ = (unsigned int)numTimesteps;
   numTotalNodes_ = (unsigned int)numTotalNodes;

@@ -265,7 +265,7 @@ void TraverseOctree(float3 _rayO,
 
   // Choose a stepsize that guarantees that we don't miss any bricks
   // TODO dynamic depending on brick dimensions
-  float stepsize = 0.1;
+  float stepsize = 0.02;
   float3 P = _rayO;
   // Keep traversing until the sample point goes outside the unit cube
   float traversed = 0.0;

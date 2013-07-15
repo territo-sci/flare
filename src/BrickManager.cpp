@@ -79,8 +79,18 @@ bool BrickManager::ReadHeader() {
   // Allocate box list and brick buffer
   // The box list keeps track of 1 brick index, 3 coordinate and 1 size value
   //boxList_.resize(xNumBricks_*yNumBricks_*zNumBricks_*5);
-  brickBuffer_[EVEN] = new real[xBrickDim_*yBrickDim_*zBrickDim_];
-  brickBuffer_[ODD] = new real[xBrickDim_*yBrickDim_*zBrickDim_];
+
+  brickDim_ = xBrickDim_;
+  numBricks_ = xNumBricks_;
+  paddedBrickDim_ = brickDim_ + paddingWidth_*2;
+  atlasDim_ = paddedBrickDim_*numBricks_; 
+  
+  INFO("Padded brick dim: " << paddedBrickDim_); 
+  INFO("Atlas dim: " << atlasDim_);
+
+  unsigned int bufferSize = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
+  brickBuffer_[EVEN] = new real[bufferSize];
+  brickBuffer_[ODD] = new real[bufferSize];
 
   hasReadHeader_ = true;
 
@@ -100,9 +110,9 @@ bool BrickManager::InitAtlas() {
 
   // Prepare the 3D texture
   std::vector<unsigned int> dims;
-  dims.push_back(xBrickDim_*xNumBricks_);
-  dims.push_back(yBrickDim_*yNumBricks_);
-  dims.push_back(zBrickDim_*zNumBricks_);
+  dims.push_back(atlasDim_);
+  dims.push_back(atlasDim_);
+  dims.push_back(atlasDim_);
   textureAtlas_ = Texture3D::New(dims);
 
   if (!textureAtlas_->Init()) return false;
@@ -153,7 +163,6 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
         }
       }
 
-
     } else {
 
       brickList_[3*i + 0] = -1;
@@ -164,8 +173,9 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
   }
 
   return true;
-
 }
+
+
 bool BrickManager::UpdateAtlas() {
 
   // TEST non-alternating
@@ -181,12 +191,12 @@ bool BrickManager::UpdateAtlas() {
     unsigned int y = static_cast<unsigned int>(brickList_[3*brickIndex+1]);
     unsigned int z = static_cast<unsigned int>(brickList_[3*brickIndex+2]);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[EVEN]);
-    if (!textureAtlas_->UpdateSubRegion(x*xBrickDim_,
-                                        y*yBrickDim_,
-                                        z*zBrickDim_,
-                                        xBrickDim_,
-                                        yBrickDim_,
-                                        zBrickDim_,
+    if (!textureAtlas_->UpdateSubRegion(x*paddedBrickDim_,
+                                        y*paddedBrickDim_,
+                                        z*paddedBrickDim_,
+                                        paddedBrickDim_,
+                                        paddedBrickDim_,
+                                        paddedBrickDim_,
                                         0)) return false;
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     brickIndex++;
@@ -268,7 +278,7 @@ bool BrickManager::ReadBrick(unsigned int _brickIndex,
   }
 
   // Number of values to be read per brick
-  unsigned int numVals = xBrickDim_*yBrickDim_*zBrickDim_;
+  unsigned int numVals = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
 
   // Total size in bytes for one brick
   size_t brickSize = sizeof(real) * numVals;
@@ -279,8 +289,7 @@ bool BrickManager::ReadBrick(unsigned int _brickIndex,
 
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[_bufferIndex]);
 
-  unsigned int size = xBrickDim_*yBrickDim_*zBrickDim_*sizeof(real);
-  glBufferData(GL_PIXEL_UNPACK_BUFFER, size, 0, GL_STREAM_DRAW);
+  glBufferData(GL_PIXEL_UNPACK_BUFFER, brickSize, 0, GL_STREAM_DRAW);
   
   // Map PBO
   brickBuffer_[_bufferIndex] = reinterpret_cast<real*>(

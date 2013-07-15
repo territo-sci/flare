@@ -19,6 +19,7 @@ struct KernelConstants {
   int temporalTolerance_;
   int spatialTolerance_;
   int rootLevel_;
+  int paddedBrickDim_;
 };
 
 struct TraversalConstants {
