@@ -149,7 +149,7 @@ int SpatialError(int _bstNodeIndex, int _numValuesPerNode,
 // Converts a global coordinate [0..1] to a box coordinate [0..boxesPerAxis]
 int3 BoxCoords(float3 _globalCoords, int _boxesPerAxis) {
   int3 boxCoords = convert_int3((_globalCoords * (float)_boxesPerAxis));
-  return clamp (boxCoords, (int3)(0, 0, 0), (int3)(_boxesPerAxis-1));
+  return clamp(boxCoords, (int3)(0, 0, 0), (int3)(_boxesPerAxis-1));
 }
 
 // Fetch atlas box coordinates from brick list
@@ -164,8 +164,9 @@ int3 AtlasBoxCoords(int _brickIndex,
 // Convert a global coordinate to a local in-box coordinate, given
 // the number of boxes (of this size) per axis and the box coordinates
 float3 InBoxCoords(float3 _globalCoords, int3 _boxCoords, int _boxesPerAxis) {
-  return (_globalCoords - convert_float3(_boxCoords)/(float)_boxesPerAxis) 
+  float3 inbox = (_globalCoords - convert_float3(_boxCoords)/(float)_boxesPerAxis) 
          * (float)_boxesPerAxis;
+  return clamp(inbox, (float3)(0.01), (float3)(0.99));
 }
 
 float3 AtlasCoords(float3 _globalCoords, int _brickIndex, int _boxesPerAxis,

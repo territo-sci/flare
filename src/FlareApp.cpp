@@ -71,6 +71,7 @@ int main() {
   // Create transfer functions
   TransferFunction *transferFunction = TransferFunction::New();
   transferFunction->SetInFilename("transferfunctions/test.txt");
+  //transferFunction->SetInFilename("transferfunctions/plain.txt");
   transferFunction->ReadFile();
   transferFunction->ConstructTexture();
 
