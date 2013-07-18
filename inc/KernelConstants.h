@@ -13,7 +13,7 @@ struct KernelConstants {
   float intensity_;
   int numTimesteps_;
   int numValuesPerNode_;
-  int numBSTNodesPerOT_;
+  int numOTNodes_;
   int numBoxesPerAxis_;
   int timestep_;
   int temporalTolerance_;
@@ -25,7 +25,7 @@ struct KernelConstants {
 struct TraversalConstants {
   int numTimesteps_;
   int numValuesPerNode_;
-  int numBSTNodesPerOT_;
+  int numOTNodes_;
   // TODO change to float
   // TODO get rid of timestep
   int timestep_;

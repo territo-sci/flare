@@ -62,7 +62,7 @@ Raycaster::Raycaster()
     pitch_(-30.f),
     yaw_(0.f),
     roll_(30.f),
-    zoom_(2.f),
+    zoom_(1.f),
     model_(glm::mat4()),
     view_(glm::mat4()),
     proj_(glm::mat4()),
@@ -478,42 +478,33 @@ bool Raycaster::Render(float _timestep) {
   // TODO temp
   traversalConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
   traversalConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
-  traversalConstants_.numBSTNodesPerOT_ = (int)tsp_->NumBSTNodes();
+  traversalConstants_.numOTNodes_ = (int)tsp_->NumOTNodes();
   traversalConstants_.timestep_ = currentTimestep;
   traversalConstants_.temporalTolerance_ = temporalTolerance;
   traversalConstants_.spatialTolerance_ = spatialTolerance; 
   
   kernelConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
   kernelConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
-  kernelConstants_.numBSTNodesPerOT_ = (int)tsp_->NumBSTNodes();
+  kernelConstants_.numOTNodes_ = (int)tsp_->NumOTNodes();
   kernelConstants_.numBoxesPerAxis_ = (int)tsp_->NumBricksPerAxis();
   kernelConstants_.timestep_ = currentTimestep;
   kernelConstants_.temporalTolerance_ = temporalTolerance;
   kernelConstants_.spatialTolerance_ = spatialTolerance;
   kernelConstants_.rootLevel_ = (int)tsp_->NumOTLevels() - 1;
   kernelConstants_.paddedBrickDim_ = (int)tsp_->PaddedBrickDim();
-  /*
-  INFO("Traversal constants:");
-  INFO("numTimesteps_ " << traversalConstants_.numTimesteps_);
-  INFO("numValuesPerNode_ " << traversalConstants_.numValuesPerNode_);
-  INFO("numBSTNodesPerOT_ " << traversalConstants_.numBSTNodesPerOT_);
-  INFO("timestep_ " << traversalConstants_.timestep_);
-  INFO("temporalTolerance_ " << traversalConstants_.temporalTolerance_);
-  INFO("spatialTolerance_ " << traversalConstants_.spatialTolerance_);
 
-  INFO("Kernel constants:");
-  INFO("numTimesteps_ " << kernelConstants_.numTimesteps_);
-  INFO("numValuesPerNode_ " << kernelConstants_.numValuesPerNode_);
-  INFO("numBSTNodesPerOT_ " << kernelConstants_.numBSTNodesPerOT_);
-  INFO("numBoxesPerAxis_ " << kernelConstants_.numBoxesPerAxis_);
-  INFO("timestep_ " << kernelConstants_.timestep_);
-  INFO("temporalTolerance_ " << kernelConstants_.temporalTolerance_);
-  INFO("spatialTolerance_ " << kernelConstants_.spatialTolerance_);
-  INFO("rootLevel_ " << kernelConstants_.rootLevel_);
-  */
+  /*
   if (!clManager_->AddTraversalConstants("TSPTraversal",
                                          tspConstantsArg_,
                                          &traversalConstants_)) return false;
+                                         */
+
+  // Add updated traversal constants
+  if (!clManager_->AddBuffer("TSPTraversal", tspConstantsArg_,
+                             reinterpret_cast<void*>(&traversalConstants_),
+                             sizeof(TraversalConstants),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false;
   // TODO TEST
   std::vector<int> brickRequest(tsp_->NumTotalNodes(), 0);
 
@@ -533,24 +524,19 @@ bool Raycaster::Render(float _timestep) {
                                  512, 512, 16, 16)) return false;
   if (!clManager_->FinishProgram("TSPTraversal")) return false;
 
-  // The next kernel needs this one
-  if (!clManager_->ReleaseBuffer("TSPTraversal", tspTSPArg_)) return false;
 
   if (!clManager_->ReadBuffer("TSPTraversal", tspBrickListArg_,
                               reinterpret_cast<void*>(&brickRequest[0]),
                               brickRequest.size()*sizeof(int),
                               true)) return false;
 
-          
-  /*
-  INFO("timestep: " << currentTimestep);
-  for (unsigned int i=0; i<brickRequest.size(); ++i) {
-    if (brickRequest[i] > 0) {
-      INFO(i);
-    }
-  }
-  */
-
+  // Release all buffers
+  if (!clManager_->ReleaseBuffer("TSPTraversal", tspTSPArg_)) return false;
+  if (!clManager_->ReleaseBuffer("TSPTraversal", tspBrickListArg_)) return false;
+  if (!clManager_->ReleaseBuffer("TSPTraversal", tspConstantsArg_)) return false;
+  
+  
+  
   // Build a brick list from the request list
   if (!brickManager_->BuildBrickList(brickRequest)) return false;
   // Apply the brick list, update the texture atlas

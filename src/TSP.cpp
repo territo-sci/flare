@@ -19,7 +19,7 @@ TSP * TSP::New(const std::string &_inFilename) {
 
 TSP::~TSP() {
 }
-/*
+
 bool TSP::Construct() {
 
   INFO("Constructing TSP tree, spatial ordering");
@@ -131,6 +131,8 @@ bool TSP::Construct() {
     }
   }
 
+ 
+  /*
   for (unsigned int i=0; i<data_.size()/4; ++i) {
     INFO("------------------------");
     INFO("Brick index: " << data_[i*NUM_DATA + BRICK_INDEX]);
@@ -138,11 +140,13 @@ bool TSP::Construct() {
     INFO("Spat. error: " << data_[i*NUM_DATA + SPATIAL_ERR]);
     INFO("Temp. error: " << data_[i*NUM_DATA + TEMPORAL_ERR]);
   }
+  */
 
   return true;
 
 }
-*/
+
+/*
 
 bool TSP::Construct() {
 
@@ -270,5 +274,5 @@ bool TSP::Construct() {
 
 }
 
-
+*/
 

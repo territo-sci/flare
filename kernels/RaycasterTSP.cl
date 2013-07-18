@@ -3,7 +3,7 @@ struct KernelConstants {
   float intensity_;
   int numTimesteps_;
   int numValuesPerNode_;
-  int numBSTNodesPerOT_;
+  int numOTNodes_;
   int numBoxesPerAxis_;
   int timestep_;
   int temporalTolerance_;
@@ -65,25 +65,25 @@ int OctreeRootNodeIndex() {
 }
 
 // Return index to left BST child (low timespan)
-int LeftBST(int _bstNodeIndex, int _numValuesPerNode, 
+int LeftBST(int _bstNodeIndex, int _numValuesPerNode, int _numOTNodes,
             bool _bstRoot, __global __read_only int *_tsp) {
   // If the BST node is a root, the child pointer is used for the OT. 
   // The child index is next to the root.
   // If not root, look up in TSP structure.
   if (_bstRoot) {
-    return _bstNodeIndex + 1;
+    return _bstNodeIndex + _numOTNodes;
   } else {
     return _tsp[_bstNodeIndex*_numValuesPerNode + 1];
   }
 }
 
 // Return index to right BST child (high timespan)
-int RightBST(int _bstNodeIndex, int _numValuesPerNode,
+int RightBST(int _bstNodeIndex, int _numValuesPerNode, int _numOTNodes,
              bool _bstRoot, __global __read_only int *_tsp) {
   if (_bstRoot) {
-    return _bstNodeIndex + 2;
+    return _bstNodeIndex + _numOTNodes*2;
   } else {
-    return _tsp[_bstNodeIndex*_numValuesPerNode + 1] + 1;
+    return _tsp[_bstNodeIndex*_numValuesPerNode + 1] + _numOTNodes;
   }
 }
 
@@ -94,6 +94,7 @@ int ChildNodeIndex(int _bstNodeIndex,
                    int *_timespanEnd,
                    int _timestep,
                    int _numValuesPerNode,
+                   int _numOTNodes,
                    bool _bstRoot,
                    __global __read_only int *_tsp) {
   // Choose left or right child
@@ -101,11 +102,13 @@ int ChildNodeIndex(int _bstNodeIndex,
   if (_timestep <= middle) {
     // Left subtree
     *_timespanEnd = middle;
-    return LeftBST(_bstNodeIndex, _numValuesPerNode, _bstRoot, _tsp);
+    return LeftBST(_bstNodeIndex, _numValuesPerNode, _numOTNodes, 
+                   _bstRoot, _tsp);
   } else {
     // Right subtree
     *_timespanStart = middle+1;
-    return RightBST(_bstNodeIndex, _numValuesPerNode, _bstRoot, _tsp);
+    return RightBST(_bstNodeIndex, _numValuesPerNode, _numOTNodes,
+                    _bstRoot, _tsp);
   }
 }
 
@@ -130,11 +133,11 @@ bool IsOctreeLeaf(int _otNodeIndex, int _numValuesPerNode,
 }
 
 // Return OT child index given current node and child number (0-7)
-int OTChildIndex(int _otNodeIndex, int _numValuesPerNode, int _numBSTNodes,
+int OTChildIndex(int _otNodeIndex, int _numValuesPerNode,
                  int _child, 
                  __global __read_only int *_tsp) {
   int firstChild = _tsp[_otNodeIndex*_numValuesPerNode + 1];
-  return firstChild + _numBSTNodes*_child;
+  return firstChild + _child;
 }
 
 int TemporalError(int _bstNodeIndex, int _numValuesPerNode, 
@@ -199,21 +202,6 @@ float3 AtlasCoords(float3 _globalCoords, int _brickIndex, int _boxesPerAxis,
 }
 
 
-/*
-// Convert a global coordinate [0..1] to a texture atlas coordinate [0..1]
-float3 AtlasCoords(float3 _globalCoords, int _brickIndex, 
-                   int _boxesPerAxis,
-                   __global __read_only int *_brickList) {
-  // Start with finding the coordinates for the "box" the point sits in
-  int3 boxCoords = BoxCoords(_globalCoords, _boxesPerAxis);
-  // Fetch the brick's texture atlas (box) coordinates
-  int3 atlasBoxCoords = AtlasBoxCoords(_brickIndex, _brickList);
-  // Convert and return texture atlas coordinates
-  int3 diff = boxCoords-atlasBoxCoords;
-  return _globalCoords - convert_float3(diff)/(float)(_boxesPerAxis);
-}
-*/
-
 
 // Sample atlas
 void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
@@ -235,9 +223,9 @@ void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
   // Sample the atlas
   float sample = read_imagef(_textureAtlas, _atlasSampler, a4).x;
   // Composition
-  //float4 tf = TransferFunction(_transferFunction, sample);
-  //*_color += (1.0 - _color->w)*tf;
-  *_color += (float4)(sample);
+  float4 tf = TransferFunction(_transferFunction, sample);
+  *_color += (1.0 - _color->w)*tf;
+  //*_color += (float4)(sample);
 }
 
 
@@ -277,6 +265,7 @@ bool TraverseBST(int _otNodeIndex, int *_brickIndex,
                                       &timespanEnd, 
                                       _constants->timestep_,
                                       _constants->numValuesPerNode_,
+                                      _constants->numOTNodes_,
                                       bstRoot, _tsp);
       }
 
@@ -291,6 +280,7 @@ bool TraverseBST(int _otNodeIndex, int *_brickIndex,
                                     &timespanEnd,
                                     _constants->timestep_,
                                     _constants->numValuesPerNode_,
+                                    _constants->numOTNodes_,
                                     bstRoot, _tsp);
     }
 
@@ -431,7 +421,7 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
 
         // Update index to new node
         otNodeIndex = OTChildIndex(otNodeIndex, _constants->numValuesPerNode_,
-                                   _constants->numBSTNodesPerOT_, child, _tsp);
+                                   child, _tsp);
         
         level--;
 

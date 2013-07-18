@@ -2,7 +2,7 @@
 struct TraversalConstants {
   int numTimesteps_;
   int numValuesPerNode_;
-  int numBSTNodesPerOT_;
+  int numOTNodes_;
   int timestep_;
   int temporalTolerance_;
   int spatialTolerance_;
@@ -32,25 +32,26 @@ int OctreeRootNodeIndex() {
 }
 
 // Return index to left BST child (low timespan)
-int LeftBST(int _bstNodeIndex, int _numValuesPerNode, 
+int LeftBST(int _bstNodeIndex, int _numValuesPerNode, int _numOTNodes,
             bool _bstRoot, __global __read_only int *_tsp) {
   // If the BST node is a root, the child pointer is used for the OT. 
   // The child index is next to the root.
   // If not root, look up in TSP structure.
   if (_bstRoot) {
-    return _bstNodeIndex + 1;
+    return _bstNodeIndex + _numOTNodes;
+    //return _bstNodeIndex + 1;
   } else {
     return _tsp[_bstNodeIndex*_numValuesPerNode + 1];
   }
 }
 
 // Return index to right BST child (high timespan)
-int RightBST(int _bstNodeIndex, int _numValuesPerNode,
+int RightBST(int _bstNodeIndex, int _numValuesPerNode, int _numOTNodes,
              bool _bstRoot, __global __read_only int *_tsp) {
   if (_bstRoot) {
-    return _bstNodeIndex + 2;
+    return _bstNodeIndex + _numOTNodes*2;
   } else {
-    return _tsp[_bstNodeIndex*_numValuesPerNode + 1] + 1;
+    return _tsp[_bstNodeIndex*_numValuesPerNode + 1] + _numOTNodes;
   }
 }
 
@@ -61,6 +62,7 @@ int ChildNodeIndex(int _bstNodeIndex,
                    int *_timespanEnd,
                    int _timestep,
                    int _numValuesPerNode,
+                   int _numOTNodes,
                    bool _bstRoot,
                    __global __read_only int *_tsp) {
   // Choose left or right child
@@ -68,11 +70,13 @@ int ChildNodeIndex(int _bstNodeIndex,
   if (_timestep <= middle) {
     // Left subtree
     *_timespanEnd = middle;
-    return LeftBST(_bstNodeIndex, _numValuesPerNode, _bstRoot, _tsp);
+    return LeftBST(_bstNodeIndex, _numValuesPerNode, _numOTNodes,
+                   _bstRoot, _tsp);
   } else {
     // Right subtree
     *_timespanStart = middle+1;
-    return RightBST(_bstNodeIndex, _numValuesPerNode, _bstRoot, _tsp);
+    return RightBST(_bstNodeIndex, _numValuesPerNode, _numOTNodes, 
+                    _bstRoot, _tsp);
   }
 }
 
@@ -97,11 +101,11 @@ bool IsOctreeLeaf(int _otNodeIndex, int _numValuesPerNode,
 }
 
 // Return OT child index given current node and child number (0-7)
-int OTChildIndex(int _otNodeIndex, int _numValuesPerNode, int _numBSTNodes,
+int OTChildIndex(int _otNodeIndex, int _numValuesPerNode,
                  int _child, 
                  __global __read_only int *_tsp) {
   int firstChild = _tsp[_otNodeIndex*_numValuesPerNode + 1];
-  return firstChild + _numBSTNodes*_child;
+  return firstChild + _child;
 }
 
 // Increment the count for a brick in the request list
@@ -174,6 +178,7 @@ bool TraverseBST(int _otNodeIndex,
                                       &timespanEnd,
                                       _timestep,
                                       _constants->numValuesPerNode_,
+                                      _constants->numOTNodes_,
                                       bstRoot,
                                       _tsp);
       }
@@ -191,6 +196,7 @@ bool TraverseBST(int _otNodeIndex,
                                     &timespanEnd,
                                     _timestep,
                                     _constants->numValuesPerNode_,
+                                    _constants->numOTNodes_,
                                     bstRoot,
                                     _tsp);
     }
@@ -330,7 +336,7 @@ void TraverseOctree(float3 _rayO,
         // Update node index to new node
         int oldIndex = otNodeIndex;
         otNodeIndex = OTChildIndex(otNodeIndex, _constants->numValuesPerNode_,
-                                   _constants->numBSTNodesPerOT_, child, _tsp);
+                                  child, _tsp);
 
         if (otNodeIndex == 36855) {
           AddToList(oldIndex, _reqList);

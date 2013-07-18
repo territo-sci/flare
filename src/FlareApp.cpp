@@ -19,7 +19,7 @@ using namespace osp;
 int main() {
 
   // File to create TSP structure and then read data from
-  std::string tspFileName = "/home/vsand/OpenSpace/output.tsp";
+  std::string tspFileName = "/home/vsand/OpenSpace/enlil_256_32_32.tsp";
 
   // Window dimensions
   unsigned int width = 512;
@@ -105,7 +105,6 @@ int main() {
   raycaster->SetCLManager(clManager);
   raycaster->SetTSP(tsp);
   if (!raycaster->InitCL()) return false;
-
 
 
   // Go!

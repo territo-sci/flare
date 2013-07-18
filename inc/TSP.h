@@ -40,6 +40,7 @@ public:
   unsigned int NumTotalNodes() const { return numTotalNodes_; }
   unsigned int NumValuesPerNode() const { return NUM_DATA; }
   unsigned int NumBSTNodes() const { return numBSTNodes_; }
+  unsigned int NumOTNodes() const { return numOTNodes_; }
   unsigned int NumOTLevels() const { return numOTLevels_; }
 
 private:
