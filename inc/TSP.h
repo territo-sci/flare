@@ -39,7 +39,7 @@ public:
   unsigned int NumTimesteps() const { return numTimesteps_; }
   unsigned int NumTotalNodes() const { return numTotalNodes_; }
   unsigned int NumValuesPerNode() const { return NUM_DATA; }
-  unsigned int NumBSTNodesPerOT() const { return numBSTNodesPerOT_; }
+  unsigned int NumBSTNodes() const { return numBSTNodes_; }
   unsigned int NumOTLevels() const { return numOTLevels_; }
 
 private:
@@ -50,13 +50,19 @@ private:
   // Holds the actual structure
   std::vector<int> data_;
 
+  unsigned int structure_;
+  unsigned int dataDimensionality_;
   unsigned int brickDim_;
   unsigned int paddedBrickDim_;
   unsigned int numBricksPerAxis_;
   unsigned int numTimesteps_;
+  unsigned int paddingWidth_;
+  unsigned int dataSize_;
   unsigned int numTotalNodes_;
-  unsigned int numBSTNodesPerOT_;
+  unsigned int numBSTLevels_;
+  unsigned int numBSTNodes_;
   unsigned int numOTLevels_;
+  unsigned int numOTNodes_;
 
 };
 

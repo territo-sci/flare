@@ -62,7 +62,7 @@ Raycaster::Raycaster()
     pitch_(-30.f),
     yaw_(0.f),
     roll_(30.f),
-    zoom_(1.f),
+    zoom_(2.f),
     model_(glm::mat4()),
     view_(glm::mat4()),
     proj_(glm::mat4()),
@@ -478,14 +478,14 @@ bool Raycaster::Render(float _timestep) {
   // TODO temp
   traversalConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
   traversalConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
-  traversalConstants_.numBSTNodesPerOT_ = (int)tsp_->NumBSTNodesPerOT();
+  traversalConstants_.numBSTNodesPerOT_ = (int)tsp_->NumBSTNodes();
   traversalConstants_.timestep_ = currentTimestep;
   traversalConstants_.temporalTolerance_ = temporalTolerance;
   traversalConstants_.spatialTolerance_ = spatialTolerance; 
   
   kernelConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
   kernelConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
-  kernelConstants_.numBSTNodesPerOT_ = (int)tsp_->NumBSTNodesPerOT();
+  kernelConstants_.numBSTNodesPerOT_ = (int)tsp_->NumBSTNodes();
   kernelConstants_.numBoxesPerAxis_ = (int)tsp_->NumBricksPerAxis();
   kernelConstants_.timestep_ = currentTimestep;
   kernelConstants_.temporalTolerance_ = temporalTolerance;
@@ -541,6 +541,15 @@ bool Raycaster::Render(float _timestep) {
                               brickRequest.size()*sizeof(int),
                               true)) return false;
 
+          
+  /*
+  INFO("timestep: " << currentTimestep);
+  for (unsigned int i=0; i<brickRequest.size(); ++i) {
+    if (brickRequest[i] > 0) {
+      INFO(i);
+    }
+  }
+  */
 
   // Build a brick list from the request list
   if (!brickManager_->BuildBrickList(brickRequest)) return false;

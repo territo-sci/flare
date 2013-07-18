@@ -19,6 +19,130 @@ TSP * TSP::New(const std::string &_inFilename) {
 
 TSP::~TSP() {
 }
+/*
+bool TSP::Construct() {
+
+  INFO("Constructing TSP tree, spatial ordering");
+
+  std::fstream in;
+  in.open(inFilename_.c_str(), std::ios_base::in | std::ios_base::binary);
+  if (!in.is_open()) {
+    ERROR("TSP Construct failed to open " << inFilename_);
+    return false;
+  }
+  
+  // Read header
+  size_t s = sizeof(unsigned int);
+  in.read(reinterpret_cast<char*>(&structure_), s);
+  in.read(reinterpret_cast<char*>(&dataDimensionality_), s);
+  // TODO remove x y z dims
+  in.read(reinterpret_cast<char*>(&brickDim_), s);
+  in.read(reinterpret_cast<char*>(&brickDim_), s);
+  in.read(reinterpret_cast<char*>(&brickDim_), s);
+  in.read(reinterpret_cast<char*>(&numBricksPerAxis_), s);
+  in.read(reinterpret_cast<char*>(&numBricksPerAxis_), s);
+  in.read(reinterpret_cast<char*>(&numBricksPerAxis_), s);
+  in.read(reinterpret_cast<char*>(&numTimesteps_), s);
+  in.read(reinterpret_cast<char*>(&paddingWidth_), s);
+  in.read(reinterpret_cast<char*>(&dataSize_), s);
+  in.close();
+
+  INFO("Brick dimensions: " << brickDim_);
+  INFO("Num bricks per axis: " << numBricksPerAxis_);
+  INFO("Num timesteps: " << numTimesteps_);
+
+  if (paddingWidth_ > 1) {
+    ERROR("Padding width > 1 unsupported");
+    return false;
+  }
+
+  paddedBrickDim_ = brickDim_ + 2*paddingWidth_;
+
+  numOTLevels_ = log((int)numBricksPerAxis_)/log(2) + 1;
+  numOTNodes_ = (pow(8, numOTLevels_) - 1) / 7;
+  numBSTLevels_ = log((int)numTimesteps_)/log(2) + 1;
+  numBSTNodes_ = (int)numTimesteps_*2 - 1;
+  numTotalNodes_ = numOTNodes_ * numBSTNodes_;
+
+  INFO("Num OT levels: " << numOTLevels_);
+  INFO("Num OT nodes: " << numOTNodes_);
+  INFO("Num BST levels: " << numBSTLevels_);
+  INFO("Num BST nodes: " << numBSTNodes_);
+
+  // Allocate space for TSP structure
+  data_.resize(numTotalNodes_*NUM_DATA);
+
+  // Loop over the OTs (one per BST node)
+  for (unsigned int OT=0; OT<numBSTNodes_; ++OT) {
+ 
+    // Start at the root of each OT  
+    unsigned int OTNode = OT*numOTNodes_;
+
+    // Calculate BST level (first level is level 0)
+    unsigned int BSTLevel = log(OT+1)/log(2);
+
+    // Traverse OT
+    unsigned int OTChild = 1;
+    unsigned int OTLevel = 0;
+    while (OTLevel < numOTLevels_) {
+
+      unsigned int OTNodesInLevel = pow(8, OTLevel);
+      for (unsigned int i=0; i<OTNodesInLevel; ++i) {      
+
+        // Brick index
+        data_[OTNode*NUM_DATA + BRICK_INDEX] = (int)OTNode;
+
+        // Error metrics
+        int localOTNode = (OTNode - OT*numOTNodes_);
+        data_[OTNode*NUM_DATA + TEMPORAL_ERR] = (int)(numBSTLevels_-1-BSTLevel);
+        data_[OTNode*NUM_DATA + SPATIAL_ERR] = (int)(numOTLevels_-1-OTLevel);
+    
+        if (BSTLevel == 0) {
+          // Calculate OT child index (-1 if node is leaf)
+          int OTChildIndex = 
+            (OTChild < numOTNodes_) ? (int)(OT*numOTNodes_+OTChild) : -1;
+            data_[OTNode*NUM_DATA + CHILD_INDEX] = OTChildIndex;
+        } else {
+          // Calculate BST child index (-1 if node is BST leaf)
+
+          // First BST node of current level
+          int firstNode = (2*pow(2, BSTLevel-1)-1)*numOTNodes_;
+          // First BST node of next level
+          int firstChild = (2*pow(2, BSTLevel)-1)*numOTNodes_;
+          // Difference between first nodes between levels
+          int levelGap = firstChild-firstNode;
+          // How many nodes away from the first node are we?
+          int offset = (OTNode-firstNode) / numOTNodes_;
+
+          // Use level gap and offset to calculate child index
+          int BSTChildIndex =
+            (BSTLevel < numBSTLevels_-1) ? 
+              (int)(OTNode+levelGap+(offset*numOTNodes_)) : -1;
+
+          data_[OTNode*NUM_DATA + CHILD_INDEX] = BSTChildIndex;
+        }
+
+        OTNode++;
+        OTChild += 8;
+
+      }
+
+      OTLevel++;
+    }
+  }
+
+  for (unsigned int i=0; i<data_.size()/4; ++i) {
+    INFO("------------------------");
+    INFO("Brick index: " << data_[i*NUM_DATA + BRICK_INDEX]);
+    INFO("Child index: " << data_[i*NUM_DATA + CHILD_INDEX]);
+    INFO("Spat. error: " << data_[i*NUM_DATA + SPATIAL_ERR]);
+    INFO("Temp. error: " << data_[i*NUM_DATA + TEMPORAL_ERR]);
+  }
+
+  return true;
+
+}
+*/
 
 bool TSP::Construct() {
 
@@ -30,47 +154,37 @@ bool TSP::Construct() {
   }
   
   // Read header
-  unsigned int structure, dataDimensionality, xBrickDim, yBrickDim, zBrickDim,
-               xNumBricks, yNumBricks, zNumBricks, numTimesteps,
-               paddingWidth, dataSize;
   size_t s = sizeof(unsigned int);
-  in.read(reinterpret_cast<char*>(&structure), s);
-  in.read(reinterpret_cast<char*>(&dataDimensionality), s);
-  in.read(reinterpret_cast<char*>(&xBrickDim), s);
-  in.read(reinterpret_cast<char*>(&yBrickDim), s);
-  in.read(reinterpret_cast<char*>(&zBrickDim), s);
-  in.read(reinterpret_cast<char*>(&xNumBricks), s);
-  in.read(reinterpret_cast<char*>(&yNumBricks), s);
-  in.read(reinterpret_cast<char*>(&zNumBricks), s);
-  in.read(reinterpret_cast<char*>(&numTimesteps), s);
-  in.read(reinterpret_cast<char*>(&paddingWidth), s);
-  in.read(reinterpret_cast<char*>(&dataSize), s);
+  in.read(reinterpret_cast<char*>(&structure_), s);
+  in.read(reinterpret_cast<char*>(&dataDimensionality_), s);
+  in.read(reinterpret_cast<char*>(&brickDim_), s);
+  in.read(reinterpret_cast<char*>(&brickDim_), s);
+  in.read(reinterpret_cast<char*>(&brickDim_), s);
+  in.read(reinterpret_cast<char*>(&numBricksPerAxis_), s);
+  in.read(reinterpret_cast<char*>(&numBricksPerAxis_), s);
+  in.read(reinterpret_cast<char*>(&numBricksPerAxis_), s);
+  in.read(reinterpret_cast<char*>(&numTimesteps_), s);
+  in.read(reinterpret_cast<char*>(&paddingWidth_), s);
+  in.read(reinterpret_cast<char*>(&dataSize_), s);
 
-  int numLevels = log((int)xNumBricks)/log(2) + 1;
-  int numOctreeNodes = (pow(8, numLevels) - 1) / 7;
-  int numBSTNodes = (int)numTimesteps * 2 - 1;
-  int numTotalNodes = numOctreeNodes * numBSTNodes;
+  numOTLevels_ = log(numBricksPerAxis_)/log(2) + 1;
+  numOTNodes_ = (pow(8, numOTLevels_) - 1) / 7;
+  numBSTNodes_ = numTimesteps_ * 2 - 1;
+  numTotalNodes_ = numOTNodes_ * numBSTNodes_;
 
-  INFO("numLevels: " << numLevels);
-  INFO("numOctreeNodes: " << numOctreeNodes);
-  INFO("numTotalNodes: " << numTotalNodes);
+  INFO("numOTLevels_: " << numBSTLevels_);
+  INFO("numOctreeNodes_: " << numOTNodes_);
+  INFO("numTotalNodes_: " << numTotalNodes_);
 
-  brickDim_ = (unsigned int)xBrickDim;
-  paddedBrickDim_ = brickDim_ + 2*paddingWidth;
-  numBricksPerAxis_ = (unsigned int)xNumBricks;
-  numTimesteps_ = (unsigned int)numTimesteps;
-  numTotalNodes_ = (unsigned int)numTotalNodes;
-  numOTLevels_ = (unsigned int)numLevels;
-  numBSTNodesPerOT_ = (unsigned int)numBSTNodes;
+  paddedBrickDim_ = brickDim_ + 2*paddingWidth_;
 
-
-  //INFO("TSP construction, num total nodes: " << numTotalNodes);
+  //INFO("TSP construction, num total nodes: " << numTotalNodes_);
 
   // Allocate space for TSP structure
-  data_.resize(numTotalNodes*NUM_DATA);
+  data_.resize(numTotalNodes_*NUM_DATA);
 
   // Loop over levels in octree skeleton
-  for (int level=0; level<numLevels; ++level) {
+  for (unsigned int level=0; level<numOTLevels_; ++level) {
     //INFO("Visiting level " << level);
     
 
@@ -80,40 +194,40 @@ bool TSP::Construct() {
     // 1 for level 1
     // 9 for level 2
     // etc
-    int firstLevelIndex = (pow(8, level) - 1) / 7;
+    unsigned int firstLevelIndex = (pow(8, level) - 1) / 7;
 
     // Position of first child for this level
     // Equals number of nodes up to this point
-    int firstChildOfLevel = (pow(8, level+1) - 1) / 7;
+    unsigned int firstChildOfLevel = (pow(8, level+1) - 1) / 7;
     // Offset between children
-    int childrenOffset = 8; 
+    unsigned int childrenOffset = 8; 
 
     // For each level, loop over all octree nodes
-    int numNodesInLevel = pow(8, level);
+    unsigned int numNodesInLevel = pow(8, level);
     for (int OTNode=0; OTNode<numNodesInLevel; ++OTNode) {
       //INFO("Visiting node " << OTNode << " at level " << level);
 
-      int OTNodeIndex = firstLevelIndex + OTNode;
+      unsigned int OTNodeIndex = firstLevelIndex + OTNode;
 
-      int OTChild;
-      if (level == numLevels - 1) { // If leaf
-        data_[numBSTNodes*OTNodeIndex*NUM_DATA+CHILD_INDEX] = -1;
+      unsigned int OTChild;
+      if (level == numOTLevels_ - 1) { // If leaf
+        data_[numBSTNodes_*OTNodeIndex*NUM_DATA+CHILD_INDEX] = -1;
       } else {
         OTChild = firstChildOfLevel+OTNode*childrenOffset;
-        data_[numBSTNodes*NUM_DATA*OTNodeIndex+CHILD_INDEX] = 
-          numBSTNodes*OTChild;
+        data_[numBSTNodes_*NUM_DATA*OTNodeIndex+CHILD_INDEX] = 
+          numBSTNodes_*OTChild;
       }
 
       // For each octree node, loop over BST nodes
       int BSTChild = 1;
-      for (int BSTNode=0; BSTNode<numBSTNodes; ++BSTNode) {
+      for (unsigned int BSTNode=0; BSTNode<numBSTNodes_; ++BSTNode) {
         //INFO("Visiting BST node " << BSTNode);
         
 
-        int BSTNodeIndex = numBSTNodes*OTNodeIndex + BSTNode;
+        unsigned int BSTNodeIndex = numBSTNodes_*OTNodeIndex + BSTNode;
         if (BSTNode != 0) { // If not root
-          if (BSTNode < (numTimesteps-1)) {  // If not leaf
-            int BSTChildIndex = numBSTNodes*OTNodeIndex + BSTChild;
+          if (BSTNode < (numTimesteps_-1)) {  // If not leaf
+            int BSTChildIndex = numBSTNodes_*OTNodeIndex + BSTChild;
             data_[NUM_DATA*BSTNodeIndex+CHILD_INDEX] = BSTChildIndex;
           } else {
             data_[NUM_DATA*BSTNodeIndex+CHILD_INDEX] = -1;
@@ -121,7 +235,8 @@ bool TSP::Construct() {
         } 
 
         data_[NUM_DATA*BSTNodeIndex + BRICK_INDEX] = BSTNodeIndex;
-        data_[NUM_DATA*BSTNodeIndex + SPATIAL_ERR] = numLevels-1-level;
+        data_[NUM_DATA*BSTNodeIndex + SPATIAL_ERR] = numOTLevels_-1-level;
+        
         // TODO test
         int tempErr;
         if (BSTNode == 0) {
@@ -140,13 +255,6 @@ bool TSP::Construct() {
         data_[NUM_DATA*BSTNodeIndex + TEMPORAL_ERR] = tempErr;
         
         BSTChild += 2;
-        /*
-        INFO("Visited BSTNodeIndex " << BSTNodeIndex);
-        INFO("data[" << NUM_DATA*BSTNodeIndex + BRICK_INDEX << "] = " << BSTNodeIndex);
-        INFO("data[" << NUM_DATA*BSTNodeIndex + CHILD_INDEX << "] = " << data_[NUM_DATA*BSTNodeIndex+CHILD_INDEX]);
-        INFO("data[" << NUM_DATA*BSTNodeIndex + SPATIAL_ERR << "] = " << data_[NUM_DATA*BSTNodeIndex+SPATIAL_ERR]);
-        INFO("data[" << NUM_DATA*BSTNodeIndex + TEMPORAL_ERR << "] = " << data_[NUM_DATA*BSTNodeIndex+TEMPORAL_ERR]);
-       */
       }
 
           
