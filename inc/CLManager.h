@@ -41,11 +41,13 @@ public:
   bool BuildProgram(std::string _programName);
   // Create kernel after building program
   bool CreateKernel(std::string _programName);
-
+  
   // Add an OpenGL texture to a program
   bool AddTexture(std::string _programName, unsigned int _argNr,
                   Texture *_texture, TextureType _textureType,
                   Permissions _permissions);
+
+  /*
   // Add (update) transfer function
   bool AddTransferFunction(std::string _programName, unsigned int _argNr,
                            TransferFunction *_transferFunction);
@@ -55,6 +57,8 @@ public:
   // Add (update) traversal constants
   bool AddTraversalConstants(std::string _programName, unsigned int _argNr,
                              TraversalConstants *_traversalConstants);
+  */
+
 
   bool AddBuffer(std::string _programName, unsigned int _argNr,
                  void *_hostPtr, unsigned int _sizeInBytes,

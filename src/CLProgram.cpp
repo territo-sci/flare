@@ -105,7 +105,7 @@ bool CLProgram::AddTexture(unsigned int _argNr, Texture *_texture,
 
 }
 
-
+/*
 bool CLProgram::AddTransferFunction(unsigned int _argNr,
                                     TransferFunction *_tf) {
   // Remove old TF already bound to this argument index 
@@ -168,6 +168,8 @@ bool CLProgram::AddTraversalConstants(unsigned int _argNr,
   memArgs_.insert(std::make_pair((cl_uint)_argNr, mka));
   return true;
 }
+
+*/
 
 bool CLProgram::AddBuffer(unsigned int _argNr,
                           void *_hostPtr,

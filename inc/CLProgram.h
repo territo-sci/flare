@@ -35,10 +35,12 @@ public:
   bool CreateProgram(std::string _fileName);
   bool BuildProgram();
   bool CreateKernel();
-
+ 
   bool AddTexture(unsigned int _argNr, Texture *_texture,
                   GLuint _textureType,
                   cl_mem_flags _permissions);
+
+  /*
 
   bool AddTransferFunction(unsigned int _argNr,
                            TransferFunction *_transferFunction);
@@ -48,6 +50,7 @@ public:
 
   bool AddTraversalConstants(unsigned int _argNr,
                              TraversalConstants *_traversalConstants);
+  */
 
   bool AddBuffer(unsigned int _argNr, 
                  void *_hostPtr, 

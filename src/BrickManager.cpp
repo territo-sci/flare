@@ -177,30 +177,87 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
 
 
 bool BrickManager::UpdateAtlas() {
-
-  // TEST non-alternating
+ 
+  // TODO spec max buffer size, just alloc once
+  // TODO asynch
+  
   unsigned int brickIndex = 0;
+
   while (brickIndex < brickList_.size()/3) {
+
+    // Find first brick index in list
     while (brickList_[3*brickIndex] == -1 &&
            brickIndex < brickList_.size()/3) {
       brickIndex++;
     }
-    if (brickIndex == brickList_.size()/3) return true;
-    ReadBrick(brickIndex, EVEN);
-    unsigned int x = static_cast<unsigned int>(brickList_[3*brickIndex+0]);
-    unsigned int y = static_cast<unsigned int>(brickList_[3*brickIndex+1]);
-    unsigned int z = static_cast<unsigned int>(brickList_[3*brickIndex+2]);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[EVEN]);
-    if (!textureAtlas_->UpdateSubRegion(x*paddedBrickDim_,
-                                        y*paddedBrickDim_,
-                                        z*paddedBrickDim_,
-                                        paddedBrickDim_,
-                                        paddedBrickDim_,
-                                        paddedBrickDim_,
-                                        0)) return false;
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    brickIndex++;
+    // If we're done, exit
+    if (brickIndex == brickList_.size()/3) break;
+
+    // Find a sequence of consecutive bricks in list
+    unsigned int sequence = 0;
+    unsigned int brickIndexProbe = brickIndex;
+    while (brickList_[3*brickIndexProbe] != -1 &&
+           brickIndexProbe < brickList_.size()/3) {
+      sequence++;
+      brickIndexProbe++;
+    }
+
+    // Read the bricks into memory
+    unsigned int numVals = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
+    unsigned int brickSize = sizeof(real)*numVals;
+    float *buffer = new real[numVals*sequence];
+    std::ios::pos_type offset = static_cast<std::ios::pos_type>(brickIndex) * 
+                                static_cast<std::ios::pos_type>(brickSize);
+    in_.seekg(dataPos_ + offset);
+    in_.read(reinterpret_cast<char*>(&buffer[0]),
+                                     brickSize*sequence);
+
+    float *brickBuffer = new real[numVals];
+     
+    // Map one brick at a time to PBO
+    for (unsigned int i=0; i<sequence; ++i) {
+    
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[EVEN]);
+      glBufferData(GL_PIXEL_UNPACK_BUFFER, 
+                   brickSize, 
+                   0, 
+                   GL_STREAM_DRAW);
+
+      brickBuffer = reinterpret_cast<real*>(glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY));
+   
+      for (unsigned int j=0; j<numVals; ++j) {
+        brickBuffer[j] = buffer[numVals*i + j];
+      }
+
+      glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+      // Brick brickIndex+i is now in memory, upload it to texture
+      unsigned int x=static_cast<unsigned int>(brickList_[3*(brickIndex+i)+0]);
+      unsigned int y=static_cast<unsigned int>(brickList_[3*(brickIndex+i)+1]);
+      unsigned int z=static_cast<unsigned int>(brickList_[3*(brickIndex+i)+2]);
+      //INFO("Brick " << brickIndex+i << " " << x << " " << y << " " << z);
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[EVEN]);
+      if (!textureAtlas_->UpdateSubRegion(x*paddedBrickDim_,
+                                          y*paddedBrickDim_,
+                                          z*paddedBrickDim_,
+                                          paddedBrickDim_,
+                                          paddedBrickDim_,
+                                          paddedBrickDim_,
+                                          0)) return false;
+      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    }
+
+   
+    delete buffer;
+    // TODO delete brick buffer? 
+
+    brickIndex += sequence;
+
   }
+
+  //}
   // END TEST
 
   /*
@@ -249,13 +306,6 @@ bool BrickManager::UpdateAtlas() {
     // Read the next brick from file to the brick buffer
     even = !even;
     brickIndex++;
-    while (brickList_[3*brickIndex] == -1 &&
-           brickIndex < brickList_.size()/3) {
-      brickIndex++;
-    }
-    if (brickIndex != brickList_.size()/3) {
-      if (!ReadBrick(brickIndex, nextIndex)) return false;
-    }
     
   }
 
@@ -266,6 +316,8 @@ bool BrickManager::UpdateAtlas() {
 
 bool BrickManager::ReadBrick(unsigned int _brickIndex, 
                              BUFFER_INDEX _bufferIndex) {
+
+  INFO("Reading");
 
   if (!hasReadHeader_) {
     ERROR("ReadBrick() - Has not read header");

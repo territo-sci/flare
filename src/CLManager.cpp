@@ -190,7 +190,7 @@ bool CLManager::AddTexture(std::string _programName, unsigned int _argNr,
                                                GLTextureType, flag);
 }
 
-
+/*
 bool CLManager::AddTransferFunction(std::string _programName,
                                     unsigned int _argNr, 
                                     TransferFunction *_transferFunction) {
@@ -225,6 +225,7 @@ bool CLManager::AddTraversalConstants(std::string _programName,
                                                        _traversalConstants);
 }
 
+*/
 
 bool CLManager::AddBuffer(std::string _programName, unsigned int _argNr,
                           void *_hostPtr, unsigned int _sizeInBytes,

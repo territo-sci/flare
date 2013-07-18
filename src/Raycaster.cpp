@@ -285,9 +285,18 @@ bool Raycaster::ReloadTransferFunctions() {
   INFO("Reloading transfer functions");
   if (!transferFunctions_[0]->ReadFile()) return false;
   if (!transferFunctions_[0]->ConstructTexture()) return false;
-  if (!clManager_->AddTransferFunction("Raycaster",
-                                        transferFunctionArg_, 
-                                        transferFunctions_[0])) return false;
+
+  float* tfData = transferFunctions_[0]->FloatData();
+  unsigned int tfSize = sizeof(float)*transferFunctions_[0]->Width()*4;
+  if (!clManager_->ReleaseBuffer("RaycasterTSP", transferFunctionArg_)) {
+    return false;
+  }
+
+  if (!clManager_->AddBuffer("RaycasterTSP", transferFunctionArg_,
+                             reinterpret_cast<void*>(tfData),
+                             tfSize,
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false;
   return true;
 }
 
@@ -493,12 +502,6 @@ bool Raycaster::Render(float _timestep) {
   kernelConstants_.rootLevel_ = (int)tsp_->NumOTLevels() - 1;
   kernelConstants_.paddedBrickDim_ = (int)tsp_->PaddedBrickDim();
 
-  /*
-  if (!clManager_->AddTraversalConstants("TSPTraversal",
-                                         tspConstantsArg_,
-                                         &traversalConstants_)) return false;
-                                         */
-
   // Add updated traversal constants
   if (!clManager_->AddBuffer("TSPTraversal", tspConstantsArg_,
                              reinterpret_cast<void*>(&traversalConstants_),
@@ -507,23 +510,24 @@ bool Raycaster::Render(float _timestep) {
                              CLManager::READ_ONLY)) return false;
   // TODO TEST
   std::vector<int> brickRequest(tsp_->NumTotalNodes(), 0);
-
   if (!clManager_->AddBuffer("TSPTraversal", tspBrickListArg_,
                              reinterpret_cast<void*>(&brickRequest[0]), 
                              brickRequest.size()*sizeof(int),
                              CLManager::COPY_HOST_PTR,
                              CLManager::READ_WRITE)) return false;
+  /*
   if (!clManager_->AddBuffer("TSPTraversal", tspTSPArg_,
                              reinterpret_cast<void*>(tsp_->Data()), 
                              tsp_->Size()*sizeof(int),
                              CLManager::COPY_HOST_PTR,
                              CLManager::READ_ONLY)) return false; 
+  */
+
   
   if (!clManager_->PrepareProgram("TSPTraversal")) return false;
   if (!clManager_->LaunchProgram("TSPTraversal", 
                                  512, 512, 16, 16)) return false;
   if (!clManager_->FinishProgram("TSPTraversal")) return false;
-
 
   if (!clManager_->ReadBuffer("TSPTraversal", tspBrickListArg_,
                               reinterpret_cast<void*>(&brickRequest[0]),
@@ -531,11 +535,9 @@ bool Raycaster::Render(float _timestep) {
                               true)) return false;
 
   // Release all buffers
-  if (!clManager_->ReleaseBuffer("TSPTraversal", tspTSPArg_)) return false;
+ // if (!clManager_->ReleaseBuffer("TSPTraversal", tspTSPArg_)) return false;
   if (!clManager_->ReleaseBuffer("TSPTraversal", tspBrickListArg_)) return false;
   if (!clManager_->ReleaseBuffer("TSPTraversal", tspConstantsArg_)) return false;
-  
-  
   
   // Build a brick list from the request list
   if (!brickManager_->BuildBrickList(brickRequest)) return false;
@@ -543,15 +545,15 @@ bool Raycaster::Render(float _timestep) {
   if (!brickManager_->UpdateAtlas()) return false;
 
   // When the texture atlas contains the correct bricks, run second pass
+ 
+  // Add kernel constants
+  if (!clManager_->AddBuffer("RaycasterTSP", constantsArg_,
+                             reinterpret_cast<void*>(&kernelConstants_),
+                             sizeof(KernelConstants),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false;
 
-                                    
-  if (!clManager_->AddKernelConstants("RaycasterTSP", constantsArg_, 
-                                      &kernelConstants_)) return false;
-
-  if (!clManager_->AddTransferFunction("RaycasterTSP", transferFunctionArg_, 
-                                       transferFunctions_[0])) return false;
-
-
+  // Add brick list
   if (!clManager_->
     AddBuffer("RaycasterTSP", brickListArg_,
               reinterpret_cast<void*>(&(brickManager_->BrickList()[0])),
@@ -559,18 +561,17 @@ bool Raycaster::Render(float _timestep) {
               CLManager::COPY_HOST_PTR,
               CLManager::READ_ONLY)) return false;
               
-  if (!clManager_->AddBuffer("RaycasterTSP", tspArg_,
-                             reinterpret_cast<void*>(tsp_->Data()), 
-                             tsp_->Size()*sizeof(int),
-                             CLManager::COPY_HOST_PTR,
-                             CLManager::READ_ONLY)) return false; 
 
   if (!clManager_->PrepareProgram("RaycasterTSP")) return false;
   if (!clManager_->LaunchProgram("RaycasterTSP",
                                  512, 512, 16, 16)) return false;
   if (!clManager_->FinishProgram("RaycasterTSP")) return false;
-
   
+  // Release all buffers
+  if (!clManager_->ReleaseBuffer("RaycasterTSP", constantsArg_)) return false;
+ // if (!clManager_->ReleaseBuffer("RaycasterTSP", transferFunctionArg_)) return false;  
+  if (!clManager_->ReleaseBuffer("RaycasterTSP", brickListArg_)) return false;
+  //if (!clManager_->ReleaseBuffer("RaycasterTSP", tspArg_)) return false;
 
   /*
 
@@ -693,13 +694,10 @@ bool Raycaster::HandleKeyboard() {
     if (!UpdateKernelConfig()) 
       return false;
     INFO("Kernel config reloaded");
-    if (!clManager_->AddKernelConstants("Raycaster", 
-                                        constantsArg_, 
-                                        &kernelConstants_)) return false;
-    INFO("Kernel constants reloaded");
     if (!ReloadTransferFunctions()) 
       return false;
     INFO("Transfer functions reloaded");
+    // TODO reload kernel constants
   }
 
   if (KeyPressed('W')) zoom_ -= 0.1f;
@@ -778,36 +776,6 @@ bool Raycaster::InitCL() {
                              CLManager::COPY_HOST_PTR,
                              CLManager::READ_ONLY)) return false;
 
-  // Rendering part of raycaster
-  /*
-  if (!clManager_->CreateProgram("Raycaster", 
-                                "kernels/RaycasterBricks.cl")) return false;
-  if (!clManager_->BuildProgram("Raycaster")) return false;
-  if (!clManager_->CreateKernel("Raycaster")) return false;
-
-  if (!clManager_->AddTexture("Raycaster", cubeFrontArg_, cubeFrontTex_, 
-                              CLManager::TEXTURE_2D,  
-                              CLManager::READ_ONLY)) return false;
-
-  if (!clManager_->AddTexture("Raycaster", cubeBackArg_, cubeBackTex_, 
-                              CLManager::TEXTURE_2D, 
-                              CLManager::READ_ONLY)) return false;
-
-  if (!clManager_->AddTexture("Raycaster", quadArg_, quadTex_, 
-                              CLManager::TEXTURE_2D, 
-                              CLManager::WRITE_ONLY)) return false;
-
-  if (!clManager_->AddTexture("Raycaster", textureAtlasArg_, 
-                              brickManager_->TextureAtlas(),
-                              CLManager::TEXTURE_3D, 
-                              CLManager::READ_ONLY)) return false;
-
-  if (!clManager_->AddKernelConstants("Raycaster", constantsArg_, 
-                                      &kernelConstants_)) return false;
-
-  if (!clManager_->AddTransferFunction("Raycaster", transferFunctionArg_, 
-                                       transferFunctions_[0])) return false;
-  */
 
   // TEST
   if (!clManager_->CreateProgram("RaycasterTSP",
@@ -832,11 +800,14 @@ bool Raycaster::InitCL() {
                               CLManager::TEXTURE_3D, 
                               CLManager::READ_ONLY)) return false;
 
-  if (!clManager_->AddKernelConstants("RaycasterTSP", constantsArg_, 
-                                      &kernelConstants_)) return false;
-
-  if (!clManager_->AddTransferFunction("RaycasterTSP", transferFunctionArg_, 
-                                       transferFunctions_[0])) return false;
+  // Add transfer function
+  float* tfData = transferFunctions_[0]->FloatData();
+  unsigned int tfSize = sizeof(float)*transferFunctions_[0]->Width()*4;
+  if (!clManager_->AddBuffer("RaycasterTSP", transferFunctionArg_,
+                             reinterpret_cast<void*>(tfData),
+                             tfSize,
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false;
 
   if (!clManager_->AddBuffer("RaycasterTSP", tspArg_,
                              reinterpret_cast<void*>(tsp_->Data()),
