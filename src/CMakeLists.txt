@@ -1,10 +1,9 @@
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
-set(OPENSPACE_DIR /home/vsand/OpenSpace)
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 
-set(Boost_INCLUDE_DIR ${OPENSPACE_DIR}/common_external/boost_1_53_0)
-set(Boost_LIBRARY_DIR ${OPENSPACE_DIR}/common_external/boost_1_53_0/stage/lib)
+set(Boost_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/../common_external/boost_1_53_0)
+set(Boost_LIBRARY_DIR ${CMAKE_SOURCE_DIR}/../common_external/boost_1_53_0/stage/lib)
 
 find_package(OpenGL REQUIRED)
 find_package(GLFW REQUIRED)
@@ -49,5 +48,4 @@ target_link_libraries(FlareApp
                       ${GLFW_LIBRARY}
                       ${OPENGL_LIBRARY}
                       ${OPENCL_LIBRARIES}
-                      ${Boost_LIBRARIES}
-              	      pthread)
+                      ${Boost_LIBRARIES})
