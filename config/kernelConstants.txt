@@ -1,2 +1,0 @@
-intensity 1.5
-stepSize 0.01
