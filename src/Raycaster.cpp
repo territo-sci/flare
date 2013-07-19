@@ -286,6 +286,7 @@ bool Raycaster::UpdateConfig() {
   kernelConstants_.spatialTolerance_ = config_->SpatialErrorTolerance();
   traversalConstants_.temporalTolerance_ = config_->TemporalErrorTolerance();
   traversalConstants_.spatialTolerance_ = config_->SpatialErrorTolerance(); 
+  return true;
 }
 
 bool Raycaster::UpdateMatrices() {
@@ -460,20 +461,13 @@ bool Raycaster::Render(float _timestep) {
                              sizeof(TraversalConstants),
                              CLManager::COPY_HOST_PTR,
                              CLManager::READ_ONLY)) return false;
-  // TODO TEST
+  // TODO test brick request list
   std::vector<int> brickRequest(tsp_->NumTotalNodes(), 0);
   if (!clManager_->AddBuffer("TSPTraversal", tspBrickListArg_,
                              reinterpret_cast<void*>(&brickRequest[0]), 
                              brickRequest.size()*sizeof(int),
                              CLManager::COPY_HOST_PTR,
                              CLManager::READ_WRITE)) return false;
-  /*
-  if (!clManager_->AddBuffer("TSPTraversal", tspTSPArg_,
-                             reinterpret_cast<void*>(tsp_->Data()), 
-                             tsp_->Size()*sizeof(int),
-                             CLManager::COPY_HOST_PTR,
-                             CLManager::READ_ONLY)) return false; 
-  */
 
   
   if (!clManager_->PrepareProgram("TSPTraversal")) return false;
@@ -486,8 +480,6 @@ bool Raycaster::Render(float _timestep) {
                               brickRequest.size()*sizeof(int),
                               true)) return false;
 
-  // Release all buffers
- // if (!clManager_->ReleaseBuffer("TSPTraversal", tspTSPArg_)) return false;
   if (!clManager_->ReleaseBuffer("TSPTraversal", tspBrickListArg_)) return false;
   if (!clManager_->ReleaseBuffer("TSPTraversal", tspConstantsArg_)) return false;
   
@@ -519,11 +511,8 @@ bool Raycaster::Render(float _timestep) {
                                  512, 512, 16, 16)) return false;
   if (!clManager_->FinishProgram("RaycasterTSP")) return false;
   
-  // Release all buffers
   if (!clManager_->ReleaseBuffer("RaycasterTSP", constantsArg_)) return false;
- // if (!clManager_->ReleaseBuffer("RaycasterTSP", transferFunctionArg_)) return false;  
   if (!clManager_->ReleaseBuffer("RaycasterTSP", brickListArg_)) return false;
-  //if (!clManager_->ReleaseBuffer("RaycasterTSP", tspArg_)) return false;
 
   /*
 
@@ -638,6 +627,8 @@ bool Raycaster::HandleKeyboard() {
     INFO("Shaders reloaded");
     if (!ReloadTransferFunctions()) return false;
     INFO("Transfer functions reloaded");
+    if (!animator_->UpdateConfig()) return false;
+    INFO("Animator updated");
   }
 
   if (KeyPressed('W')) zoom_ -= 0.1f;

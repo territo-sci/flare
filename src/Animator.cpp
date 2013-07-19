@@ -24,8 +24,9 @@ void Animator::SetCurrentTimestep(unsigned int _timestep) {
   currentTimestep_ = _timestep;
 }
 
-void Animator::UpdateConfig() {
+bool Animator::UpdateConfig() {
   refreshInterval_ = config_->AnimatorRefreshInterval();
+  return true;
 }
 
 void Animator::Update(float _elapsedTime) {
@@ -50,6 +51,11 @@ void Animator::Update(float _elapsedTime) {
 
 void Animator::ToggleFPSMode() {
   fpsMode_ = !fpsMode_;
+  if (fpsMode_) {
+    INFO("Rendering as fast as possible");
+  } else {
+    INFO("Rendering uses refresh interval parameter");
+  }
 }
 
 void Animator::TogglePause() {

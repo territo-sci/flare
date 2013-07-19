@@ -3,6 +3,7 @@ cmake_install.cmake
 Makefile
 CMakeFiles/
 Debug/
+sgct/
 data/
 
 FlareApp

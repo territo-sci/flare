@@ -32,7 +32,7 @@ public:
   void IncTimestep();
   void DecTimestep();
 
-  void UpdateConfig();
+  bool UpdateConfig();
 
 private:
   Animator();

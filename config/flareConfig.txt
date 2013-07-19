@@ -1,29 +1,31 @@
-
-
-##### RUNTIME RELOADING UNIMPLEMENTED ATM #######
-
-# window dimensions
+# Window dimensions
+# Don't change during runtime
 win_width 			512
 win_height 			512
 
-# filenames
-tsp_filename 			/home/vsand/OpenSpace/enlil_256_32_32.tsp
-transferfunction_filename 	transferfunctions/test.txt
+# Filenames
+# Don't change during runtime
+# (Transfer function values can be changed during runtime though)
+tsp_filename 			/home/vsand/OpenSpace/enlil_128_32_32.tsp
+transferfunction_filename 	transferfunctions/blue.txt
 
-# error tolerances 
-# spatial only works in integer steps. 
-# level 0 corresponds to octree leaves.
-# temporal error unimplemented
+# Error tolerances 
+# Spatial only works in integer steps. 
+# Level 0 corresponds to octree leaves.
+# Temporal error unimplemented
 spatial_error_tolerance 	0
 temporal_error_tolerance 	0
 
-# step size for TSP traversal
-# decrease this if holes appear in the rendering
+# Step size for TSP traversal
+# Decrease this if holes appear in the rendering
+# Can be changed during runtime
 tsp_traversal_stepsize 		0.1
 
-# ray caster constants
-raycaster_stepsize 		0.01
-raycaster_intensity 		2
+# Ray caster constants
+# Can be changed during runtime
+raycaster_stepsize 		0.015
+raycaster_intensity 		1.5
 
-# animation speed
-animator_refresh_interval 	0.2
+# Animation speed
+# Can be changed during runtime
+animator_refresh_interval 	0.1

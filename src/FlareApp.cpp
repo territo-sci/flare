@@ -75,7 +75,7 @@ int main() {
   transferFunction->ReadFile();
   transferFunction->ConstructTexture();
 
-  //Create animator
+  // Create animator
   Animator *animator = Animator::New(config);
   animator->SetNumTimesteps(brickManager->NumTimesteps());
 
@@ -107,8 +107,7 @@ int main() {
   manager->SetRenderer(raycaster);
   manager->StartLoop();
 
-  // Clean up, like a good citizen
-  delete config;
+  // Clean up like a good citizen
   delete clManager;
   delete tsp;
   delete brickManager;
@@ -121,6 +120,7 @@ int main() {
   delete manager;
   delete animator;
   delete raycaster;
+  delete config;
 
   exit(0);
 }

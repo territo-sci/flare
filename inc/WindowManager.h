@@ -3,7 +3,7 @@
 
 /* 
  * Author: Victor Sand (victor.sand@gmail.com)
- * Class to reasonably abstract Window handling away from rendering.
+ * Class to reasonably abstract window handling away from rendering.
  *
  */
 
