@@ -4,17 +4,18 @@
  */
 
 #include <TSP.h>
+#include <Config.h>
 #include <fstream>
 #include <Utils.h>
 #include <cmath>
 
 using namespace osp;
 
-TSP::TSP(const std::string &_inFilename) : inFilename_(_inFilename) {
+TSP::TSP(Config *_config) : config_(_config) {
 }
 
-TSP * TSP::New(const std::string &_inFilename) {
-  return new TSP(_inFilename);
+TSP * TSP::New(Config *_config) {
+  return new TSP(_config);
 }
 
 TSP::~TSP() {
@@ -22,12 +23,13 @@ TSP::~TSP() {
 
 bool TSP::Construct() {
 
-  INFO("Constructing TSP tree, spatial ordering");
+  INFO("\nConstructing TSP tree, spatial ordering");
 
   std::fstream in;
-  in.open(inFilename_.c_str(), std::ios_base::in | std::ios_base::binary);
+  std::string inFilename = config_->TSPFilename();
+  in.open(inFilename.c_str(), std::ios_base::in | std::ios_base::binary);
   if (!in.is_open()) {
-    ERROR("TSP Construct failed to open " << inFilename_);
+    ERROR("TSP Construct failed to open " << inFilename);
     return false;
   }
   
@@ -142,6 +144,7 @@ bool TSP::Construct() {
   }
   */
 
+  INFO("");
   return true;
 
 }

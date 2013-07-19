@@ -14,6 +14,8 @@
 
 namespace osp {
 
+class Config;
+
 class TSP {
 public:
 
@@ -25,7 +27,7 @@ public:
     NUM_DATA
   };
 
-  static TSP * New(const std::string &_inFilename);
+  static TSP * New(Config * _config);
   ~TSP();
   
   bool Construct();
@@ -45,9 +47,11 @@ public:
 
 private:
   TSP();
-  TSP(const std::string &_inFilename);
+  TSP(Config *_config);
   TSP(const TSP&);
-  std::string inFilename_;
+  
+  Config *config_;
+
   // Holds the actual structure
   std::vector<int> data_;
 

@@ -9,9 +9,11 @@
 
 namespace osp {
 
+class Config;
+
 class Animator {
 public:
-  static Animator * New();
+  static Animator * New(Config *_config);
 
   // Signals the animator to update its state if needed
   void Update(float _elapsedTime);
@@ -26,14 +28,18 @@ public:
   }
 
   void SetCurrentTimestep(unsigned int _timestep);
-  void SetRefreshInterval(float _refreshInterval);
   void SetNumTimesteps(unsigned int _numTimesteps);
   void IncTimestep();
   void DecTimestep();
 
+  void UpdateConfig();
+
 private:
   Animator();
+  Animator(Config *_config);
   Animator(const Animator&) { }
+
+  Config *config_;
   
   // Number of timesteps before looping occurs
   unsigned int numTimesteps_;

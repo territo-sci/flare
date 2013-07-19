@@ -27,6 +27,7 @@ link_directories(${Boost_LIBRARY_DIR})
 add_executable(FlareApp
                FlareApp.cpp
                BrickManager.cpp
+	       Config.cpp
                Utils.cpp
                WindowManager.cpp
                Renderer.cpp

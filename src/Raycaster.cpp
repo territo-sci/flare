@@ -20,6 +20,7 @@
 #include <vector>
 #include <CLManager.h>
 #include <KernelConstants.h>
+#include <Config.h>
 
 using namespace osp;
 
@@ -43,10 +44,9 @@ uint32_t ZOrder(uint16_t xPos, uint16_t yPos, uint16_t zPos) {
   return result;
 }
 
-Raycaster::Raycaster() 
+Raycaster::Raycaster(Config *_config) 
   : Renderer(),
-    configFilename_("NotSet"),
-    kernelConfigFilename_("NotSet"),
+    config_(_config),
     cubeFrontFBO_(0),
     cubeBackFBO_(0),
     renderbufferObject_(0),
@@ -76,15 +76,15 @@ Raycaster::Raycaster()
     lastTimestep_(1),
     brickManager_(NULL),
     clManager_(NULL) {
-
-
 }
 
 Raycaster::~Raycaster() {
 }
 
-Raycaster * Raycaster::New() {
-  return new Raycaster();
+Raycaster * Raycaster::New(Config *_config) {
+  Raycaster *raycaster = new Raycaster(_config);
+  raycaster->UpdateConfig();
+  return raycaster;
 }
 
 // TODO Move out hardcoded values
@@ -259,27 +259,6 @@ bool Raycaster::InitFramebuffers() {
   return true;
 }
 
-bool Raycaster::ReadShaderConfig(const std::string &_filename) {
-  shaderConstants_.clear();
-  configFilename_ = _filename;
-  std::ifstream in;
-  in.open(_filename.c_str());
-
-  if (!in.is_open()) {
-    ERROR("Could not open config file " << _filename);
-    return false;
-  } else {
-    std::string uniform;
-    float value;
-    while (!in.eof()) {
-      in >> uniform;
-      in >> value;
-      shaderConstants_.insert(std::make_pair(uniform, value));
-    }
-
-    return true;
-  }
-}
 
 bool Raycaster::ReloadTransferFunctions() {
   INFO("Reloading transfer functions");
@@ -300,32 +279,13 @@ bool Raycaster::ReloadTransferFunctions() {
   return true;
 }
 
-bool Raycaster::UpdateKernelConfig() {
-  std::ifstream in;
-  in.open(kernelConfigFilename_.c_str());
-  if (!in.is_open()) {
-    ERROR("Could not open kernel config file " << kernelConfigFilename_);
-    return false;
-  } else {
-    std::string variable;
-    float value;
-    while (!in.eof()) {
-      in >> variable;
-      in >> value;
-      if (variable == "stepSize") {
-        kernelConstants_.stepsize_ = value;
-      } else if (variable == "intensity") {
-        kernelConstants_.intensity_ = value;
-      } else {
-        ERROR("Invalid variable name: " << variable);
-        return false;
-      }
-    }
-  }
-  if (brickManager_) {
-    kernelConstants_.numBoxesPerAxis_ = brickManager_->XNumBricks();
-  }
-  return true;
+bool Raycaster::UpdateConfig() {
+  kernelConstants_.stepsize_ = config_->RaycasterStepsize();
+  kernelConstants_.intensity_ = config_->RaycasterIntensity();
+  kernelConstants_.temporalTolerance_ = config_->TemporalErrorTolerance(); 
+  kernelConstants_.spatialTolerance_ = config_->SpatialErrorTolerance();
+  traversalConstants_.temporalTolerance_ = config_->TemporalErrorTolerance();
+  traversalConstants_.spatialTolerance_ = config_->SpatialErrorTolerance(); 
 }
 
 bool Raycaster::UpdateMatrices() {
@@ -479,26 +439,18 @@ bool Raycaster::Render(float _timestep) {
     nextTimestep = 1;
   }
 
-  // TODO temp test
-
-  int temporalTolerance = 0;
-  int spatialTolerance = 0;
 
   // TODO temp
   traversalConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
   traversalConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
   traversalConstants_.numOTNodes_ = (int)tsp_->NumOTNodes();
   traversalConstants_.timestep_ = currentTimestep;
-  traversalConstants_.temporalTolerance_ = temporalTolerance;
-  traversalConstants_.spatialTolerance_ = spatialTolerance; 
   
   kernelConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
   kernelConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
   kernelConstants_.numOTNodes_ = (int)tsp_->NumOTNodes();
   kernelConstants_.numBoxesPerAxis_ = (int)tsp_->NumBricksPerAxis();
   kernelConstants_.timestep_ = currentTimestep;
-  kernelConstants_.temporalTolerance_ = temporalTolerance;
-  kernelConstants_.spatialTolerance_ = spatialTolerance;
   kernelConstants_.rootLevel_ = (int)tsp_->NumOTLevels() - 1;
   kernelConstants_.paddedBrickDim_ = (int)tsp_->PaddedBrickDim();
 
@@ -666,13 +618,6 @@ bool Raycaster::ReloadShaders() {
   return true;
 }
 
-bool Raycaster::ReloadConfig() {
-  INFO("Reloading config");
-  WARNING("UNIMPLEMENTED");
-  return true;
-  //return ReadShaderConfig(configFilename_);
-}
-
 bool Raycaster::HandleMouse() {
   if (leftMouseDown_) {
     pitch_ += 0.2f*(float)(currentMouseX_ - lastMouseX_);
@@ -685,19 +630,14 @@ bool Raycaster::HandleMouse() {
 // TODO proper keyboard handling class
 bool Raycaster::HandleKeyboard() {
   if (KeyPressedNoRepeat('R')) {
-    if (!ReloadConfig()) 
-      return false;
-    INFO("Config reloaded");
-    if (!ReloadShaders()) 
-      return false;
+    if (!config_->Read()) return false; 
+    INFO("Config file read");
+    if (!UpdateConfig()) return false;
+    INFO("Config updated");
+    if (!ReloadShaders()) return false;
     INFO("Shaders reloaded");
-    if (!UpdateKernelConfig()) 
-      return false;
-    INFO("Kernel config reloaded");
-    if (!ReloadTransferFunctions()) 
-      return false;
+    if (!ReloadTransferFunctions()) return false;
     INFO("Transfer functions reloaded");
-    // TODO reload kernel constants
   }
 
   if (KeyPressed('W')) zoom_ -= 0.1f;
@@ -706,7 +646,6 @@ bool Raycaster::HandleKeyboard() {
   if (KeyPressedNoRepeat('F')) animator_->ToggleFPSMode();
   if (KeyPressed('Z')) animator_->IncTimestep();
   if (KeyPressed('X')) animator_->DecTimestep();
-  //if (KeyPressedNoRepeat('T')) cler_->ToggleTimers();
   return true;
 }
 
@@ -816,11 +755,6 @@ bool Raycaster::InitCL() {
                              CLManager::READ_ONLY)) return false;
 
   return true;
-}
-
-
-void Raycaster::SetKernelConfigFilename(const std::string &_filename) {
-  kernelConfigFilename_ = _filename;
 }
 
 void Raycaster::AddTransferFunction(TransferFunction *_transferFunction) {

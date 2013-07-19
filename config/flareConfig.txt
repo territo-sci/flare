@@ -1,2 +1,29 @@
-/home/vsand/OpenSpace/enlil_256_32_32.tsp
-transferfunctions/test.txt
+
+
+##### RUNTIME RELOADING UNIMPLEMENTED ATM #######
+
+# window dimensions
+win_width 			512
+win_height 			512
+
+# filenames
+tsp_filename 			/home/vsand/OpenSpace/enlil_256_32_32.tsp
+transferfunction_filename 	transferfunctions/test.txt
+
+# error tolerances 
+# spatial only works in integer steps. 
+# level 0 corresponds to octree leaves.
+# temporal error unimplemented
+spatial_error_tolerance 	0
+temporal_error_tolerance 	0
+
+# step size for TSP traversal
+# decrease this if holes appear in the rendering
+tsp_traversal_stepsize 		0.1
+
+# ray caster constants
+raycaster_stepsize 		0.01
+raycaster_intensity 		2
+
+# animation speed
+animator_refresh_interval 	0.2

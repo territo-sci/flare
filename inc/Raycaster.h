@@ -1,5 +1,5 @@
-#ifndef RAYCASTER_H
-#define RAYCASTER_H
+#ifndef RAYCASTER_H_
+#define RAYCASTER_H_
 
 /*
 Author: Victor Sand (victor.sand@gmail.com)
@@ -27,18 +27,19 @@ class TransferFunction;
 class Animator;
 class BrickManager;
 class CLManager;
+class Config;
 
 class Raycaster : public Renderer {
 public:
   
-  static Raycaster * New();
+  static Raycaster * New(Config *_config);
   virtual ~Raycaster();
   virtual bool Render(float _timestep);
 
+  bool UpdateConfig();
+
   // Reload GLSL shaders
   bool ReloadShaders();
-  // Reload constant configuration file
-  bool ReloadConfig();
   // Reload transfer function file
   bool ReloadTransferFunctions();
   // Initialize model, view and projection matrices.
@@ -59,8 +60,6 @@ public:
   bool UpdateMatrices();
   // Bind transformation matrices to a ShaderProgram
   bool BindTransformationMatrices(ShaderProgram *_program);
-  // Read shader config from file
-  bool ReadShaderConfig(const std::string &_filename);
   bool HandleMouse();
   bool HandleKeyboard();
   // Read kernel config from file and voxel data,
@@ -82,7 +81,6 @@ public:
   void SetQuadTexture(Texture2D *_quadTexture);
   void SetCubeShaderProgram(ShaderProgram *_cubeShaderProgram);
   void SetQuadShaderProgram(ShaderProgram *_quadShaderProgram);
-  void SetConfigFilename(std::string _configFilename);
   void SetKeyLastState(int, bool _pressed);
   void SetAnimator(Animator *_animator);
   void SetCLManager(CLManager *_clManager);
@@ -91,8 +89,10 @@ public:
 
 private:
   Raycaster();
-  std::string configFilename_;
+  Raycaster(Config *_config);
     
+  Config *config_;
+
   // Buffer object handles
   unsigned int cubeFrontFBO_;
   unsigned int cubeBackFBO_;
@@ -119,8 +119,6 @@ private:
   glm::mat4 model_;
   glm::mat4 view_;
   glm::mat4 proj_;
-  // Shader constants
-  std::map<std::string, float> shaderConstants_;
   // State
   bool cubeInitialized_;
   bool quadInitialized_;

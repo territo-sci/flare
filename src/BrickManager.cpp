@@ -6,17 +6,19 @@
 #include <GL/glew.h>
 #include <BrickManager.h>
 #include <Texture3D.h>
+#include <Config.h>
 #include <Utils.h>
 #include <boost/timer/timer.hpp>
 
 using namespace osp;
 
-BrickManager * BrickManager::New() {
-  return new BrickManager();
+BrickManager * BrickManager::New(Config *_config) {
+  return new BrickManager(_config);
 }
 
-BrickManager::BrickManager()
- : textureAtlas_(NULL) {
+
+BrickManager::BrickManager(Config *_config)
+ : textureAtlas_(NULL), config_(_config) {
 
   brickBuffer_[ODD] = NULL;
   brickBuffer_[EVEN] = NULL;
@@ -31,20 +33,20 @@ BrickManager::~BrickManager() {
   if (in_.is_open()) {
     in_.close();
   }
-  if (brickBuffer_) {
-    delete[] brickBuffer_;
-  }
 }
 
-void BrickManager::SetInFilename(const std::string &_inFilename) {
-  inFilename_ = _inFilename;
-}
 
 bool BrickManager::ReadHeader() {
   
-  in_.open(inFilename_.c_str(), std::ios_base::in | std::ios_base::binary);
+  if (!config_) {
+    ERROR("No config set");
+    return false;
+  }
+
+  std::string inFilename = config_->TSPFilename();
+  in_.open(inFilename.c_str(), std::ios_base::in | std::ios_base::binary);
   if (!in_.is_open()) {
-    ERROR("Failed to open " << inFilename_);
+    ERROR("Failed to open " << inFilename);
     return false;
   }
 

@@ -12,18 +12,20 @@
 #include <Animator.h>
 #include <BrickManager.h>
 #include <TSP.h>
-#include <CLManager.h>
+#include <CLManager.h>  
+#include <Config.h>
 
 using namespace osp;
 
 int main() {
 
-  // File to create TSP structure and then read data from
-  std::string tspFileName = "/home/vsand/OpenSpace/enlil_256_32_32.tsp";
+  // Start with reading a config file
+  Config *config = Config::New("config/flareConfig.txt");
+  if (!config) exit(1);
 
   // Window dimensions
-  unsigned int width = 512;
-  unsigned int height = 512;
+  unsigned int width = config->WinWidth();
+  unsigned int height = config->WinHeight();
 
   // Create a WindowManager, open window to init GLEW and GLFW.
   // This has to be done before other OpenGL/CL stuff can be initialized.
@@ -31,12 +33,11 @@ int main() {
   if (!manager->OpenWindow()) exit(1);
 
   // Create TSP structure from file
-  TSP *tsp = TSP::New(tspFileName);
-  tsp->Construct();
+  TSP *tsp = TSP::New(config);
+  if (!tsp->Construct()) exit(1);
 
   // Create brick manager and init (has to be done after init OpenGL!)
-  BrickManager *brickManager= BrickManager::New();
-  brickManager->SetInFilename(tspFileName);
+  BrickManager *brickManager= BrickManager::New(config);
   if (!brickManager->ReadHeader()) exit(1);
   if (!brickManager->InitAtlas()) exit(1);
 
@@ -70,21 +71,19 @@ int main() {
   
   // Create transfer functions
   TransferFunction *transferFunction = TransferFunction::New();
-  transferFunction->SetInFilename("transferfunctions/test.txt");
-  //transferFunction->SetInFilename("transferfunctions/plain.txt");
+  transferFunction->SetInFilename(config->TFFilename());
   transferFunction->ReadFile();
   transferFunction->ConstructTexture();
 
   //Create animator
-  Animator *animator = Animator::New();
+  Animator *animator = Animator::New(config);
   animator->SetNumTimesteps(brickManager->NumTimesteps());
-  animator->SetRefreshInterval(0.05f);
 
   // Create CL manager
   CLManager *clManager = CLManager::New();
 
   // Create a raycaster and set it up
-  Raycaster * raycaster = Raycaster::New();
+  Raycaster * raycaster = Raycaster::New(config);
   raycaster->SetWinWidth(width);
   raycaster->SetWinHeight(height);
   raycaster->InitMatrices();
@@ -99,20 +98,17 @@ int main() {
   if (!raycaster->InitFramebuffers()) exit(1);
   raycaster->SetAnimator(animator);
   raycaster->AddTransferFunction(transferFunction);
-  raycaster->SetKernelConfigFilename("config/kernelConstants.txt");
-  if (!raycaster->UpdateKernelConfig()) exit(1);
   // Tie CL manager to renderer
   raycaster->SetCLManager(clManager);
   raycaster->SetTSP(tsp);
   if (!raycaster->InitCL()) return false;
 
-
   // Go!
   manager->SetRenderer(raycaster);
-  // We expect a false return from the loop, so exit with normal code
-  if (!manager->StartLoop()) exit(0);
+  manager->StartLoop();
 
   // Clean up, like a good citizen
+  delete config;
   delete clManager;
   delete tsp;
   delete brickManager;

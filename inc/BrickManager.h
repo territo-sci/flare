@@ -17,15 +17,17 @@
 namespace osp {
 
 class Texture3D;
+class Config;
 
 class BrickManager {
 public:
-  static BrickManager * New();
+  static BrickManager * New(Config *_config);
   ~BrickManager();
+
+  Config *config_;
 
   enum BUFFER_INDEX { EVEN = 0, ODD };
 
-  void SetInFilename(const std::string &_inFilename);
   // Read header data from file, should normally only be called once
   // unless header data changes
   bool ReadHeader();
@@ -54,12 +56,11 @@ public:
 private:
 
   BrickManager();
+  BrickManager(Config *_config);
   BrickManager(const BrickManager&);
 
   // Read a single brick into the brick buffer
   bool ReadBrick(unsigned int _brickIndex, BUFFER_INDEX _bufferIndex);
-
-  std::string inFilename_;
 
   // Header data
   unsigned int structure_;

@@ -1,27 +1,31 @@
 #include <Animator.h>
 #include <Utils.h>
+#include <Config.h>
 
 using namespace osp;
 
-Animator * Animator::New() {
-  return new Animator();
+Animator * Animator::New(Config *_config) {
+  Animator *animator = new Animator(_config);
+  animator->UpdateConfig();
+  return animator;
 }
 
-Animator::Animator() 
+Animator::Animator(Config *_config) 
   : numTimesteps_(0),
     currentTimestep_(0),
     fpsMode_(true),
     paused_(false),
     elapsedTime_(0.f),
-    refreshInterval_(0.f) {
+    refreshInterval_(0.f),
+    config_(_config) {
 }
 
 void Animator::SetCurrentTimestep(unsigned int _timestep) {
   currentTimestep_ = _timestep;
 }
 
-void Animator::SetRefreshInterval(float _refreshInterval) {
-  refreshInterval_ = _refreshInterval;
+void Animator::UpdateConfig() {
+  refreshInterval_ = config_->AnimatorRefreshInterval();
 }
 
 void Animator::Update(float _elapsedTime) {
