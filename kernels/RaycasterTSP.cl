@@ -57,7 +57,8 @@ float4 TransferFunction(__global __read_only float *_tf, float _i) {
   float tfb = Lerp(tfb0, tfb1, di);
   float tfa = Lerp(tfa0, tfa1, di);
 
-  return (float4)(tfr, tfg, tfb, tfa);
+  return clamp((float4)(tfr, tfg, tfb, tfa), (float4)(0.0), (float4)(1.0));
+  //return (float4)(tfr, tfg, tfb, tfa);
 }
 // Return index to the octree root (same index as BST root at that OT node)
 int OctreeRootNodeIndex() {
@@ -219,15 +220,12 @@ void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
 
   int3 boxCoords = BoxCoords(_coords, _boxesPerAxis);
   
- 
   float4 a4 = (float4)(atlasCoords.x, atlasCoords.y, atlasCoords.z, 1.0);
   // Sample the atlas
   float sample = read_imagef(_textureAtlas, _atlasSampler, a4).x;
   // Composition
   float4 tf = TransferFunction(_transferFunction, sample);
   *_color += (1.0 - _color->w)*tf;
-
-  
 
 }
 

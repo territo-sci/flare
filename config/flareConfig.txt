@@ -6,18 +6,18 @@ win_height 			512
 # Filenames
 # Don't change during runtime
 # (Transfer function values can be changed during runtime though)
-tsp_filename 			/home/vsand/OpenSpace/enlil_256_64_32.tsp
+tsp_filename 			/home/vsand/OpenSpace/enlil_128_32_32.tsp
 transferfunction_filename 	transferfunctions/blue.txt
 
 # Error tolerances 
 # Temporal error unimplemented
-spatial_error_tolerance 	100
-temporal_error_tolerance 	0
+spatial_error_tolerance 	0
+temporal_error_tolerance 	1
 
 # Step size for TSP traversal
 # Decrease this if holes appear in the rendering
 # Can be changed during runtime
-tsp_traversal_stepsize 		0.1
+tsp_traversal_stepsize 		0.01
 
 # Ray caster constants
 # Can be changed during runtime
@@ -26,4 +26,4 @@ raycaster_intensity 		1.5
 
 # Animation speed
 # Can be changed during runtime
-animator_refresh_interval 	0.1
+animator_refresh_interval 	0.07

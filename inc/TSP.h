@@ -34,7 +34,7 @@ public:
   
   bool Construct();
   bool CalculateSpatialError();
-  //bool CalculateTemporalError();
+  bool CalculateTemporalError();
 
   int * Data() { return &data_[0]; }
   unsigned int Size() { return data_.size(); }
@@ -73,9 +73,14 @@ private:
   unsigned int numOTLevels_;
   unsigned int numOTNodes_;
 
-  // Return a vector with the indices of the bricks that a given
-  // input brick covers. If given a leaf brick, return leaf index back.
+  // Returns a list of the octree leaf nodes that a given input 
+  // brick covers. If the input is already a leaf, the list will
+  // only contain that one index.
   std::list<unsigned int> CoveredLeafBricks(unsigned int _brickIndex);
+
+  // Returns a list of the BST leaf nodes that a given input brick
+  // covers (at the same spatial subdivision level).
+  std::list<unsigned int> CoveredBSTLeafBricks(unsigned int _brickIndex);
 
   // Return a list of eight children brick incices given a brick index
   std::list<unsigned int> ChildBricks(unsigned int _brickIndex);

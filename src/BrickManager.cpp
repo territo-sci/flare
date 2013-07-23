@@ -176,7 +176,7 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
     }
   }
 
-  INFO("Num bricks used: " << numBricks);
+  //INFO("Num bricks used: " << numBricks);
 
   return true;
 }
