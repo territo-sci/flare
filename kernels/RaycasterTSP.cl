@@ -6,8 +6,8 @@ struct KernelConstants {
   int numOTNodes_;
   int numBoxesPerAxis_;
   int timestep_;
-  int temporalTolerance_;
-  int spatialTolerance_;
+  float temporalTolerance_;
+  float spatialTolerance_;
   int rootLevel_;
   int paddedBrickDim_;
 };
@@ -140,14 +140,15 @@ int OTChildIndex(int _otNodeIndex, int _numValuesPerNode,
   return firstChild + _child;
 }
 
-int TemporalError(int _bstNodeIndex, int _numValuesPerNode, 
+float TemporalError(int _bstNodeIndex, int _numValuesPerNode, 
+
                     __global __read_only int *_tsp) {
-  return (int)(_tsp[_bstNodeIndex*_numValuesPerNode + 3]);
+  return as_float(_tsp[_bstNodeIndex*_numValuesPerNode + 3]);
 }
 
-int SpatialError(int _bstNodeIndex, int _numValuesPerNode, 
+float SpatialError(int _bstNodeIndex, int _numValuesPerNode, 
                   __global __read_only int *_tsp) {
-  return (int)(_tsp[_bstNodeIndex*_numValuesPerNode + 2]);
+  return as_float(_tsp[_bstNodeIndex*_numValuesPerNode + 2]);
 }
 
 // Converts a global coordinate [0..1] to a box coordinate [0..boxesPerAxis]
@@ -225,7 +226,9 @@ void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
   // Composition
   float4 tf = TransferFunction(_transferFunction, sample);
   *_color += (1.0 - _color->w)*tf;
-  //*_color += (float4)(sample);
+
+  
+
 }
 
 
@@ -243,7 +246,7 @@ bool TraverseBST(int _otNodeIndex, int *_brickIndex,
                               _tsp);
 
     // Check temporal error
-    if (TemporalError(bstNodeIndex, _constants->numValuesPerNode_, _tsp) ==
+    if (TemporalError(bstNodeIndex, _constants->numValuesPerNode_, _tsp) <=
         _constants->temporalTolerance_) {
 
       // If the OT node is a leaf, we cannot do any better spatially
@@ -251,7 +254,7 @@ bool TraverseBST(int _otNodeIndex, int *_brickIndex,
         return true;
 
       } else if (SpatialError(bstNodeIndex, _constants->numValuesPerNode_,
-                              _tsp) == _constants->spatialTolerance_) {
+                              _tsp) <= _constants->spatialTolerance_) {
         return true;
 
       } else if (IsBSTLeaf(bstNodeIndex, _constants->numValuesPerNode_,
@@ -391,6 +394,10 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
 
       if (bstSuccess || 
           IsOctreeLeaf(otNodeIndex, _constants->numValuesPerNode_, _tsp)) {
+        
+        //float s = 0.008*SpatialError(brickIndex, 4, _tsp);
+        //color += (float4)(s);
+
 
         float3 sphericalP = CartesianToSpherical(cartesianP);
         // Sample the brick

@@ -8,6 +8,8 @@
 #include <fstream>
 #include <Utils.h>
 #include <cmath>
+#include <list>
+#include <queue>
 
 using namespace osp;
 
@@ -47,6 +49,8 @@ bool TSP::Construct() {
   in.read(reinterpret_cast<char*>(&numTimesteps_), s);
   in.read(reinterpret_cast<char*>(&paddingWidth_), s);
   in.read(reinterpret_cast<char*>(&dataSize_), s);
+  dataPos_ = in.tellg();
+
   in.close();
 
   INFO("Brick dimensions: " << brickDim_);
@@ -148,6 +152,154 @@ bool TSP::Construct() {
   return true;
 
 }
+
+bool TSP::CalculateSpatialError() {
+
+  unsigned int numBrickVals = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
+
+  std::fstream in;
+  std::string inFilename = config_->TSPFilename();
+  in.open(inFilename.c_str(), std::ios_base::in | std::ios_base::binary);
+  if (!in.is_open()) {
+    ERROR("TSP CalculateSpatialError failed to open " << inFilename);
+    return false;
+  }
+
+  std::vector<float> buffer(numBrickVals);
+
+  // First pass: Calculate average voxel value for each brick
+  INFO("\nFirst pass");
+  for (unsigned int brick=0; brick<numTotalNodes_; ++brick) {
+    //INFO("\nCalculating avg for brick " << brick);
+
+    // Offset in file
+    std::ios::pos_type offset = dataPos_ +
+      static_cast<std::ios::pos_type>(brick*numBrickVals*sizeof(float));
+
+    in.seekp(offset);
+    in.read(reinterpret_cast<char*>(&buffer[0]), sizeof(float)*numBrickVals);
+
+    // Average
+    float avg = static_cast<float>(0);
+    for (auto it=buffer.begin(); it!=buffer.end(); ++it) {
+      avg += *it;
+    }
+    avg /= static_cast<float>(numBrickVals);
+
+    //INFO("Average brick value: " << avg);
+
+    // Use spatial err position in data array to store average
+    
+    data_[brick*NUM_DATA + SPATIAL_ERR] = 
+      *reinterpret_cast<int*>(&avg);
+
+  }
+
+  // Second pass: For each brick, compare the covered leaf voxels with
+  // the brick average
+  INFO("Second pass");
+  for (unsigned int brick=0; brick<numTotalNodes_; ++brick) {
+  
+    //INFO("Calculating spatial error for brick " << brick);
+    
+    // Read brick average from first pass
+    float brickAvg = 
+      *reinterpret_cast<float*>(&data_[brick*NUM_DATA + SPATIAL_ERR]);
+    //INFO("brickAvg = " << brickAvg);
+
+    float sum = 0.f;
+    int numTerms = 0;
+
+    // Get a list of leaf bricks that the current brick covers
+    std::list<unsigned int> coveredLeafBricks =
+      CoveredLeafBricks(brick);
+
+    // Calculate "standard deviation" corresponding to leaves
+    for (auto lb=coveredLeafBricks.begin(); 
+         lb!=coveredLeafBricks.end(); ++lb) {
+
+      // Read brick
+      //INFO("Reading leaf brick " << *lb);
+      std::ios::pos_type offset = dataPos_ +
+        static_cast<std::ios::pos_type>((*lb)*numBrickVals*sizeof(float));
+      in.seekp(offset);
+      in.read(reinterpret_cast<char*>(&buffer[0]), sizeof(float)*numBrickVals);
+
+      // Add to sum
+      for (auto v=buffer.begin(); v!=buffer.end(); ++v) {
+        sum += (*v - brickAvg)*(*v - brickAvg);
+        numTerms++;
+      }
+
+    }
+
+    // Finish calculation
+    if (sizeof(float) != sizeof(int)) {
+      ERROR("Float and int sizes don't match, can't reintepret");
+      return false;
+    }
+    sum /= static_cast<float>(numTerms);
+    float spatialErr = sqrt(sum) / brickAvg;
+    //INFO("Before casting " << spatialErr);
+    data_[brick*NUM_DATA + SPATIAL_ERR] = *reinterpret_cast<int*>(&spatialErr);
+
+    float se = *reinterpret_cast<float*>(&data_[brick*NUM_DATA + SPATIAL_ERR]);
+    //INFO("Spatial error for brick " << brick << " = " << se);
+    
+  }
+
+  return true;
+}  
+
+
+std::list<unsigned int> TSP::CoveredLeafBricks(unsigned int _brickIndex) {
+  std::list<unsigned int> out;
+
+  //INFO("Calculating covered leaf bricks for " << _brickIndex);
+
+  // Find what octree skeleton node the index belongs to
+  unsigned int OTNode = _brickIndex % numOTNodes_;
+
+  // Find what BST node the index corresponds to using int division
+  unsigned int BSTNode = _brickIndex / numOTNodes_;
+
+  // Calculate BST offset (to translate to root octree)
+  unsigned int BSTOffset = BSTNode * numOTNodes_;
+
+  // Traverse root octree structure to leaves
+  // When visiting the leaves, translate back to correct BST level and save
+  std::queue<unsigned int> queue;
+  queue.push(OTNode);
+  do {
+
+    // Get front of queue
+    unsigned int toVisit = queue.front();
+    queue.pop();
+
+    // See if the node has children
+    int child = data_[toVisit*NUM_DATA + CHILD_INDEX];
+    if (child == -1) {
+      // Translate back and save
+      out.push_back(toVisit+BSTOffset);
+    } else {
+      // Queue the eight children
+      for (int i=0; i<8; ++i) {
+        queue.push(child+i);
+      }
+    }
+  
+  } while (!queue.empty());
+
+  return out;
+}
+
+
+  
+
+
+  
+
+  
 
 /*
 

@@ -1,11 +1,12 @@
 // Mirrors struct on host side
 struct TraversalConstants {
+  float stepsize_;
   int numTimesteps_;
   int numValuesPerNode_;
   int numOTNodes_;
   int timestep_;
-  int temporalTolerance_;
-  int spatialTolerance_;
+  float temporalTolerance_;
+  float spatialTolerance_;
 };
 
 // Turn normalized [0..1] cartesian coordinates 
@@ -114,14 +115,14 @@ void AddToList(int _brickIndex,
   atomic_inc(&_reqList[_brickIndex]);
 }
 
-int TemporalError(int _bstNodeIndex, int _numValuesPerNode, 
+float TemporalError(int _bstNodeIndex, int _numValuesPerNode, 
                     __global __read_only int *_tsp) {
-  return (int)(_tsp[_bstNodeIndex*_numValuesPerNode + 3]);
+  return as_float(_tsp[_bstNodeIndex*_numValuesPerNode + 3]);
 }
 
-int SpatialError(int _bstNodeIndex, int _numValuesPerNode, 
+float SpatialError(int _bstNodeIndex, int _numValuesPerNode, 
                    __global __read_only int *_tsp) {
-  return (int)(_tsp[_bstNodeIndex*_numValuesPerNode + 2]);
+  return as_float(_tsp[_bstNodeIndex*_numValuesPerNode + 2]);
 }
 
 
@@ -139,7 +140,6 @@ bool TraverseBST(int _otNodeIndex,
   bool bstRoot = true;
   int timespanStart = 0;
   int timespanEnd = _constants->numTimesteps_;
- 
 
    // Rely on structure for termination
    while (true) {
@@ -152,7 +152,7 @@ bool TraverseBST(int _otNodeIndex,
     // If temporal error is ok
     // TODO float and <= errors
     if (TemporalError(bstNodeIndex, _constants->numValuesPerNode_,
-                      _tsp) == _constants->temporalTolerance_) {
+                      _tsp) <= _constants->temporalTolerance_) {
       
       // If the ot node is a leaf, we can't do any better spatially so we 
       // return the current brick
@@ -161,7 +161,7 @@ bool TraverseBST(int _otNodeIndex,
 
       // All is well!
       } else if (SpatialError(bstNodeIndex, _constants->numValuesPerNode_,
-                 _tsp) == _constants->spatialTolerance_) {
+               _tsp) <= _constants->spatialTolerance_) {
         return true;
          
       // If spatial failed and the BST node is a leaf
@@ -271,7 +271,7 @@ void TraverseOctree(float3 _rayO,
 
   // Choose a stepsize that guarantees that we don't miss any bricks
   // TODO dynamic depending on brick dimensions
-  float stepsize = 0.02;
+  float stepsize = _constants->stepsize_;
   float3 P = _rayO;
   // Keep traversing until the sample point goes outside the unit cube
   float traversed = 0.0;
@@ -289,7 +289,6 @@ void TraverseOctree(float3 _rayO,
     // Rely on finding a leaf for loop termination 
     while (true) {
 
-  
       // See if the BST tree is good enough
       int brickIndex = 0;
       bool bstSuccess = TraverseBST(otNodeIndex, 
@@ -338,11 +337,6 @@ void TraverseOctree(float3 _rayO,
         otNodeIndex = OTChildIndex(otNodeIndex, _constants->numValuesPerNode_,
                                   child, _tsp);
 
-        if (otNodeIndex == 36855) {
-          AddToList(oldIndex, _reqList);
-          AddToList(1337, _reqList);
-        }
-
       } 
 
     } // while traversing
@@ -374,7 +368,8 @@ __kernel void TSPTraversal(__global __read_only image2d_t _cubeFront,
     // Figure out ray direction 
     float maxDist = length(cubeBackColor.xyz-cubeFrontColor.xyz);
     float3 direction = normalize(cubeBackColor.xyz-cubeFrontColor.xyz);
-
+    
+    // Traverse octree and fill the brick request list
     TraverseOctree(cubeFrontColor.xyz, direction, maxDist,
                    _constants,  _reqList, _tsp);
 

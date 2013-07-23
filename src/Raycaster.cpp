@@ -284,6 +284,7 @@ bool Raycaster::UpdateConfig() {
   kernelConstants_.intensity_ = config_->RaycasterIntensity();
   kernelConstants_.temporalTolerance_ = config_->TemporalErrorTolerance(); 
   kernelConstants_.spatialTolerance_ = config_->SpatialErrorTolerance();
+  traversalConstants_.stepsize_ = config_->TSPTraversalStepsize();
   traversalConstants_.temporalTolerance_ = config_->TemporalErrorTolerance();
   traversalConstants_.spatialTolerance_ = config_->SpatialErrorTolerance(); 
   return true;

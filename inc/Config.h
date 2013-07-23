@@ -25,8 +25,8 @@ public:
   int WinHeight() const { return winHeight_; }
   std::string TSPFilename() const { return TSPFilename_; }
   std::string TFFilename() const { return TFFilename_; }
-  int SpatialErrorTolerance() const { return spatialErrorTolerance_; }
-  int TemporalErrorTolerance() const { return temporalErrorTolerance_; }
+  float SpatialErrorTolerance() const { return spatialErrorTolerance_; }
+  float TemporalErrorTolerance() const { return temporalErrorTolerance_; }
   float TSPTraversalStepsize() const { return TSPTraversalStepsize_; }
   float RaycasterStepsize() const { return raycasterStepsize_; }
   float RaycasterIntensity() const { return raycasterIntensity_; }
@@ -43,8 +43,8 @@ private:
   int winHeight_;
   std::string TSPFilename_;
   std::string TFFilename_;
-  int spatialErrorTolerance_;
-  int temporalErrorTolerance_;
+  float spatialErrorTolerance_;
+  float temporalErrorTolerance_;
   float TSPTraversalStepsize_;
   float raycasterStepsize_;
   float raycasterIntensity_;

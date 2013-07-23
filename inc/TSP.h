@@ -10,7 +10,9 @@
 #define TSP_H_
 
 #include <vector>
+#include <list>
 #include <string>
+#include <iostream>
 
 namespace osp {
 
@@ -31,6 +33,8 @@ public:
   ~TSP();
   
   bool Construct();
+  bool CalculateSpatialError();
+  //bool CalculateTemporalError();
 
   int * Data() { return &data_[0]; }
   unsigned int Size() { return data_.size(); }
@@ -68,6 +72,15 @@ private:
   unsigned int numBSTNodes_;
   unsigned int numOTLevels_;
   unsigned int numOTNodes_;
+
+  // Return a vector with the indices of the bricks that a given
+  // input brick covers. If given a leaf brick, return leaf index back.
+  std::list<unsigned int> CoveredLeafBricks(unsigned int _brickIndex);
+
+  // Return a list of eight children brick incices given a brick index
+  std::list<unsigned int> ChildBricks(unsigned int _brickIndex);
+
+  std::ios::pos_type dataPos_;
 
 };
 

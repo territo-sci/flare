@@ -140,6 +140,8 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
   int zCoord = 0;
   for (unsigned int i=0; i<_brickRequest.size(); ++i) {
     if (_brickRequest[i] > 0) {
+
+      //INFO(i);
         
       if (xCoord >= xNumBricks_ || 
           yCoord >= yNumBricks_ || 
@@ -174,6 +176,8 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
     }
   }
 
+  INFO("Num bricks used: " << numBricks);
+
   return true;
 }
 
@@ -182,7 +186,7 @@ bool BrickManager::UpdateAtlas() {
  
   // TODO spec max buffer size, just alloc once
   // TODO asynch
-  
+
   unsigned int brickIndex = 0;
 
   while (brickIndex < brickList_.size()/3) {
@@ -203,6 +207,8 @@ bool BrickManager::UpdateAtlas() {
       sequence++;
       brickIndexProbe++;
     }
+    
+    //INFO("Found a sequence of " << sequence << " bricks");
 
     // Read the bricks into memory
     unsigned int numVals = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
