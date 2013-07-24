@@ -3,7 +3,7 @@
 
 /*
 Author: Victor Sand (victor.sand@gmail.com)
-Simple struct to gather constants used in kernel
+Simple structs to gather constants used in kernel
 */
 
 namespace osp {
@@ -16,21 +16,21 @@ struct KernelConstants {
   int numOTNodes_;
   int numBoxesPerAxis_;
   int timestep_;
-  int temporalTolerance_;
-  int spatialTolerance_;
+  float temporalTolerance_;
+  float spatialTolerance_;
   int rootLevel_;
   int paddedBrickDim_;
 };
 
 struct TraversalConstants {
+  float stepsize_;
   int numTimesteps_;
   int numValuesPerNode_;
   int numOTNodes_;
-  // TODO change to float
-  // TODO get rid of timestep
+  // TODO get rid of timestep, put as separate arg?
   int timestep_;
-  int temporalTolerance_;
-  int spatialTolerance_;
+  float temporalTolerance_;
+  float spatialTolerance_;
 };
 
 }

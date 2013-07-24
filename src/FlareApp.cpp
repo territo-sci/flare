@@ -17,7 +17,7 @@
 
 using namespace osp;
 
-int main() {
+int main(int argc, char **argv) {
 
   // Start with reading a config file
   Config *config = Config::New("config/flareConfig.txt");
@@ -35,6 +35,8 @@ int main() {
   // Create TSP structure from file
   TSP *tsp = TSP::New(config);
   if (!tsp->Construct()) exit(1);
+  if (!tsp->CalculateSpatialError()) exit(1);
+  if (!tsp->CalculateTemporalError()) exit(1);
 
   // Create brick manager and init (has to be done after init OpenGL!)
   BrickManager *brickManager= BrickManager::New(config);

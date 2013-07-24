@@ -6,8 +6,8 @@ struct KernelConstants {
   int numOTNodes_;
   int numBoxesPerAxis_;
   int timestep_;
-  int temporalTolerance_;
-  int spatialTolerance_;
+  float temporalTolerance_;
+  float spatialTolerance_;
   int rootLevel_;
   int paddedBrickDim_;
 };
@@ -57,7 +57,8 @@ float4 TransferFunction(__global __read_only float *_tf, float _i) {
   float tfb = Lerp(tfb0, tfb1, di);
   float tfa = Lerp(tfa0, tfa1, di);
 
-  return (float4)(tfr, tfg, tfb, tfa);
+  return clamp((float4)(tfr, tfg, tfb, tfa), (float4)(0.0), (float4)(1.0));
+  //return (float4)(tfr, tfg, tfb, tfa);
 }
 // Return index to the octree root (same index as BST root at that OT node)
 int OctreeRootNodeIndex() {
@@ -140,14 +141,15 @@ int OTChildIndex(int _otNodeIndex, int _numValuesPerNode,
   return firstChild + _child;
 }
 
-int TemporalError(int _bstNodeIndex, int _numValuesPerNode, 
+float TemporalError(int _bstNodeIndex, int _numValuesPerNode, 
+
                     __global __read_only int *_tsp) {
-  return (int)(_tsp[_bstNodeIndex*_numValuesPerNode + 3]);
+  return as_float(_tsp[_bstNodeIndex*_numValuesPerNode + 3]);
 }
 
-int SpatialError(int _bstNodeIndex, int _numValuesPerNode, 
+float SpatialError(int _bstNodeIndex, int _numValuesPerNode, 
                   __global __read_only int *_tsp) {
-  return (int)(_tsp[_bstNodeIndex*_numValuesPerNode + 2]);
+  return as_float(_tsp[_bstNodeIndex*_numValuesPerNode + 2]);
 }
 
 // Converts a global coordinate [0..1] to a box coordinate [0..boxesPerAxis]
@@ -218,14 +220,13 @@ void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
 
   int3 boxCoords = BoxCoords(_coords, _boxesPerAxis);
   
- 
   float4 a4 = (float4)(atlasCoords.x, atlasCoords.y, atlasCoords.z, 1.0);
   // Sample the atlas
   float sample = read_imagef(_textureAtlas, _atlasSampler, a4).x;
   // Composition
   float4 tf = TransferFunction(_transferFunction, sample);
   *_color += (1.0 - _color->w)*tf;
-  //*_color += (float4)(sample);
+
 }
 
 
@@ -243,7 +244,7 @@ bool TraverseBST(int _otNodeIndex, int *_brickIndex,
                               _tsp);
 
     // Check temporal error
-    if (TemporalError(bstNodeIndex, _constants->numValuesPerNode_, _tsp) ==
+    if (TemporalError(bstNodeIndex, _constants->numValuesPerNode_, _tsp) <=
         _constants->temporalTolerance_) {
 
       // If the OT node is a leaf, we cannot do any better spatially
@@ -251,7 +252,7 @@ bool TraverseBST(int _otNodeIndex, int *_brickIndex,
         return true;
 
       } else if (SpatialError(bstNodeIndex, _constants->numValuesPerNode_,
-                              _tsp) == _constants->spatialTolerance_) {
+                              _tsp) <= _constants->spatialTolerance_) {
         return true;
 
       } else if (IsBSTLeaf(bstNodeIndex, _constants->numValuesPerNode_,
@@ -391,6 +392,10 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
 
       if (bstSuccess || 
           IsOctreeLeaf(otNodeIndex, _constants->numValuesPerNode_, _tsp)) {
+        
+        //float s = 0.008*SpatialError(brickIndex, 4, _tsp);
+        //color += (float4)(s);
+
 
         float3 sphericalP = CartesianToSpherical(cartesianP);
         // Sample the brick

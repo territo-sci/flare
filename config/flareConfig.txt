@@ -10,16 +10,14 @@ tsp_filename 			c:/alebo68/OpenSpace/enlil_256_64_32.tsp
 transferfunction_filename 	transferfunctions/fire.txt
 
 # Error tolerances 
-# Spatial only works in integer steps. 
-# Level 0 corresponds to octree leaves.
 # Temporal error unimplemented
-spatial_error_tolerance 	1
-temporal_error_tolerance 	0
+spatial_error_tolerance 	0
+temporal_error_tolerance 	1
 
 # Step size for TSP traversal
 # Decrease this if holes appear in the rendering
 # Can be changed during runtime
-tsp_traversal_stepsize 		0.1
+tsp_traversal_stepsize 		0.01
 
 # Ray caster constants
 # Can be changed during runtime
@@ -28,4 +26,4 @@ raycaster_intensity 		0.15
 
 # Animation speed
 # Can be changed during runtime
-animator_refresh_interval 	0.05
+animator_refresh_interval 	0.07
