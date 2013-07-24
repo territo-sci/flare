@@ -6,7 +6,11 @@
 #ifndef CL_MANAGER_H_
 #define CL_MANAGER_H_
 
+#ifndef _WIN32
 #include <CL/cl.hpp>
+#else
+#include <CL/cl.h>
+#endif
 #include <map>
 #include <string>
 #include <KernelConstants.h>
@@ -46,6 +50,13 @@ public:
   bool AddTexture(std::string _programName, unsigned int _argNr,
                   Texture *_texture, TextureType _textureType,
                   Permissions _permissions);
+
+  bool AddTexture(std::string _programName, unsigned int _argNr,
+      Texture *_texture, TextureType _textureType,
+      Permissions _permissions, cl_mem& _clTextureMem);
+
+  bool AddTexture(std::string _programName, unsigned int _argNr,
+                cl_mem _texture, Permissions _permissions);
 
   /*
   // Add (update) transfer function

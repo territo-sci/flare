@@ -43,6 +43,7 @@ FIND_LIBRARY(GLFW_LIBRARY DOC "Absolute path to GLFW library."
   /usr/local/lib
   /usr/lib
   ${GLFW_ROOT_DIR}/lib-msvc100/release # added by ptr
+  ${GLFW_ROOT_DIR}/lib-msvc90 # added by ptr
 )
 
 SET(GLFW_FOUND 0)

@@ -4,7 +4,13 @@
  */
 
 #include <GL/glew.h>
+#ifndef _WIN32
 #include <GL/glx.h>
+#else
+#include <Windows.h>
+#include <WinUser.h>
+#include <CL/cl_gl.h>
+#endif
 #include <CLManager.h>
 #include <CLProgram.h>
 #include <TransferFunction.h>
@@ -101,11 +107,16 @@ bool CLManager::CreateContext() {
 
   // Create an OpenCL context with a reference to an OpenGL context
   cl_context_properties contextProperties[] = {
+#ifndef _WIN32
     CL_GL_CONTEXT_KHR, (cl_context_properties)glXGetCurrentContext(),
     CL_GLX_DISPLAY_KHR, (cl_context_properties)glXGetCurrentDisplay(),
+#else
+    CL_GL_CONTEXT_KHR, (cl_context_properties)wglGetCurrentContext(),
+    CL_WGL_HDC_KHR, (cl_context_properties)wglGetCurrentDC(),
+#endif
     CL_CONTEXT_PLATFORM, (cl_context_properties)platforms_[0],
     0};
- 
+  
   // TODO Support more than one device?
   context_ = clCreateContext(contextProperties, 1, &devices_[0], NULL,
                              NULL, &error_);
@@ -163,31 +174,76 @@ bool CLManager::AddTexture(std::string _programName, unsigned int _argNr,
                            Texture *_texture, TextureType _textureType,
                            Permissions _permissions) {
 
-  cl_mem_flags flag = ConvertPermissions(_permissions);
+    cl_mem_flags flag = ConvertPermissions(_permissions);
 
-  GLuint GLTextureType;
-  switch (_textureType) {
+    GLuint GLTextureType;
+    switch (_textureType) {
     case TEXTURE_1D:
-     ERROR("Texture 1D unimplemented");
-     return false;
-     break;
+        ERROR("Texture 1D unimplemented");
+        return false;
+        break;
     case TEXTURE_2D:
-      GLTextureType = GL_TEXTURE_2D;
-      break;
+        GLTextureType = GL_TEXTURE_2D;
+        break;
     case TEXTURE_3D:
-      GLTextureType = GL_TEXTURE_3D;
-      break;
+        GLTextureType = GL_TEXTURE_3D;
+        break;
     default:
-      ERROR("Unknown texture type");
-      return false;
-  }
+        ERROR("Unknown texture type");
+        return false;
+    }
 
-  if (clPrograms_.find(_programName) == clPrograms_.end()) {
-    ERROR("Program " << _programName << " not found");
-    return false;
-  }
-  return clPrograms_[_programName]->AddTexture(_argNr, _texture,
-                                               GLTextureType, flag);
+    if (clPrograms_.find(_programName) == clPrograms_.end()) {
+        ERROR("Program " << _programName << " not found");
+        return false;
+    }
+    return clPrograms_[_programName]->AddTexture(_argNr, _texture,
+        GLTextureType, flag);
+}
+
+bool CLManager::AddTexture(std::string _programName, unsigned int _argNr,
+                           Texture *_texture, TextureType _textureType,
+                           Permissions _permissions, cl_mem& _clTextureMem) {
+
+    cl_mem_flags flag = ConvertPermissions(_permissions);
+
+    GLuint GLTextureType;
+    switch (_textureType) {
+    case TEXTURE_1D:
+        ERROR("Texture 1D unimplemented");
+        return false;
+        break;
+    case TEXTURE_2D:
+        GLTextureType = GL_TEXTURE_2D;
+        break;
+    case TEXTURE_3D:
+        GLTextureType = GL_TEXTURE_3D;
+        break;
+    default:
+        ERROR("Unknown texture type");
+        return false;
+    }
+
+    if (clPrograms_.find(_programName) == clPrograms_.end()) {
+        ERROR("Program " << _programName << " not found");
+        return false;
+    }
+    return clPrograms_[_programName]->AddTexture(_argNr, _texture,
+        GLTextureType, flag, _clTextureMem);
+}
+
+bool osp::CLManager::AddTexture(std::string _programName,
+                                unsigned int _argNr,
+                                cl_mem _texture,
+                                Permissions _permissions)
+{
+    cl_mem_flags flag = ConvertPermissions(_permissions);
+
+    if (clPrograms_.find(_programName) == clPrograms_.end()) {
+        ERROR("Program " << _programName << " not found");
+        return false;
+    }
+    return clPrograms_[_programName]->AddTexture(_argNr, _texture, flag);
 }
 
 /*

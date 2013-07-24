@@ -13,7 +13,11 @@ TODO: Iteratively break away parts from it into other classes.
 #include <string>
 #include <vector>
 #include <glm/glm.hpp>
+#ifndef _WIN32
 #include <CL/cl.hpp>
+#else
+#include <CL/cl.h>
+#endif
 #include <KernelConstants.h>
 #include <boost/timer/timer.hpp>
 #include <TSP.h>
@@ -170,8 +174,6 @@ private:
   
   // Timer and timer constants 
   boost::timer::cpu_timer timer_;
-  const double BYTES_PER_GB = 1073741824.0;
-
 };
 
 }

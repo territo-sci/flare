@@ -6,14 +6,14 @@ win_height 			512
 # Filenames
 # Don't change during runtime
 # (Transfer function values can be changed during runtime though)
-tsp_filename 			/home/vsand/OpenSpace/enlil_128_32_32.tsp
-transferfunction_filename 	transferfunctions/blue.txt
+tsp_filename 			c:/alebo68/OpenSpace/enlil_256_64_32.tsp
+transferfunction_filename 	transferfunctions/fire.txt
 
 # Error tolerances 
 # Spatial only works in integer steps. 
 # Level 0 corresponds to octree leaves.
 # Temporal error unimplemented
-spatial_error_tolerance 	0
+spatial_error_tolerance 	1
 temporal_error_tolerance 	0
 
 # Step size for TSP traversal
@@ -23,9 +23,9 @@ tsp_traversal_stepsize 		0.1
 
 # Ray caster constants
 # Can be changed during runtime
-raycaster_stepsize 		0.015
-raycaster_intensity 		1.5
+raycaster_stepsize 		0.005
+raycaster_intensity 		0.15
 
 # Animation speed
 # Can be changed during runtime
-animator_refresh_interval 	0.1
+animator_refresh_interval 	0.05

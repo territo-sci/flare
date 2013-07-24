@@ -45,6 +45,7 @@ bool BrickManager::ReadHeader() {
 
   std::string inFilename = config_->TSPFilename();
   in_.open(inFilename.c_str(), std::ios_base::in | std::ios_base::binary);
+
   if (!in_.is_open()) {
     ERROR("Failed to open " << inFilename);
     return false;
@@ -188,8 +189,7 @@ bool BrickManager::UpdateAtlas() {
   while (brickIndex < brickList_.size()/3) {
 
     // Find first brick index in list
-    while (brickList_[3*brickIndex] == -1 &&
-           brickIndex < brickList_.size()/3) {
+    while (brickIndex < brickList_.size()/3 && brickList_[3*brickIndex] == -1) {
       brickIndex++;
     }
     // If we're done, exit

@@ -22,3 +22,8 @@ FlareApp
 *.a
 
 *.log
+FlareApp.exe
+FlareApp.ilk
+Release/
+bin/
+glew32.dll

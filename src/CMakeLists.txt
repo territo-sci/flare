@@ -1,15 +1,37 @@
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
 
+if (NOT WIN32)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-
-set(Boost_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/../common_external/boost_1_53_0)
-set(Boost_LIBRARY_DIR ${CMAKE_SOURCE_DIR}/../common_external/boost_1_53_0/stage/lib)
-
 find_package(OpenGL REQUIRED)
 find_package(GLFW REQUIRED)
 find_package(OpenCL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(Boost COMPONENTS timer system REQUIRED)
+endif ()
+
+#set(Boost_INCLUDE_DIR "C:/alebo68/boost")
+#set(Boost_LIBRARY_DIR "C:/alebo68/boost/stage/lib")
+if (WIN32)
+    set(Boost_INCLUDE_DIR "C:/alebo68/boost")
+    set(Boost_LIBRARIES
+        "C:/alebo68/boost/stage/lib/libboost_timer-vc110-mt-1_53.lib"
+        "C:/alebo68/boost/stage/lib/libboost_system-vc110-mt-1_53.lib"
+        "C:/alebo68/boost/stage/lib/libboost_chrono-vc110-mt-1_53.lib"
+        )
+    
+    set(GLEW_INCLUDE_PATH "C:/alebo68/glew-1.9.0/include")
+    set(GLEW_LIBRARY "C:/alebo68/glew-1.9.0/lib/glew32.lib")
+
+    set(OpenCL_INCPATH "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v5.0/include")
+    set(OpenCL_LIBPATH "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v5.0/lib/Win32")
+
+    set(GLFW_ROOT_DIR "C:/alebo68/sgct/src/deps/glfw27")
+
+    find_package(OpenGL REQUIRED)
+    find_package(GLFW REQUIRED)
+    find_package(OpenCL REQUIRED)
+endif ()
+
 
 set(GLM_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/glm-0.9.4.3")
 

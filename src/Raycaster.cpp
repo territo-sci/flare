@@ -5,7 +5,9 @@
 
 #include <GL/glew.h>
 #include <GL/glfw.h>
+#ifndef _WIN32
 #include <GL/glx.h>
+#endif
 #include <fstream>
 #include <Raycaster.h>
 #include <Texture2D.h>
@@ -43,6 +45,8 @@ uint32_t ZOrder(uint16_t xPos, uint16_t yPos, uint16_t zPos) {
   const uint32_t result = x | (y << 1) | (z << 2);
   return result;
 }
+
+const double BYTES_PER_GB = 1073741824.0;
 
 Raycaster::Raycaster(Config *_config) 
   : Renderer(),
@@ -480,6 +484,13 @@ bool Raycaster::Render(float _timestep) {
                               brickRequest.size()*sizeof(int),
                               true)) return false;
 
+  //INFO(" ");
+  //for (unsigned int i=0; i< brickRequest.size(); ++i) {
+  //    if (brickRequest[i] > 0) {
+  //        INFO("Req brick " << i);
+  //    }
+  //}
+
   if (!clManager_->ReleaseBuffer("TSPTraversal", tspBrickListArg_)) return false;
   if (!clManager_->ReleaseBuffer("TSPTraversal", tspConstantsArg_)) return false;
   
@@ -692,13 +703,15 @@ bool Raycaster::InitCL() {
   if (!clManager_->BuildProgram("TSPTraversal")) return false;
   if (!clManager_->CreateKernel("TSPTraversal")) return false;
 
+  cl_mem cubeFrontCLmem;
   if (!clManager_->AddTexture("TSPTraversal", tspCubeFrontArg_, 
                               cubeFrontTex_, CLManager::TEXTURE_2D,
-                              CLManager::READ_ONLY)) return false;
+                              CLManager::READ_ONLY, cubeFrontCLmem)) return false;
 
+  cl_mem cubeBackCLmem;
   if (!clManager_->AddTexture("TSPTraversal", tspCubeBackArg_,
                               cubeBackTex_, CLManager::TEXTURE_2D,
-                              CLManager::READ_ONLY)) return false;
+                              CLManager::READ_ONLY, cubeBackCLmem)) return false;
 
   if (!clManager_->AddBuffer("TSPTraversal", tspTSPArg_,
                              reinterpret_cast<void*>(tsp_->Data()),
@@ -713,12 +726,10 @@ bool Raycaster::InitCL() {
   if (!clManager_->BuildProgram("RaycasterTSP")) return false;
   if (!clManager_->CreateKernel("RaycasterTSP")) return false;
 
-  if (!clManager_->AddTexture("RaycasterTSP", cubeFrontArg_, cubeFrontTex_, 
-                              CLManager::TEXTURE_2D,  
+  if (!clManager_->AddTexture("RaycasterTSP", cubeFrontArg_, cubeFrontCLmem,  
                               CLManager::READ_ONLY)) return false;
 
-  if (!clManager_->AddTexture("RaycasterTSP", cubeBackArg_, cubeBackTex_, 
-                              CLManager::TEXTURE_2D, 
+  if (!clManager_->AddTexture("RaycasterTSP", cubeBackArg_, cubeBackCLmem, 
                               CLManager::READ_ONLY)) return false;
 
   if (!clManager_->AddTexture("RaycasterTSP", quadArg_, quadTex_, 

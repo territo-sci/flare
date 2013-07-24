@@ -10,6 +10,10 @@
 #include <Texture.h>
 #include <Utils.h>
 
+#ifdef _WIN32
+#include <CL/cl_gl.h>
+#endif
+
 using namespace osp;
 
 CLProgram::CLProgram(const std::string &_programName, CLManager *_clManager) 
@@ -103,6 +107,57 @@ bool CLProgram::AddTexture(unsigned int _argNr, Texture *_texture,
 
   return true;
 
+}
+
+
+bool CLProgram::AddTexture(unsigned int _argNr, Texture *_texture,
+                           GLuint _textureType,
+                           cl_mem_flags _permissions,
+                           cl_mem& _clTextureMem) {
+
+    // Remove anything already associated with argument index
+    if (OGLTextures_.find((cl_uint)_argNr) != OGLTextures_.end()) {
+        OGLTextures_.erase((cl_uint)_argNr);
+    }
+
+    switch (_textureType) {
+    case GL_TEXTURE_1D:
+        ERROR("Texture 1D unimplemented");
+        return false;
+        break;
+    case GL_TEXTURE_2D:
+        _clTextureMem = clCreateFromGLTexture2D(clManager_->context_, _permissions, 
+            GL_TEXTURE_2D, 0, 
+            _texture->Handle(), &error_);
+        break;
+    case GL_TEXTURE_3D:
+        _clTextureMem = clCreateFromGLTexture3D(clManager_->context_, _permissions, 
+            GL_TEXTURE_3D, 0, 
+            _texture->Handle(), &error_);
+        break;
+    default:
+        ERROR("Unknown GL texture type");
+        return false;
+    }
+
+    if (!clManager_->CheckSuccess(error_, "AddTexture")) return false;
+
+    OGLTextures_.insert(std::make_pair((cl_uint)_argNr, _clTextureMem));
+
+    return true;
+}
+
+bool osp::CLProgram::AddTexture(unsigned int _argNr,
+                                cl_mem _texture,
+                                cl_mem_flags _permissions)
+{
+    // Remove anything already associated with argument index
+    if (OGLTextures_.find((cl_uint)_argNr) != OGLTextures_.end()) {
+        OGLTextures_.erase((cl_uint)_argNr);
+    }
+    OGLTextures_.insert(std::make_pair((cl_uint)_argNr, _texture));
+
+    return true;
 }
 
 /*

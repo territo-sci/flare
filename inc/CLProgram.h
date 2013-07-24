@@ -6,7 +6,11 @@
 #ifndef CL_PROGRAM_H_
 #define CL_PROGRAM_H_
 
+#ifndef _WIN32
 #include <CL/cl.hpp>
+#else
+#include <CL/cl.h>
+#endif
 #include <map>
 #include <string>
 #include <KernelConstants.h>
@@ -39,6 +43,13 @@ public:
   bool AddTexture(unsigned int _argNr, Texture *_texture,
                   GLuint _textureType,
                   cl_mem_flags _permissions);
+
+  bool AddTexture(unsigned int _argNr, Texture *_texture,
+      GLuint _textureType,
+      cl_mem_flags _permissions, cl_mem& _clTextureMem);
+
+  bool AddTexture(unsigned int _argNr, cl_mem _texture,
+      cl_mem_flags _permissions);
 
   /*
 
