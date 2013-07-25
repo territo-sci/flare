@@ -23,6 +23,8 @@ public:
 
   int WinWidth() const { return winWidth_; }
   int WinHeight() const { return winHeight_; }
+  int LocalWorkSizeX() const { return localWorkSizeX_; }
+  int LocalWorkSizeY() const { return localWorkSizeY_; }
   std::string TSPFilename() const { return TSPFilename_; }
   std::string TFFilename() const { return TFFilename_; }
   std::string RaycasterKernelFilename()const{return raycasterKernelFilename_;}
@@ -38,6 +40,16 @@ public:
   float RaycasterStepsize() const { return raycasterStepsize_; }
   float RaycasterIntensity() const { return raycasterIntensity_; }
   float AnimatorRefreshInterval() const { return animatorRefreshInterval_; }
+  float MousePitchFactor() const { return mousePitchFactor_; }
+  float MouseRollFactor() const { return mouseRollFactor_; }
+  float ZoomFactor() const { return zoomFactor_; }
+  float StartPitch() const { return startPitch_; }
+  float StartRoll() const { return startRoll_; }
+  float StartYaw() const { return startYaw_; }
+  float TranslateX() const { return translateX_; }
+  float TranslateY() const { return translateY_; }
+  float TranslateZ() const { return translateZ_; }
+
 
 private:
   Config();
@@ -48,6 +60,8 @@ private:
 
   int winWidth_;
   int winHeight_;
+  int localWorkSizeX_;
+  int localWorkSizeY_;
   std::string TSPFilename_;
   std::string TFFilename_;
   std::string raycasterKernelFilename_;
@@ -62,6 +76,15 @@ private:
   float raycasterStepsize_;
   float raycasterIntensity_;
   float animatorRefreshInterval_;
+  float mousePitchFactor_;
+  float mouseRollFactor_;
+  float zoomFactor_;
+  float startPitch_;
+  float startRoll_;
+  float startYaw_;
+  float translateX_;
+  float translateY_;
+  float translateZ_;
 };
 
 }

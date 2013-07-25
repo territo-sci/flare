@@ -29,7 +29,7 @@ bool Texture2D::Init(float *_data) {
     return true;
   }
 
-  glEnable(GL_TEXTURE_2D);
+  //glEnable(GL_TEXTURE_2D);
   glGenTextures(1, &handle_);
   glBindTexture(GL_TEXTURE_2D, handle_);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -66,7 +66,7 @@ bool Texture2D::Bind(ShaderProgram * _shaderProgram,
 
   glUseProgram(_shaderProgram->Handle());
   glActiveTexture(GL_TEXTURE0 + _texUnit);
-  glEnable(GL_TEXTURE_2D);
+  //glEnable(GL_TEXTURE_2D);
 
   int location = glGetUniformLocation(_shaderProgram->Handle(),
                                       _uniformName.c_str());
@@ -79,9 +79,8 @@ bool Texture2D::Bind(ShaderProgram * _shaderProgram,
   glUniform1i(location, _texUnit);
   glBindTexture(GL_TEXTURE_2D, handle_);
   glUseProgram(0);
-  CheckGLError("Texture2D::Bind() " + _uniformName);
+  return (CheckGLError("Texture2D::Bind() " + _uniformName) == GL_NO_ERROR);
 
-  return true;
 }
 
 

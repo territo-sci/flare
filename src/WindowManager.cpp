@@ -180,6 +180,9 @@ bool WindowManager::Close() {
 }
 
 bool WindowManager::Draw(float _timeStep) {
+
+  INFO(_timeStep);
+
   if (!renderer_->Render(_timeStep)) {
     return false;
   }

@@ -14,8 +14,36 @@ using namespace osp;
 Config::Config() : configFilename_("OopsNotSet") {}
 
 Config::Config(const std::string &_configFilename) 
-  : configFilename_(_configFilename) {}
-
+  : configFilename_(_configFilename),
+    winWidth_(512),
+    winHeight_(512),
+    localWorkSizeX_(16),
+    localWorkSizeY_(16),
+    TSPFilename_("notSet"),
+    TFFilename_("notSet"),
+    raycasterKernelFilename_("notSet"),
+    TSPTraversalKernelFilename_("notSet"),
+    cubeShaderVertFilename_("notSet"),
+    cubeShaderFragFilename_("notSet"),
+    quadShaderVertFilename_("notSet"),
+    quadShaderFragFilename_("notSet"),
+    spatialErrorTolerance_(0.f),
+    temporalErrorTolerance_(0.f),
+    TSPTraversalStepsize_(0.1f),
+    raycasterStepsize_(0.1f),
+    raycasterIntensity_(1.f),
+    animatorRefreshInterval_(1.f),
+    mousePitchFactor_(1.f),
+    mouseRollFactor_(1.f),
+    zoomFactor_(1.f),
+    startPitch_(0.f),
+    startRoll_(0.f),
+    startYaw_(0.f),
+    translateX_(0.f),
+    translateY_(0.f),
+    translateZ_(0.f)
+{}
+    
 Config::~Config() {}
 
 Config * Config::New(const std::string &_configFilename) {
@@ -97,6 +125,39 @@ bool Config::Read() {
        } else if (variable == "quad_shader_frag_filename") {
         ss >> quadShaderFragFilename_;
         INFO("Cube vertex shader file name: " << quadShaderFragFilename_);
+      } else if (variable == "mouse_pitch_factor") {
+        ss >> mousePitchFactor_;
+        INFO("Mouse pitch factor " << mousePitchFactor_);
+      } else if (variable == "mouse_roll_factor") {
+        ss >> mouseRollFactor_;
+        INFO("Mouse roll factor " << mouseRollFactor_);
+      } else if (variable == "zoom_factor") {
+        ss >> zoomFactor_;
+        INFO("Zoom factor " << zoomFactor_);
+      } else if (variable == "start_pitch") {
+        ss >> startPitch_;
+        INFO("Start pitch: " << startPitch_);
+      } else if (variable == "start_roll") {
+        ss >> startRoll_;
+        INFO("Start roll: " << startRoll_);
+      } else if (variable == "start_yaw") {
+        ss >> startYaw_;
+        INFO("Start yaw: " << startYaw_);
+      } else if (variable == "translate_x") {
+        ss >> translateX_;
+        INFO("Translate X: " << translateX_);
+      } else if (variable == "translate_y") {
+        ss >> translateY_;
+        INFO("Translate Y: " << translateY_);
+      } else if (variable == "translate_z") {
+        ss >> translateZ_;
+        INFO("Translate Z: " << translateZ_);
+      } else if (variable == "local_worksize_x") {
+        ss >> localWorkSizeX_;
+        INFO("Local worksize X: " << localWorkSizeX_);
+      } else if (variable == "local_worksize_x") {
+        ss >> localWorkSizeY_;
+        INFO("Local worksize Y: " << localWorkSizeY_);
       } else { 
         ERROR("Variable name " << variable << " unknown");
       }

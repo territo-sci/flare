@@ -36,8 +36,11 @@ bool Texture3D::Init(float *_data) {
     ERROR("Dims: " << dim_[0] << " " << dim_[1] << " " << dim_[2]);
     return false;
   }
-
-  glEnable(GL_TEXTURE_3D);
+ 
+  //glEnable(GL_TEXTURE_3D);
+  if (CheckGLError("Texture3D::Init(): enabling 3D texture") != GL_NO_ERROR) {
+    return false;
+  }
   glGenTextures(1, &handle_);
   glBindTexture(GL_TEXTURE_3D, handle_);
   glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

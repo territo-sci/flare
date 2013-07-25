@@ -48,9 +48,10 @@ uint32_t ZOrder(uint16_t xPos, uint16_t yPos, uint16_t zPos) {
 
 const double BYTES_PER_GB = 1073741824.0;
 
-Raycaster::Raycaster(Config *_config) 
+Raycaster::Raycaster(Config *_config, sgct::Engine *_engine) 
   : Renderer(),
     config_(_config),
+    engine_(_engine),
     cubeFrontFBO_(0),
     cubeBackFBO_(0),
     renderbufferObject_(0),
@@ -63,10 +64,10 @@ Raycaster::Raycaster(Config *_config)
     cubeFrontTex_(NULL),
     cubeBackTex_(NULL),
     quadTex_(NULL),
-    pitch_(-30.f),
-    yaw_(0.f),
-    roll_(30.f),
-    zoom_(1.f),
+    pitch_(_config->StartPitch()),
+    yaw_(_config->StartYaw()),
+    roll_(_config->StartRoll()),
+    zoom_(_config->TranslateZ()),
     model_(glm::mat4()),
     view_(glm::mat4()),
     proj_(glm::mat4()),
@@ -85,16 +86,17 @@ Raycaster::Raycaster(Config *_config)
 Raycaster::~Raycaster() {
 }
 
-Raycaster * Raycaster::New(Config *_config) {
-  Raycaster *raycaster = new Raycaster(_config);
+Raycaster * Raycaster::New(Config *_config, sgct::Engine *_engine) {
+  Raycaster *raycaster = new Raycaster(_config, _engine);
   raycaster->UpdateConfig();
   return raycaster;
 }
 
 // TODO Move out hardcoded values
 bool Raycaster::InitMatrices() {
-  float aspect = (float)winWidth_/(float)winHeight_;
-  proj_ = glm::perspective(40.f, aspect, 0.1f, 100.f);
+  //float aspect = (float)winWidth_/(float)winHeight_;
+  //proj_ = glm::perspective(40.f, aspect, 0.1f, 100.f);
+  proj_ = engine_->getActiveProjectionMatrix();
   matricesInitialized_ = true;
   return true;
 }
@@ -155,12 +157,20 @@ bool Raycaster::InitCube() {
    1.f, 0.f, 0.f, 1.f
  };
 
+  glGenVertexArrays(1, &cubeVAO_);
+  glBindVertexArray(cubeVAO_);
+
   glGenBuffers(1, &cubePosbufferObject_);
   glBindBuffer(GL_ARRAY_BUFFER, cubePosbufferObject_);
   glBufferData(GL_ARRAY_BUFFER, sizeof(float)*144, v, GL_STATIC_DRAW);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  CheckGLError("InitCube()");
+  glBindVertexArray(0);
+
+  if (CheckGLError("InitCube()") != GL_NO_ERROR) {
+    return false;
+  }
+
   cubeInitialized_ = true;
   return true;
 }
@@ -177,12 +187,20 @@ bool Raycaster::InitQuad() {
     -1.f,  1.0, 0.f, 1.f,
   };
 
+  glGenVertexArrays(1, &quadVAO_);
+  glBindVertexArray(quadVAO_);
+
   glGenBuffers(1, &quadPosbufferObject_);
   glBindBuffer(GL_ARRAY_BUFFER, quadPosbufferObject_);
   glBufferData(GL_ARRAY_BUFFER, sizeof(float)*24, v, GL_STATIC_DRAW);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-  CheckGLError("InitQuad()");
+  glBindVertexArray(0);
+
+  if (CheckGLError("InitQuad()") != GL_NO_ERROR) {
+    return false;
+  }
+
   quadInitialized_ = true;
   return true;
 }
@@ -255,7 +273,9 @@ bool Raycaster::InitFramebuffers() {
   }
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-  CheckGLError("InitFramebuffers()");
+  if (CheckGLError("InitFramebuffers()") != GL_NO_ERROR) {
+    return false;
+  }
 
   INFO("Initializing framebuffers... complete");
 
@@ -301,8 +321,14 @@ bool Raycaster::UpdateMatrices() {
   model_ = glm::rotate(model_, -pitch_, glm::vec3(0.f, 1.f, 0.0));
   model_ = glm::rotate(model_, yaw_, glm::vec3(0.f, 0.f, 1.f));
   model_ = glm::translate(model_, glm::vec3(-0.5f, -0.5f, -0.5f));
+  /*
   view_ = glm::rotate(glm::mat4(1.f), 180.f, glm::vec3(1.f, 0.f, 0.f));
   view_ = glm::translate(view_, glm::vec3(-0.5f, -0.5f, zoom_));
+  */
+  glm::mat4 sgctView = engine_->getActiveViewMatrix();
+  view_ = glm::translate(sgctView, glm::vec3(config_->TranslateX(), 
+                                             config_->TranslateY(),
+                                             zoom_));
   return true;
 }
 
@@ -343,6 +369,8 @@ void Raycaster::SetQuadShaderProgram(ShaderProgram *_quadShaderProgram) {
 }
 
 bool Raycaster::Render(float _timestep) {
+
+  INFO("Raycaster rendering");
 
   if (animator_ != NULL) {
     animator_->Update(_timestep);
@@ -406,6 +434,7 @@ bool Raycaster::Render(float _timestep) {
   glBindFramebuffer(GL_FRAMEBUFFER, cubeFrontFBO_);
   glCullFace(GL_BACK);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glBindVertexArray(cubeVAO_);
   glBindBuffer(GL_ARRAY_BUFFER, cubePosbufferObject_);
   glEnableVertexAttribArray(cubePositionAttrib_);
   glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
@@ -413,13 +442,17 @@ bool Raycaster::Render(float _timestep) {
   glDisableVertexAttribArray(cubePositionAttrib_);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindVertexArray(0);
 
-  CheckGLError("Cube front rendering");
+  if (CheckGLError("Cube front rendering") != GL_NO_ERROR) {
+    return false;
+  }
 
   // Back
   glBindFramebuffer(GL_FRAMEBUFFER, cubeBackFBO_);
   glCullFace(GL_FRONT);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glBindVertexArray(cubeVAO_);
   glBindBuffer(GL_ARRAY_BUFFER, cubePosbufferObject_);
   glEnableVertexAttribArray(cubePositionAttrib_);
   glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
@@ -427,12 +460,14 @@ bool Raycaster::Render(float _timestep) {
   glDisableVertexAttribArray(cubePositionAttrib_);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindVertexArray(0);
 
-  CheckGLError("Cube back rendering");
+  if (CheckGLError("Cube back rendering") != GL_NO_ERROR) {
+    return false;
+  }
 
   glUseProgram(0);
 
-  // TODO Set kernel constants that might have changed 
 
   unsigned int currentTimestep;
   unsigned int nextTimestep;
@@ -477,7 +512,11 @@ bool Raycaster::Render(float _timestep) {
   
   if (!clManager_->PrepareProgram("TSPTraversal")) return false;
   if (!clManager_->LaunchProgram("TSPTraversal", 
-                                 512, 512, 16, 16)) return false;
+                                 config_->WinWidth(),
+                                 config_->WinHeight(), 
+                                 config_->LocalWorkSizeX(),
+                                 config_->LocalWorkSizeY()))
+                                 return false;
   if (!clManager_->FinishProgram("TSPTraversal")) return false;
 
   if (!clManager_->ReadBuffer("TSPTraversal", tspBrickListArg_,
@@ -520,7 +559,11 @@ bool Raycaster::Render(float _timestep) {
 
   if (!clManager_->PrepareProgram("RaycasterTSP")) return false;
   if (!clManager_->LaunchProgram("RaycasterTSP",
-                                 512, 512, 16, 16)) return false;
+                                 config_->WinWidth(),
+                                 config_->WinHeight(), 
+                                 config_->LocalWorkSizeX(),
+                                 config_->LocalWorkSizeY())) 
+                                 return false;
   if (!clManager_->FinishProgram("RaycasterTSP")) return false;
   
   if (!clManager_->ReleaseBuffer("RaycasterTSP", constantsArg_)) return false;
@@ -568,12 +611,14 @@ bool Raycaster::Render(float _timestep) {
   if (!clHandler_->FinishRaycaster()) return false;
   */
 
-  // Render to screen using quad
+  // Render to framebuffer using quad
+
+  glBindFramebuffer(GL_FRAMEBUFFER, engine_->getFBOPtr()->getBufferID());
+
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
 
   glDisable(GL_CULL_FACE);
 
-  glClearColor(0.f, 0.f, 0.f, 0.f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glUseProgram(quadShaderProgram_->Handle());
@@ -584,13 +629,19 @@ bool Raycaster::Render(float _timestep) {
   }
   glCullFace(GL_BACK);
   glClear(GL_COLOR_BUFFER_BIT);
+  glBindVertexArray(quadVAO_);
   glBindBuffer(GL_ARRAY_BUFFER, quadPosbufferObject_);
   glEnableVertexAttribArray(quadPositionAttrib_);
   glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   glDisableVertexAttribArray(quadPositionAttrib_);
+  glBindVertexArray(0);
 
-  CheckGLError("Quad rendering");
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  if (CheckGLError("Quad rendering") != GL_NO_ERROR) {
+    return false;
+  }
 
   glUseProgram(0);
   
@@ -621,8 +672,8 @@ bool Raycaster::ReloadShaders() {
 
 bool Raycaster::HandleMouse() {
   if (leftMouseDown_) {
-    pitch_ += 0.2f*(float)(currentMouseX_ - lastMouseX_);
-    roll_ += 0.2f*(float)(currentMouseY_ - lastMouseY_);  
+    pitch_ += config_->MousePitchFactor()*(float)(currentMouseX_-lastMouseX_);
+    roll_ += config_->MouseRollFactor()*(float)(currentMouseY_ - lastMouseY_);  
   }
   return true;
 }
@@ -643,8 +694,8 @@ bool Raycaster::HandleKeyboard() {
     INFO("Animator updated");
   }
 
-  if (KeyPressed('W')) zoom_ -= 0.1f;
-  if (KeyPressed('S')) zoom_ += 0.1f;
+  if (KeyPressed('W')) zoom_ -= config_->ZoomFactor();
+  if (KeyPressed('S')) zoom_ += config_->ZoomFactor();
   if (KeyPressedNoRepeat(32)) animator_->TogglePause();
   if (KeyPressedNoRepeat('F')) animator_->ToggleFPSMode();
   if (KeyPressed('Z')) animator_->IncTimestep();

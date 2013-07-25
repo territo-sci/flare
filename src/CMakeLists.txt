@@ -13,6 +13,16 @@ endif ()
 #set(Boost_LIBRARY_DIR "C:/alebo68/boost/stage/lib")
 if (WIN32)
 
+	# SGCT special case
+	ADD_DEFINITIONS(-D__WIN32__)
+	SET(SGCT_DEBUG_LIBRARY "C:/Program Files (x86)/SGCT/SGCT_1.5.2_x86/lib/msvc11/sgct32_d.lib" )
+	SET(SGCT_RELEASE_LIBRARY "C:/Program Files (x86)/SGCT/SGCT_1.5.2_x86/lib/msvc11/gct32.lib" )
+	SET(SGCT_INCLUDE_DIRECTORY "C:/Program Files (x86)/SGCT/SGCT_1.5.2_x86/include" )
+	SET(SGCT_LINK_LIBRARY 
+		optimized ${SGCT_RELEASE_LIBRARY}
+		debug ${SGCT_DEBUG_LIBRARY}
+	)
+
     #set(Boost_INCLUDE_DIR "C:/alebo68/boost")
 	set(Boost_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../external/boost_1_54_0")
     #set(Boost_LIBRARIES
@@ -24,8 +34,8 @@ if (WIN32)
     #set(GLEW_INCLUDE_PATH "C:/alebo68/glew-1.9.0/include")
     #set(GLEW_LIBRARY "C:/alebo68/glew-1.9.0/lib/glew32.lib")
 	set(GLEW_INCLUDE_PATH "${CMAKE_SOURCE_DIR}/../external/glew-1.10.0/include")
-	set(GLEW_LIBRARY "${CMAKE_SOURCE_DIR}/../external/glew-1.10.0/lib/Release/Win32/glew32.lib")
-	add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+	set(GLEW_LIBRARY "${CMAKE_SOURCE_DIR}/../external/glew-1.10.0/lib/Release/Win32/glew32s.lib")
+	add_definitions(-D_CRT_SECURE_NO_WARNINGS -DGLEW_STATIC)
 	
 	set(OpenCL_INCPATH "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v5.0/include")
     set(OpenCL_LIBPATH "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v5.0/lib/Win32")
@@ -48,7 +58,9 @@ include_directories(${CMAKE_SOURCE_DIR}/inc
                     ${GLFW_INCLUDE_DIRS}
                     ${GLEW_INCLUDE_PATH}
                     ${GLM_INCLUDE_DIR}
-                    ${Boost_INCLUDE_DIR})
+                    ${Boost_INCLUDE_DIR}
+					${SGCT_INCLUDE_DIRECTORY}
+					)
 
 link_directories(${Boost_LIBRARY_DIR})
 
@@ -77,4 +89,5 @@ target_link_libraries(FlareApp
                       ${GLFW_LIBRARY}
                       ${OPENGL_LIBRARY}
                       ${OPENCL_LIBRARIES}
-                      ${Boost_LIBRARIES})
+                      ${Boost_LIBRARIES}
+					  ${SGCT_LINK_LIBRARY})

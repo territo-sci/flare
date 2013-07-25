@@ -27,7 +27,7 @@ bool Texture1D::Init(float *_data) {
     return true;
   }
 
-  glEnable(GL_TEXTURE_1D);
+  //glEnable(GL_TEXTURE_1D);
   glGenTextures(1, &handle_);
   glBindTexture(GL_TEXTURE_1D, handle_);
   glTexParameteri(GL_TEXTURE_1D, GL_TEXTURE_WRAP_S, GL_REPEAT);
