@@ -79,6 +79,24 @@ bool Config::Read() {
       } else if (variable == "win_height") {
         ss >> winHeight_;
         INFO("Win height: " << winHeight_);
+      } else if (variable == "raycaster_kernel_filename") {
+        ss >> raycasterKernelFilename_;
+        INFO("Raycaster kernel file name: " << raycasterKernelFilename_);
+      } else if (variable == "tsp_traversal_kernel_filename" ) {
+        ss >> TSPTraversalKernelFilename_;
+        INFO("TSP traversal kernel file name: " <<TSPTraversalKernelFilename_);
+      } else if (variable == "cube_shader_vert_filename") {
+        ss >> cubeShaderVertFilename_;
+        INFO("Cube vertex shader file name: " << cubeShaderVertFilename_);
+      } else if (variable == "cube_shader_frag_filename") {
+        ss >> cubeShaderFragFilename_;
+        INFO("Cube fragment shader file name: " << cubeShaderFragFilename_);
+      } else if (variable == "quad_shader_vert_filename") {
+        ss >> quadShaderVertFilename_;
+        INFO("Quad vertex shader file name: " << quadShaderVertFilename_);
+       } else if (variable == "quad_shader_frag_filename") {
+        ss >> quadShaderFragFilename_;
+        INFO("Cube vertex shader file name: " << quadShaderFragFilename_);
       } else { 
         ERROR("Variable name " << variable << " unknown");
       }

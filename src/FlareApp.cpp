@@ -46,16 +46,16 @@ int main(int argc, char **argv) {
   // Create shaders for color cube and output textured quad
   ShaderProgram *cubeShaderProgram = ShaderProgram::New();
   cubeShaderProgram->CreateShader(ShaderProgram::VERTEX,
-                                  "../shaders/cubeVert.glsl");
+                                  config->CubeShaderVertFilename());
   cubeShaderProgram->CreateShader(ShaderProgram::FRAGMENT,
-                                  "../shaders/cubeFrag.glsl");
+                                  config->CubeShaderFragFilename());
   cubeShaderProgram->CreateProgram();
   
   ShaderProgram *quadShaderProgram = ShaderProgram::New();
   quadShaderProgram->CreateShader(ShaderProgram::VERTEX,
-                                  "../shaders/quadVert.glsl");
+                                  config->QuadShaderVertFilename());
   quadShaderProgram->CreateShader(ShaderProgram::FRAGMENT,
-                                  "../shaders/quadFrag.glsl");
+                                  config->QuadShaderFragFilename());
   quadShaderProgram->CreateProgram();
 
   // Create two textures to hold the color cube

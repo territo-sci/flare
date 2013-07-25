@@ -159,71 +159,6 @@ bool osp::CLProgram::AddTexture(unsigned int _argNr,
     return true;
 }
 
-/*
-bool CLProgram::AddTransferFunction(unsigned int _argNr,
-                                    TransferFunction *_tf) {
-  // Remove old TF already bound to this argument index 
-  if (memArgs_.find((cl_uint)_argNr) != memArgs_.end()) {
-    memArgs_.erase((cl_uint)_argNr);
-  }
-
-  // TODO implement TF using 1D texture
-  MemArg mka;
-  mka.size_ = sizeof(cl_mem);
-  mka.mem_ = clCreateBuffer(clManager_->context_,
-                             CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                             _tf->Width()*4*sizeof(float),
-                             _tf->FloatData(),
-                             &error_);
- 
-  if (error_ != CL_SUCCESS) return false;
-  memArgs_.insert(std::make_pair((cl_uint)_argNr, mka));
-  return true;
-}
-
-
-bool CLProgram::AddKernelConstants(unsigned int _argNr,
-                                   KernelConstants *_kernelConstants) {
-  // Delete any old data already bound to argument index
-  if (memArgs_.find((cl_uint)_argNr) != memArgs_.end()) {
-    memArgs_.erase((cl_uint)_argNr);
-  }
-
-  MemArg mka;
-  mka.size_ = sizeof(cl_mem);
-  mka.mem_ = clCreateBuffer(clManager_->context_,
-                            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                            sizeof(KernelConstants),
-                            _kernelConstants,
-                            &error_);
-
-  if (error_ != CL_SUCCESS) return false;
-  memArgs_.insert(std::make_pair((cl_uint)_argNr, mka));
-  return true;
-
-}
-
-
-bool CLProgram::AddTraversalConstants(unsigned int _argNr,
-                                  TraversalConstants *_traversalConstants) {
-  // Delete any old data already bound to argument index
-  if (memArgs_.find((cl_uint)_argNr) != memArgs_.end()) {
-    memArgs_.erase((cl_uint)_argNr);
-  }
-
-  MemArg mka;
-  mka.size_ = sizeof(cl_mem);
-  mka.mem_ = clCreateBuffer(clManager_->context_,
-                            CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR,
-                            sizeof(TraversalConstants),
-                            _traversalConstants,
-                            &error_);
-  if (error_ != CL_SUCCESS) return false;
-  memArgs_.insert(std::make_pair((cl_uint)_argNr, mka));
-  return true;
-}
-
-*/
 
 bool CLProgram::AddBuffer(unsigned int _argNr,
                           void *_hostPtr,
@@ -357,7 +292,8 @@ bool CLProgram::FinishProgram() {
 }
 
 
-char * CLProgram::ReadSource(std::string _filename, int &_numChars) const {
+char * CLProgram::ReadSource(const std::string &_filename, 
+                             int &_numChars) const {
   FILE *in;
   char *content = NULL;
   in = fopen(_filename.c_str(), "r");

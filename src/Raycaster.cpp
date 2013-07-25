@@ -693,26 +693,33 @@ bool Raycaster::InitCL() {
     return false;
   }
   
+  // Init common OpenCL resources
   if (!clManager_->InitPlatform()) return false;
   if (!clManager_->InitDevices()) return false;
   if (!clManager_->CreateContext()) return false;
   if (!clManager_->CreateCommandQueue()) return false;
 
-  // TSP traversal part or raycaster
+  // TSP traversal part of raycaster
   if (!clManager_->CreateProgram("TSPTraversal",
-                                 "../kernels/TSPTraversal.cl")) return false;
+                                 config_->TSPTraversalKernelFilename())) {
+    return false;
+  }
   if (!clManager_->BuildProgram("TSPTraversal")) return false;
   if (!clManager_->CreateKernel("TSPTraversal")) return false;
 
   cl_mem cubeFrontCLmem;
   if (!clManager_->AddTexture("TSPTraversal", tspCubeFrontArg_, 
                               cubeFrontTex_, CLManager::TEXTURE_2D,
-                              CLManager::READ_ONLY, cubeFrontCLmem)) return false;
+                              CLManager::READ_ONLY, cubeFrontCLmem)) {
+    return false;
+  }
 
   cl_mem cubeBackCLmem;
   if (!clManager_->AddTexture("TSPTraversal", tspCubeBackArg_,
                               cubeBackTex_, CLManager::TEXTURE_2D,
-                              CLManager::READ_ONLY, cubeBackCLmem)) return false;
+                              CLManager::READ_ONLY, cubeBackCLmem)) {
+    return false;
+  }
 
   if (!clManager_->AddBuffer("TSPTraversal", tspTSPArg_,
                              reinterpret_cast<void*>(tsp_->Data()),
@@ -721,9 +728,11 @@ bool Raycaster::InitCL() {
                              CLManager::READ_ONLY)) return false;
 
 
-  // TEST
+  // Raycaster part
   if (!clManager_->CreateProgram("RaycasterTSP",
-                                "../kernels/RaycasterTSP.cl")) return false;
+                                config_->RaycasterKernelFilename())) {
+    return false;
+  }
   if (!clManager_->BuildProgram("RaycasterTSP")) return false;
   if (!clManager_->CreateKernel("RaycasterTSP")) return false;
 

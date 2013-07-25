@@ -25,6 +25,13 @@ public:
   int WinHeight() const { return winHeight_; }
   std::string TSPFilename() const { return TSPFilename_; }
   std::string TFFilename() const { return TFFilename_; }
+  std::string RaycasterKernelFilename()const{return raycasterKernelFilename_;}
+  std::string TSPTraversalKernelFilename() const 
+    { return TSPTraversalKernelFilename_; }
+  std::string CubeShaderVertFilename() const { return cubeShaderVertFilename_;}
+  std::string CubeShaderFragFilename() const { return cubeShaderFragFilename_;}
+  std::string QuadShaderVertFilename() const { return quadShaderVertFilename_;}
+  std::string QuadShaderFragFilename() const { return quadShaderFragFilename_;}
   float SpatialErrorTolerance() const { return spatialErrorTolerance_; }
   float TemporalErrorTolerance() const { return temporalErrorTolerance_; }
   float TSPTraversalStepsize() const { return TSPTraversalStepsize_; }
@@ -43,6 +50,12 @@ private:
   int winHeight_;
   std::string TSPFilename_;
   std::string TFFilename_;
+  std::string raycasterKernelFilename_;
+  std::string TSPTraversalKernelFilename_;
+  std::string cubeShaderVertFilename_;
+  std::string cubeShaderFragFilename_;
+  std::string quadShaderVertFilename_;
+  std::string quadShaderFragFilename_;
   float spatialErrorTolerance_;
   float temporalErrorTolerance_;
   float TSPTraversalStepsize_;

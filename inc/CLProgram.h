@@ -51,18 +51,6 @@ public:
   bool AddTexture(unsigned int _argNr, cl_mem _texture,
       cl_mem_flags _permissions);
 
-  /*
-
-  bool AddTransferFunction(unsigned int _argNr,
-                           TransferFunction *_transferFunction);
-
-  bool AddKernelConstants(unsigned int _argNr, 
-                          KernelConstants *_kernelConstants);
-
-  bool AddTraversalConstants(unsigned int _argNr,
-                             TraversalConstants *_traversalConstants);
-  */
-
   bool AddBuffer(unsigned int _argNr, 
                  void *_hostPtr, 
                  unsigned int _sizeInBytes, 
@@ -86,7 +74,7 @@ private:
   CLProgram();
   CLProgram(const CLProgram&);
 
-  char * ReadSource(std::string _fileName, int &_numChars) const;
+  char * ReadSource(const std::string &_fileName, int &_numChars) const;
 
   std::string programName_;
 
