@@ -2,13 +2,12 @@
  * Author: Victor Sand (victor.sand@gmail.com)
  *
  */
-
 #include <GL/glew.h>
 #include <BrickManager.h>
 #include <Texture3D.h>
 #include <Config.h>
 #include <Utils.h>
-#include <boost/timer/timer.hpp>
+//#include <boost/timer/timer.hpp>
 
 using namespace osp;
 
@@ -19,9 +18,6 @@ BrickManager * BrickManager::New(Config *_config) {
 
 BrickManager::BrickManager(Config *_config)
  : textureAtlas_(NULL), config_(_config) {
-
-  brickBuffer_[ODD] = NULL;
-  brickBuffer_[EVEN] = NULL;
 
   // TODO move
   glGenBuffers(1, &pboHandle_[EVEN]);
@@ -91,9 +87,11 @@ bool BrickManager::ReadHeader() {
   INFO("Padded brick dim: " << paddedBrickDim_); 
   INFO("Atlas dim: " << atlasDim_);
 
-  unsigned int bufferSize = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
-  brickBuffer_[EVEN] = new real[bufferSize];
-  brickBuffer_[ODD] = new real[bufferSize];
+  numBrickVals_ = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
+  numBricksTot_ = numBricks_*numBricks_*numBricks_;
+  brickSize_ = sizeof(float)*numBrickVals_;
+  volumeSize_ = brickSize_*numBricksTot_;
+  numValsTot_ = numBrickVals_*numBricksTot_;
 
   hasReadHeader_ = true;
 
@@ -144,9 +142,9 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
 
       //INFO(i);
         
-      if (xCoord >= xNumBricks_ || 
-          yCoord >= yNumBricks_ || 
-          zCoord >= zNumBricks_) {
+      if (xCoord >= static_cast<int>(xNumBricks_) || 
+          yCoord >= static_cast<int>(yNumBricks_) || 
+          zCoord >= static_cast<int>(zNumBricks_)) {
         ERROR("atlas coord too large!");
         return false;
       }
@@ -182,229 +180,114 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
   return true;
 }
 
+bool BrickManager::FillVolume(float *_in, float *_out, 
+                              unsigned int _x, 
+                              unsigned int _y, 
+                              unsigned int _z) {
 
+  unsigned int xMin = _x*paddedBrickDim_;
+  unsigned int yMin = _y*paddedBrickDim_;
+  unsigned int zMin = _z*paddedBrickDim_;
+  unsigned int xMax = xMin+paddedBrickDim_;
+  unsigned int yMax = yMin+paddedBrickDim_;
+  unsigned int zMax = zMin+paddedBrickDim_;
+
+  // Loop over the brick using three loops
+  unsigned int from = 0;
+  for (unsigned int zValCoord=zMin; zValCoord<zMax; ++zValCoord) {
+    for (unsigned int yValCoord=yMin; yValCoord<yMax; ++yValCoord) {
+      for (unsigned int xValCoord=xMin; xValCoord<xMax; ++xValCoord) {
+        //INFO(xValCoord << " " << yValCoord << " " << zValCoord);
+        unsigned int idx = 
+          xValCoord + 
+          yValCoord*atlasDim_ +
+          zValCoord*atlasDim_*atlasDim_;
+
+        _out[idx] = _in[from];
+        from++;
+      }
+    }
+  }
+
+  return true;
+}
+
+// TODO find buffer size
+// TODO use two PBOs
 bool BrickManager::UpdateAtlas() {
- 
-  // TODO spec max buffer size, just alloc once
-  // TODO asynch
 
+  // Map PBO
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[EVEN]);
+  glBufferData(GL_PIXEL_UNPACK_BUFFER, volumeSize_, 0, GL_STREAM_DRAW);
+  float *mappedBuffer = reinterpret_cast<float*>(
+    glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY));
+
+  if (!mappedBuffer) {
+    ERROR("Failed to map PBO");
+    return false;
+  }
+
+  // Loop over brick request list
   unsigned int brickIndex = 0;
-
   while (brickIndex < brickList_.size()/3) {
 
-    // Find first brick index in list
-    while (brickIndex < brickList_.size()/3 && brickList_[3*brickIndex] == -1) {
+    // Find first active brick index in list
+    while (brickIndex<brickList_.size()/3 && brickList_[3*brickIndex]== -1) {
       brickIndex++;
     }
-    // If we're done, exit
-    if (brickIndex == brickList_.size()/3) break;
+
+    // If we are at the end of the list, exit
+    if (brickIndex == brickList_.size()/3) {
+      break;
+    }
 
     // Find a sequence of consecutive bricks in list
     unsigned int sequence = 0;
     unsigned int brickIndexProbe = brickIndex;
-    while (brickList_[3*brickIndexProbe] != -1 &&
-           brickIndexProbe < brickList_.size()/3) {
+    while (brickIndexProbe < brickList_.size()/3 &&
+           brickList_[3*brickIndexProbe] != -1) {
       sequence++;
       brickIndexProbe++;
     }
-    
-    //INFO("Found a sequence of " << sequence << " bricks");
 
-    // Read the bricks into memory
-    unsigned int numVals = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
-    unsigned int brickSize = sizeof(real)*numVals;
-    float *buffer = new real[numVals*sequence];
-    std::ios::pos_type offset = static_cast<std::ios::pos_type>(brickIndex) * 
-                                static_cast<std::ios::pos_type>(brickSize);
-    in_.seekg(dataPos_ + offset);
-    in_.read(reinterpret_cast<char*>(&buffer[0]),
-                                     brickSize*sequence);
+    // Read the sequence into a buffer
+    float *seqBuffer = new float[sequence*numBrickVals_];
+    std::ios::pos_type offset = static_cast<std::ios::pos_type>(brickIndex) *
+                                static_cast<std::ios::pos_type>(brickSize_);
+    in_.seekg(dataPos_+offset);
+    in_.read(reinterpret_cast<char*>(seqBuffer), brickSize_*sequence);
 
-    float *brickBuffer = new real[numVals];
-     
-    // Map one brick at a time to PBO
+    // For each brick in the buffer, put it the correct buffer spot
     for (unsigned int i=0; i<sequence; ++i) {
-    
-      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[EVEN]);
-      glBufferData(GL_PIXEL_UNPACK_BUFFER, 
-                   brickSize, 
-                   0, 
-                   GL_STREAM_DRAW);
 
-      brickBuffer = reinterpret_cast<real*>(glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY));
-   
-      for (unsigned int j=0; j<numVals; ++j) {
-        brickBuffer[j] = buffer[numVals*i + j];
-      }
-
-      glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
-      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-      // Brick brickIndex+i is now in memory, upload it to texture
       unsigned int x=static_cast<unsigned int>(brickList_[3*(brickIndex+i)+0]);
       unsigned int y=static_cast<unsigned int>(brickList_[3*(brickIndex+i)+1]);
       unsigned int z=static_cast<unsigned int>(brickList_[3*(brickIndex+i)+2]);
-      //INFO("Brick " << brickIndex+i << " " << x << " " << y << " " << z);
-      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[EVEN]);
-      if (!textureAtlas_->UpdateSubRegion(x*paddedBrickDim_,
-                                          y*paddedBrickDim_,
-                                          z*paddedBrickDim_,
-                                          paddedBrickDim_,
-                                          paddedBrickDim_,
-                                          paddedBrickDim_,
-                                          0)) return false;
-      glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
+      // Put each brick in the correct buffer place.
+      // This needs to be done because the values are in brick order, and
+      // the volume needs to be filled with one big float array.
+      FillVolume(&seqBuffer[numBrickVals_*i], mappedBuffer, x, y, z);  
     }
 
-   
-    delete buffer;
-    // TODO delete brick buffer? 
+    delete[] seqBuffer;
 
+    // Update the brick index
     brickIndex += sequence;
 
   }
 
-  //}
-  // END TEST
-
-  /*
-
-  // Update all bricks in the brick list
-  // TODO caching and size control structure
-
-  // Read first brick into mapped buffer
-  unsigned int brickIndex = 0;
-  while (brickList_[3*brickIndex] == -1) {
-    brickIndex++;
-  }
-  if (!ReadBrick(brickIndex, EVEN)) return false;
-
-  bool even = true;
-
-  // Loop over all bricks
-  while (brickIndex < brickList_.size()/3) {
-    
-    BUFFER_INDEX bufIndex = (even) ? EVEN : ODD;
-    BUFFER_INDEX nextIndex = (even) ? ODD : EVEN;
-     
-    // Lookup the target atlas coordinates
-    if (brickList_[3*brickIndex+0] < 0 ||
-        brickList_[3*brickIndex+1] < 0 ||
-        brickList_[3*brickIndex+2] < 0) {
-      ERROR("Trying to read invalid brick position (-1)");
-      return false;
-    }
-    unsigned int x = static_cast<unsigned int>(brickList_[3*brickIndex+0]);
-    unsigned int y = static_cast<unsigned int>(brickList_[3*brickIndex+1]);
-    unsigned int z = static_cast<unsigned int>(brickList_[3*brickIndex+2]);
-
-    // Upload the brick to the right place
-    // The 0 argument enables upload from bound buffer
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[bufIndex]);
-    if (!textureAtlas_->UpdateSubRegion(x*xBrickDim_,
-                                        y*yBrickDim_,
-                                        z*zBrickDim_,
-                                        xBrickDim_,
-                                        yBrickDim_,
-                                        zBrickDim_,
-                                        0)) return false;
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-    // Read the next brick from file to the brick buffer
-    even = !even;
-    brickIndex++;
-    
-  }
-
-  */
-
-  return true;
-}
-
-bool BrickManager::ReadBrick(unsigned int _brickIndex, 
-                             BUFFER_INDEX _bufferIndex) {
-
-  INFO("Reading");
-
-  if (!hasReadHeader_) {
-    ERROR("ReadBrick() - Has not read header");
-    return false;
-  }
-
-  if (!atlasInitialized_) {
-    ERROR("ReadBrick() - Has not initialized atlas");
-    return false;
-  }
-
-  // Number of values to be read per brick
-  unsigned int numVals = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
-
-  // Total size in bytes for one brick
-  size_t brickSize = sizeof(real) * numVals;
-
-  // Offset in filestream
-  std::ios::pos_type offset = dataPos_ +
-    static_cast<std::ios::pos_type>(_brickIndex * brickSize);
-
-  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[_bufferIndex]);
-
-  glBufferData(GL_PIXEL_UNPACK_BUFFER, brickSize, 0, GL_STREAM_DRAW);
-  
-  // Map PBO
-  brickBuffer_[_bufferIndex] = reinterpret_cast<real*>(
-    glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY));  
-
-  // Read
-
-  real *buffer = new real[numVals];
-
-  in_.seekg(offset);
-  /*
-  boost::timer::cpu_timer t;
-  t.start();
-  */
-  in_.read(reinterpret_cast<char*>(brickBuffer_[_bufferIndex]), brickSize);
-  /*
-  t.stop();
-  double time = t.elapsed().wall / 1.0e9;
-  double mb = brickSize / 1048579.0;
-  INFO(mb << std::fixed << " MBs in " << time << " s, " << mb/time << "MB/s");
-  */
-
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+  // Now a whole timestep is in the PBO. Upload it to the texture.
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[EVEN]);
+  if (!textureAtlas_->UpdateSubRegion(0, 0, 0,
+                                      textureAtlas_->Dim(0),
+                                      textureAtlas_->Dim(1),
+                                      textureAtlas_->Dim(2),
+                                      0)) return false;
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
   return true;
 }
-
-
-
-/*
-void BrickManager::Print() {
-    std::cout << "\nBRICK LIST " << std::endl;
-    std::cout << "Constructed from " << inFilename_ << std::endl;
-
-    std::cout << "Structure: " << structure_ << std::endl;
-    std::cout << "Data dimensionality: " << dataDimensionality_ << std::endl;
-    std::cout << "Brick dimensions: [" << xBrickDim_ << " " <<
-                                          yBrickDim_ << " " << 
-                                          zBrickDim_ << "]" << std::endl;
-    std::cout << "Num bricks: [" << xNumBricks_ << " " <<
-                                    yNumBricks_ << " " <<
-                                    zNumBricks_ << "]" << std::endl;
-    std::cout << "Num timesteps: " << numTimesteps_ << std::endl;
-    std::cout << "Padding width: " << paddingWidth_ << std::endl;
-    std::cout << "Data size: " << dataSize_ << std::endl;
-
-    std::cout << "Bricks: " << std::endl;
-    unsigned int i = 0;
-    for (auto it=boxList_.begin(); it!=boxList_.end(); it+=5) {
-      std::cout << "Box number: " << i++ << std::endl;
-      std::cout << "Brick index: " << *it << std::endl;
-      AtlasCoords ac = brickList_[*it];
-      std::cout << "Atlas coords: [" << ac.x_ << " " << ac.y_ << " " << 
-                                        ac.z_ << " " << ac.size_ << "]" <<
-                                        std::endl;
-    }
-}
-    */

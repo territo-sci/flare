@@ -2,7 +2,6 @@
  * Author: Victor Sand (victor.sand@gmail.com)
  *
  */
-
 #include <GL/glew.h>
 #include <Texture2D.h>
 #include <ShaderProgram.h>
@@ -52,7 +51,7 @@ bool Texture2D::Init(float *_data) {
                0);                      // data
   glBindTexture(GL_TEXTURE_2D, 0);
   initialized_ = true;
-  return CheckGLError("Texture2D::Init()");
+  return CheckGLError("Texture2D::Init()") == GL_NO_ERROR;
 }
 
 bool Texture2D::Bind(ShaderProgram * _shaderProgram,

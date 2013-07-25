@@ -6,24 +6,30 @@ win_height 			512
 # Filenames
 # Don't change during runtime
 # (Transfer function values can be changed during runtime though)
-tsp_filename 			c:/alebo68/OpenSpace/enlil_256_64_32.tsp
-transferfunction_filename 	transferfunctions/fire.txt
+tsp_filename 			../../data/enlil_128_32_32.tsp
+transferfunction_filename 	../transferfunctions/fire.txt
 
 # Error tolerances 
 # Temporal error unimplemented
 spatial_error_tolerance 	0
-temporal_error_tolerance 	1
+temporal_error_tolerance 	0
 
 # Step size for TSP traversal
 # Decrease this if holes appear in the rendering
 # Can be changed during runtime
-tsp_traversal_stepsize 		0.01
+tsp_traversal_stepsize 		0.05
 
 # Ray caster constants
 # Can be changed during runtime
-raycaster_stepsize 		0.005
-raycaster_intensity 		0.15
+raycaster_stepsize 		0.04
+raycaster_intensity 		10
 
 # Animation speed
 # Can be changed during runtime
 animator_refresh_interval 	0.07
+
+# Various paths
+#raycaster_filename		../kernels/RaycasterTSP.cl
+#tsp_traversal_kernel_filename	../kernels/TSPTraversal.cl
+
+

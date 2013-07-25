@@ -2,7 +2,6 @@
  * Author: Victor Sand (victor.sand@gmail.com)
  *
  */
-   
 #include <GL/glew.h>
 #include <Texture.h>
 #include <Utils.h>

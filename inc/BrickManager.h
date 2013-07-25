@@ -59,9 +59,6 @@ private:
   BrickManager(Config *_config);
   BrickManager(const BrickManager&);
 
-  // Read a single brick into the brick buffer
-  bool ReadBrick(unsigned int _brickIndex, BUFFER_INDEX _bufferIndex);
-
   // Header data
   unsigned int structure_;
   unsigned int dataDimensionality_;
@@ -80,6 +77,12 @@ private:
   unsigned int paddedBrickDim_;
   unsigned int atlasDim_;
 
+  unsigned int numBrickVals_;
+  unsigned int numBricksTot_;
+  unsigned int brickSize_;
+  unsigned int volumeSize_;
+  unsigned int numValsTot_;
+
   // Texture where the actual atlas is kept
   Texture3D *textureAtlas_;
 
@@ -92,16 +95,19 @@ private:
   // Points to the first brick data (just after the header)
   // This is set when the ReadHeader() function is run
   std::ios::pos_type dataPos_;
-  
-  // Buffer for reading brick data
-  // Allocated in ReadHeader(), deleted in destructor
-  real *brickBuffer_[2];
 
   bool hasReadHeader_;
   bool atlasInitialized_;
 
-  // PBO
+  // PBOs
   unsigned int pboHandle_[2];
+
+  // Fill a brick in the volume using a pointer to flattened brick data
+  bool FillVolume(float *_in, 
+                  float *_out,
+                  unsigned int _x, 
+                  unsigned int _y, 
+                  unsigned int _z);
 
 };
 

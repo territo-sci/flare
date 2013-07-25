@@ -2,7 +2,6 @@
  * Author: Victor Sand (victor.sand@gmail.com)
  *
  */
-
 #include <GL/glew.h>
 #include <Texture1D.h>
 #include <ShaderProgram.h>
@@ -47,7 +46,7 @@ bool Texture1D::Init(float *_data) {
                _data);
   glBindTexture(GL_TEXTURE_1D, 0);
   initialized_ = true;
-  return CheckGLError("Texture1D::Init()");
+  return CheckGLError("Texture1D::Init()") == GL_NO_ERROR;
 }
 
 bool Texture1D::Bind(ShaderProgram * _shaderProgram,

@@ -154,8 +154,9 @@ bool TransferFunction::ConstructTexture() {
           //DEBUG("dist: " << dist);
           float weight = dist/(next.Intensity()-prev.Intensity());
           //DEBUG("weight: " << weight);
-          floatData_[4*i + channel] = ((float)prev.Channel(channel)*(1.f-weight)+ 
-                                  (float)next.Channel(channel)*weight)/255.0;
+          floatData_[4*i + channel] = 
+            ((float)prev.Channel(channel)*(1.f-weight)+ 
+            (float)next.Channel(channel)*weight)/255.f;
 
         }
       }

@@ -2,6 +2,7 @@ CMakeCache.txt
 cmake_install.cmake
 Makefile
 CMakeFiles/
+Win32/
 Debug/
 sgct/
 data/
@@ -22,8 +23,17 @@ FlareApp
 *.a
 
 *.log
-FlareApp.exe
-FlareApp.ilk
 Release/
+Debug/
 bin/
-glew32.dll
+
+
+*.vcxproj
+*.filters
+*.sdf
+*.sln
+*.exe
+*.pdb
+*.ilk
+*.dll
+

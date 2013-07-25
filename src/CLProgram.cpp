@@ -2,7 +2,6 @@
  * Author: Victor Sand (victor.sand@gmail.com)
  *
  */
-
 #include <GL/glew.h>
 #include <CLProgram.h>
 #include <CLManager.h>
@@ -231,6 +230,12 @@ bool CLProgram::AddBuffer(unsigned int _argNr,
                           unsigned int _sizeInBytes,
                           cl_mem_flags _allocMode,
                           cl_mem_flags _permissions) {
+
+  if (!_hostPtr) {
+    ERROR("AddBuffer(): Host pointer is NULL");
+    return false;
+  }
+
   if (memArgs_.find((cl_uint)_argNr) != memArgs_.end()) {
     memArgs_.erase((cl_uint)_argNr);
   }
@@ -356,7 +361,7 @@ char * CLProgram::ReadSource(std::string _filename, int &_numChars) const {
   FILE *in;
   char *content = NULL;
   in = fopen(_filename.c_str(), "r");
-  int count;
+  int count = 0;
   if (in != NULL) {
     fseek(in, 0, SEEK_END);
     count = ftell(in);

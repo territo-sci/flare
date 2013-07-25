@@ -64,10 +64,10 @@ bool TSP::Construct() {
 
   paddedBrickDim_ = brickDim_ + 2*paddingWidth_;
 
-  numOTLevels_ = log((int)numBricksPerAxis_)/log(2) + 1;
-  numOTNodes_ = (pow(8, numOTLevels_) - 1) / 7;
-  numBSTLevels_ = log((int)numTimesteps_)/log(2) + 1;
-  numBSTNodes_ = (int)numTimesteps_*2 - 1;
+  numOTLevels_ = (unsigned int)(log((int)numBricksPerAxis_)/log(2) + 1);
+  numOTNodes_ = (unsigned int)((pow(8, numOTLevels_) - 1) / 7);
+  numBSTLevels_ = (unsigned int)(log((int)numTimesteps_)/log(2) + 1);
+  numBSTNodes_ = (unsigned int)numTimesteps_*2 - 1;
   numTotalNodes_ = numOTNodes_ * numBSTNodes_;
 
   INFO("Num OT levels: " << numOTLevels_);
@@ -85,14 +85,14 @@ bool TSP::Construct() {
     unsigned int OTNode = OT*numOTNodes_;
 
     // Calculate BST level (first level is level 0)
-    unsigned int BSTLevel = log(OT+1)/log(2);
+    unsigned int BSTLevel = (unsigned int)(log(OT+1)/log(2));
 
     // Traverse OT
     unsigned int OTChild = 1;
     unsigned int OTLevel = 0;
     while (OTLevel < numOTLevels_) {
 
-      unsigned int OTNodesInLevel = pow(8, OTLevel);
+      unsigned int OTNodesInLevel = static_cast<unsigned int>(pow(8, OTLevel));
       for (unsigned int i=0; i<OTNodesInLevel; ++i) {      
 
         // Brick index
@@ -112,9 +112,11 @@ bool TSP::Construct() {
           // Calculate BST child index (-1 if node is BST leaf)
 
           // First BST node of current level
-          int firstNode = (2*pow(2, BSTLevel-1)-1)*numOTNodes_;
+          int firstNode = 
+            static_cast<unsigned int>((2*pow(2, BSTLevel-1)-1)*numOTNodes_);
           // First BST node of next level
-          int firstChild = (2*pow(2, BSTLevel)-1)*numOTNodes_;
+          int firstChild = 
+            static_cast<unsigned int>((2*pow(2, BSTLevel)-1)*numOTNodes_);
           // Difference between first nodes between levels
           int levelGap = firstChild-firstNode;
           // How many nodes away from the first node are we?

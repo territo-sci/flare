@@ -19,7 +19,7 @@ TODO: Iteratively break away parts from it into other classes.
 #include <CL/cl.h>
 #endif
 #include <KernelConstants.h>
-#include <boost/timer/timer.hpp>
+//#include <boost/timer/timer.hpp>
 #include <TSP.h>
 
 namespace osp {
@@ -173,7 +173,7 @@ private:
 
   
   // Timer and timer constants 
-  boost::timer::cpu_timer timer_;
+  //boost::timer::cpu_timer timer_;
 };
 
 }

@@ -9,6 +9,7 @@ for which the key is active, and RGBA values for that specific intensity.
 */
 
 #include <iostream>
+#include <Utils.h>
 
 namespace osp {
 
@@ -35,6 +36,9 @@ public:
          return b_;
         case 3:
          return a_;
+        default:
+          ERROR("Invalid channel, returning 0");
+          return 0;
       }
     }
 

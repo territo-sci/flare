@@ -2,11 +2,10 @@
  * Author: Victor Sand (victor.sand@gmail.com)
  * 
  */
-
 #include <GL/glew.h>
 #include <GL/glfw.h>
 #ifndef _WIN32
-#include <GL/glx.h>
+  #include <GL/glx.h>
 #endif
 #include <fstream>
 #include <Raycaster.h>
@@ -23,6 +22,7 @@
 #include <CLManager.h>
 #include <KernelConstants.h>
 #include <Config.h>
+#include <stdint.h>
 
 using namespace osp;
 
@@ -700,7 +700,7 @@ bool Raycaster::InitCL() {
 
   // TSP traversal part or raycaster
   if (!clManager_->CreateProgram("TSPTraversal",
-                                 "kernels/TSPTraversal.cl")) return false;
+                                 "../kernels/TSPTraversal.cl")) return false;
   if (!clManager_->BuildProgram("TSPTraversal")) return false;
   if (!clManager_->CreateKernel("TSPTraversal")) return false;
 
@@ -723,7 +723,7 @@ bool Raycaster::InitCL() {
 
   // TEST
   if (!clManager_->CreateProgram("RaycasterTSP",
-                                "kernels/RaycasterTSP.cl")) return false;
+                                "../kernels/RaycasterTSP.cl")) return false;
   if (!clManager_->BuildProgram("RaycasterTSP")) return false;
   if (!clManager_->CreateKernel("RaycasterTSP")) return false;
 

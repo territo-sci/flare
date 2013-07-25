@@ -6,9 +6,12 @@
 // TODO abstraction of shader binder, maybe a templated ShaderBinder class?
 // or string values service
 // possibly make a common UniformType class to handle matrices, ints, floats
-
 #include <GL/glew.h>
-#include <GL/glfw.h>
+#ifndef _WIN32
+  #include <GL/glfw.h>
+#else
+  #include <GL/glfw3.h>
+#endif
 #include <Utils.h>
 #include <ShaderProgram.h>
 #include <Texture2D.h>
@@ -228,7 +231,7 @@ bool ShaderProgram::DeleteShaders() {
     ERROR("Shader(s) not set, nothing to delete");
     return false;
   }
-  for (int i=0; i<shaderHandles_.size(); i++) {
+  for (unsigned int i=0; i<shaderHandles_.size(); i++) {
     glDetachShader(programHandle_, shaderHandles_[i]);
     glDeleteShader(shaderHandles_[i]);
   }

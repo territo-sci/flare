@@ -20,7 +20,7 @@ using namespace osp;
 int main(int argc, char **argv) {
 
   // Start with reading a config file
-  Config *config = Config::New("config/flareConfig.txt");
+  Config *config = Config::New("../config/flareConfig.txt");
   if (!config) exit(1);
 
   // Window dimensions
@@ -35,8 +35,8 @@ int main(int argc, char **argv) {
   // Create TSP structure from file
   TSP *tsp = TSP::New(config);
   if (!tsp->Construct()) exit(1);
-  if (!tsp->CalculateSpatialError()) exit(1);
-  if (!tsp->CalculateTemporalError()) exit(1);
+  //if (!tsp->CalculateSpatialError()) exit(1);
+  //if (!tsp->CalculateTemporalError()) exit(1);
 
   // Create brick manager and init (has to be done after init OpenGL!)
   BrickManager *brickManager= BrickManager::New(config);
@@ -46,16 +46,16 @@ int main(int argc, char **argv) {
   // Create shaders for color cube and output textured quad
   ShaderProgram *cubeShaderProgram = ShaderProgram::New();
   cubeShaderProgram->CreateShader(ShaderProgram::VERTEX,
-                                  "shaders/cubeVert.glsl");
+                                  "../shaders/cubeVert.glsl");
   cubeShaderProgram->CreateShader(ShaderProgram::FRAGMENT,
-                                  "shaders/cubeFrag.glsl");
+                                  "../shaders/cubeFrag.glsl");
   cubeShaderProgram->CreateProgram();
   
   ShaderProgram *quadShaderProgram = ShaderProgram::New();
   quadShaderProgram->CreateShader(ShaderProgram::VERTEX,
-                                  "shaders/quadVert.glsl");
+                                  "../shaders/quadVert.glsl");
   quadShaderProgram->CreateShader(ShaderProgram::FRAGMENT,
-                                  "shaders/quadFrag.glsl");
+                                  "../shaders/quadFrag.glsl");
   quadShaderProgram->CreateProgram();
 
   // Create two textures to hold the color cube
@@ -74,8 +74,8 @@ int main(int argc, char **argv) {
   // Create transfer functions
   TransferFunction *transferFunction = TransferFunction::New();
   transferFunction->SetInFilename(config->TFFilename());
-  transferFunction->ReadFile();
-  transferFunction->ConstructTexture();
+  if (!transferFunction->ReadFile()) exit(1);
+  if (!transferFunction->ConstructTexture()) exit(1);
 
   // Create animator
   Animator *animator = Animator::New(config);

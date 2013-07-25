@@ -7,7 +7,7 @@
 #include <sstream>
 #include <iomanip>
 #include <boost/lexical_cast.hpp>
-#include <boost/timer/timer.hpp>
+//#include <boost/timer/timer.hpp>
 
 using namespace osp;
 
@@ -87,7 +87,7 @@ bool WindowManager::StartLoop() {
     return false;
   }
 
-  float oldTime = glfwGetTime();
+  float oldTime = static_cast<float>(glfwGetTime());
   float currentTime = oldTime;
 
   std::vector<int> keysToCheck;
@@ -141,7 +141,7 @@ bool WindowManager::StartLoop() {
 
     // Update time
     oldTime = currentTime;
-    currentTime = glfwGetTime();
+    currentTime = static_cast<float>(glfwGetTime());
     elapsedTime = currentTime - oldTime;
     accTime += elapsedTime;
 
