@@ -12,7 +12,8 @@
 namespace osp {
 
 class Config;
-class Renderer;
+class Raycaster;
+class Animator;
 
 class SGCTWinManager {
 public:
@@ -20,8 +21,9 @@ public:
   static SGCTWinManager * Instance();
    ~SGCTWinManager();
   
-  void SetRenderer(Renderer *_renderer);
+  void SetRaycaster(Raycaster *_Raycaster);
   void SetConfig(Config *_config);
+  void SetAnimator(Animator *_animator);
 
   // Init engine, set up OpenGL context
   bool InitEngine(int _argc, char **_argv,
@@ -40,16 +42,39 @@ public:
     return engine_->getActiveViewMatrix();
   }
 
+  const int* GetActiveViewPort() const { 
+    return engine_->getActiveViewport();
+  }
+
 private:
   SGCTWinManager();
   SGCTWinManager(const SGCTWinManager&);
 
   Config *config_;
   sgct::Engine *engine_;
-  Renderer *renderer_;
+  Raycaster *raycaster_;
 
-  // For keyboard functions
-  std::vector<int> keysToCheck;
+  // Animator and animator state
+  Animator *animator_;
+  static sgct::SharedBool animationPaused_;
+  static sgct::SharedBool fpsMode_;
+  static sgct::SharedInt manualTimestep_;
+
+  // Navigation state
+  // Model params
+  static sgct::SharedFloat pitch_;
+  static sgct::SharedFloat yaw_;
+  static sgct::SharedFloat roll_;
+  // View
+  static sgct::SharedFloat translateX_;
+  static sgct::SharedFloat translateY_;
+  static sgct::SharedFloat translateZ_;
+  // Mouse state
+  static bool leftMouseButton_;
+  static int currentMouseX_;
+  static int currentMouseY_;
+  static int lastMouseX_;
+  static int lastMouseY_;
 
   // Helper methods
   void InitNavigation();
@@ -57,11 +82,17 @@ private:
 
   // Callback functions
   static void Draw();
+  static void PreSync();
+  static void PostDraw();
+  static void Encode();
+  static void Decode();
+  static void Keyboard(int _key, int _action);
+  static void Mouse(int _button, int _action);
 
   // Render timing variables
   static float oldTime_;
   static float currentTime_;
-  static float elapsedTime_;
+  static sgct::SharedFloat elapsedTime_;
 
   // Singleton instance
   static SGCTWinManager *instance_;

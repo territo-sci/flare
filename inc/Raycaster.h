@@ -92,6 +92,10 @@ public:
   void SetBrickManager(BrickManager *_brickManager);
   void SetTSP(TSP *_tsp);
 
+  // SGCT 
+  void SetModelParams(float _pitch, float _yaw, float _roll);
+  void SetViewParams(float _translateX, float _translateY, float _translateZ);
+
 private:
   Raycaster();
   Raycaster(Config *_config);

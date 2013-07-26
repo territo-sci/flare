@@ -10,7 +10,6 @@
 using namespace osp;
 
 Texture2D::Texture2D(std::vector<unsigned int> _dim) : Texture(_dim) {
-  
 }
 
 Texture2D * Texture2D::New(std::vector<unsigned int> _dim) {
@@ -18,6 +17,7 @@ Texture2D * Texture2D::New(std::vector<unsigned int> _dim) {
     ERROR("Texture2D need a dimension vector of size 2, defaulting to 1x1");
     _dim = std::vector<unsigned int>(2, 1);
   }
+  INFO("Creating Texture2D with dimensions: " << _dim[0] << " " << _dim[1]);
   return new Texture2D(_dim);
 }
 

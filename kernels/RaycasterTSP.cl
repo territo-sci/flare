@@ -462,14 +462,11 @@ __kernel void RaycasterTSP(__global __read_only image2d_t _cubeFront,
   // Read from color cube textures
   float4 cubeFrontColor = read_imagef(_cubeFront, sampler, intCoords);
   float4 cubeBackColor = read_imagef(_cubeBack, sampler, intCoords);
-  // Abort if both colors are black (missed the cube)
-  if (length(cubeFrontColor.xyz) == 0.0 && length(cubeBackColor.xyz) == 0.0) {
-    write_imagef(_output, intCoords, (float4)(0.0));
-    return;
-  }
   // Figure out ray direction and distance to traverse
   float3 direction = cubeBackColor.xyz - cubeFrontColor.xyz;
+  
   float maxDist = length(direction);
+  
   direction = normalize(direction);
 
   float4 color = TraverseOctree(cubeFrontColor.xyz, // ray origin
@@ -482,6 +479,7 @@ __kernel void RaycasterTSP(__global __read_only image2d_t _cubeFront,
                                 _brickList);        // brick list
 
   write_imagef(_output, intCoords, _constants->intensity_*color);
+  
   return;
 }
                                   

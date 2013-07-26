@@ -49,6 +49,14 @@ void Animator::Update(float _elapsedTime) {
 
 }
 
+void Animator::SetPaused(bool _paused) {
+  paused_ = _paused;
+}
+
+void Animator::SetFPSMode(bool _fpsMode) {
+  fpsMode_ = _fpsMode;
+}
+
 void Animator::ToggleFPSMode() {
   fpsMode_ = !fpsMode_;
   if (fpsMode_) {
@@ -64,6 +72,16 @@ void Animator::TogglePause() {
 
 void Animator::SetNumTimesteps(unsigned int _numTimesteps) {
   numTimesteps_ = _numTimesteps;
+}
+
+void Animator::ManualTimestep(int _manualTimestep) {
+  if (_manualTimestep == 0) {
+    return;
+  } else if (_manualTimestep < 0) {
+    DecTimestep();
+  } else {
+    IncTimestep();
+  }
 }
 
 void Animator::IncTimestep() {

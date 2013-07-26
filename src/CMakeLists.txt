@@ -16,7 +16,7 @@ if (WIN32)
 	# SGCT special case
 	ADD_DEFINITIONS(-D__WIN32__)
 	SET(SGCT_DEBUG_LIBRARY "C:/Program Files (x86)/SGCT/SGCT_1.5.2_x86/lib/msvc11/sgct32_d.lib" )
-	SET(SGCT_RELEASE_LIBRARY "C:/Program Files (x86)/SGCT/SGCT_1.5.2_x86/lib/msvc11/gct32.lib" )
+	SET(SGCT_RELEASE_LIBRARY "C:/Program Files (x86)/SGCT/SGCT_1.5.2_x86/lib/msvc11/sgct32.lib" )
 	SET(SGCT_INCLUDE_DIRECTORY "C:/Program Files (x86)/SGCT/SGCT_1.5.2_x86/include" )
 	SET(SGCT_LINK_LIBRARY 
 		optimized ${SGCT_RELEASE_LIBRARY}
@@ -69,7 +69,7 @@ add_executable(FlareApp
                BrickManager.cpp
 			   Config.cpp
                Utils.cpp
-               WindowManager.cpp
+               #WindowManager.cpp
                Renderer.cpp
                Raycaster.cpp
                Texture.cpp

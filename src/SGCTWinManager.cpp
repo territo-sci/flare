@@ -5,10 +5,10 @@
  */
 
 #include <SGCTWinManager.h>
-#include <Renderer.h>
+#include <Raycaster.h>
 #include <Config.h>
 #include <Utils.h>
-#include <functional>
+#include <Animator.h>
 
 using namespace osp;
 
@@ -16,7 +16,22 @@ using namespace osp;
 SGCTWinManager * SGCTWinManager::instance_= NULL;
 float SGCTWinManager::oldTime_ = 0.f;
 float SGCTWinManager::currentTime_ = 0.f;
-float SGCTWinManager::elapsedTime_ = 0.f;
+sgct::SharedFloat SGCTWinManager::elapsedTime_;
+sgct::SharedBool SGCTWinManager::animationPaused_;
+sgct::SharedBool SGCTWinManager::fpsMode_;
+sgct::SharedInt SGCTWinManager::manualTimestep_;
+bool SGCTWinManager::leftMouseButton_ = false;
+int SGCTWinManager::currentMouseX_ = 0;
+int SGCTWinManager::currentMouseY_ = 0;
+int SGCTWinManager::lastMouseX_ = 0;
+int SGCTWinManager::lastMouseY_ = 0;
+sgct::SharedFloat SGCTWinManager::pitch_;
+sgct::SharedFloat SGCTWinManager::yaw_;
+sgct::SharedFloat SGCTWinManager::roll_;
+sgct::SharedFloat SGCTWinManager::translateX_;
+sgct::SharedFloat SGCTWinManager::translateY_;
+sgct::SharedFloat SGCTWinManager::translateZ_;
+
 
 SGCTWinManager * SGCTWinManager::Instance() {
   if (!instance_) {
@@ -26,15 +41,19 @@ SGCTWinManager * SGCTWinManager::Instance() {
 }
 
 SGCTWinManager::SGCTWinManager() 
-  : engine_(NULL), config_(NULL), renderer_(NULL) {
+  : engine_(NULL), config_(NULL), raycaster_(NULL) {
 }
 
-void SGCTWinManager::SetRenderer(Renderer *_renderer) {
-  renderer_ = _renderer;
+void SGCTWinManager::SetRaycaster(Raycaster *_renderer) {
+  raycaster_ = _renderer;
 }
 
 void SGCTWinManager::SetConfig(Config *_config) {
   config_ = _config;
+}
+
+void SGCTWinManager::SetAnimator(Animator *_animator) {
+  animator_ = _animator;
 }
 
 SGCTWinManager::~SGCTWinManager() {
@@ -55,8 +74,14 @@ bool SGCTWinManager::InitEngine(int _argc, char **_argv,
   InitNavigation();
 
   engine_->setDrawFunction(Draw);
+  engine_->setPreSyncFunction(PreSync);
+  engine_->setPostDrawFunction(PostDraw);
+  engine_->setKeyboardCallbackFunction(Keyboard);
+  engine_->setMouseButtonCallbackFunction(Mouse);
+  sgct::SharedData::Instance()->setEncodeFunction(Encode);
+  sgct::SharedData::Instance()->setDecodeFunction(Decode);
 
-  if (engine_->init(_runMode)) {
+  if (!engine_->init(_runMode)) {
     ERROR("Failed to init engine");
     return false;
   }
@@ -70,7 +95,7 @@ bool SGCTWinManager::Render() {
     return false;
   } 
 
-  if (!renderer_) {
+  if (!raycaster_) {
     ERROR("Win Manager: No renderer");
     return false;
   }
@@ -79,64 +104,160 @@ bool SGCTWinManager::Render() {
   return true;
 }
 
-
-// Helper definitions
-// ------------------------------------------------------------
-
 void SGCTWinManager::InitNavigation() {
-  keysToCheck.push_back('R');
 
-  // Translate X
-  keysToCheck.push_back('Q');
-  keysToCheck.push_back('A');
+  animationPaused_.setVal(false);
+  fpsMode_.setVal(false);
+  manualTimestep_.setVal(0);
 
-  // Translate Y
-  keysToCheck.push_back('E');
-  keysToCheck.push_back('D');
+  pitch_.setVal(0.f);
+  yaw_.setVal(0.f);
+  roll_.setVal(0.f);
 
-  // Translate Z
-  keysToCheck.push_back('W'); 
-  keysToCheck.push_back('S');
+  translateX_.setVal(0.f);
+  translateY_.setVal(0.f);
+  translateZ_.setVal(0.f);
 
-
-  keysToCheck.push_back('F');
-  keysToCheck.push_back(32);
-  keysToCheck.push_back('Z');
-  keysToCheck.push_back('X');
-  keysToCheck.push_back('P');
-  keysToCheck.push_back('T');
-  keysToCheck.push_back('U');
 }
 
-void SGCTWinManager::UpdateNavigation() {
-  for (auto it = keysToCheck.begin(); it != keysToCheck.end(); it++) {
-    renderer_->SetKeyPressed(*it, (glfwGetKey(*it) == GLFW_PRESS));
+void SGCTWinManager::Keyboard(int _key, int _action) {
+
+  if (Instance()->engine_->isMaster()) {
+
+    switch(_key) {
+    case 32: // space bar
+      // Toggle animation paused
+      INFO("Pausing");
+      if (_action == GLFW_PRESS) {
+        animationPaused_.setVal(!animationPaused_.getVal());
+      }
+      break;
+    case 'Z':
+    case 'z':
+      // Decrease timestep
+      manualTimestep_.setVal(-1);
+      break;
+    case 'X':
+    case 'x':
+      // Increase timestep
+      manualTimestep_.setVal(1);
+      break;
+    case 'D':
+    case 'd':
+      translateX_.setVal(translateX_.getVal() + Instance()->config_->ZoomFactor());
+      break;
+    case 'A':
+    case 'a':
+      translateX_.setVal(translateX_.getVal() - Instance()->config_->ZoomFactor());
+      break;
+    case 'W':
+    case 'w':
+      translateY_.setVal(translateY_.getVal() + Instance()->config_->ZoomFactor());
+      break;
+    case 'S':
+    case 's':
+      translateY_.setVal(translateY_.getVal() - Instance()->config_->ZoomFactor());
+      break;
+    case 'Q':
+    case 'q':
+      translateZ_.setVal(translateZ_.getVal() + Instance()->config_->ZoomFactor());
+      break;
+    case 'E':
+    case 'e':
+      translateZ_.setVal(translateZ_.getVal() - Instance()->config_->ZoomFactor());
+      break;
+
+
+    }
+
+  }
+}
+
+void SGCTWinManager::Mouse(int _button, int _action) {
+  if (Instance()->engine_->isMaster()) { 
+
+    switch (_button) {
+    case GLFW_MOUSE_BUTTON_LEFT:
+      leftMouseButton_ = (_action == GLFW_PRESS) ? true : false;
+      sgct::Engine::getMousePos(&lastMouseX_, &lastMouseY_);
+    }
+
+  }
+}
+
+
+void SGCTWinManager::PreSync() {
+  if (Instance()->engine_->isMaster()) {
+
+    // Update time
+    oldTime_ = currentTime_;
+    currentTime_ = static_cast<float>(sgct::Engine::getTime());
+    elapsedTime_.setVal(currentTime_ - oldTime_);
+
+    // Update mouse
+    if (leftMouseButton_) {
+      sgct::Engine::getMousePos(&currentMouseX_, &currentMouseY_);
+      pitch_.setVal(pitch_.getVal() + Instance()->config_->MousePitchFactor()*(float)(currentMouseX_-lastMouseX_));
+      roll_.setVal(roll_.getVal() + Instance()->config_->MouseRollFactor()*(float)(currentMouseY_-lastMouseY_));
+    }
+
+  }
+}
+
+void SGCTWinManager::PostDraw() {
+  // Reset manual timestep
+  if (Instance()->engine_->isMaster()) {
+    manualTimestep_.setVal(0);
+  }
+}
+
+
+void SGCTWinManager::Draw() {
+
+  // Update animator with synchronized time
+  Instance()->animator_->SetPaused(animationPaused_.getVal());
+  Instance()->animator_->SetFPSMode(fpsMode_.getVal());
+  Instance()->animator_->Update(elapsedTime_.getVal());
+  Instance()->animator_->ManualTimestep(manualTimestep_.getVal());
+
+  // Set model and view params
+  Instance()->raycaster_->SetModelParams(pitch_.getVal(),
+                                         yaw_.getVal(),
+                                         roll_.getVal());
+  Instance()->raycaster_->SetViewParams(translateX_.getVal(),
+                                        translateY_.getVal(),
+                                        translateZ_.getVal());
+  // Render
+  if (!Instance()->raycaster_->Render(elapsedTime_.getVal())) {
+    exit(1);
   }
 
-  int xMouse, yMouse;
-  glfwGetMousePos(&xMouse, &yMouse);
-  renderer_->SetMousePosition((float)xMouse, (float)yMouse);
-
-  bool leftButton = glfwGetMouseButton(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-  bool rightButton = glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
-  renderer_->SetMousePressed(leftButton, rightButton);
 }
 
-// Callback definitions
-// --------------------------------------------------------------
+void SGCTWinManager::Encode() {
+  sgct::SharedData::Instance()->writeBool(&animationPaused_);
+  sgct::SharedData::Instance()->writeBool(&fpsMode_);
+  sgct::SharedData::Instance()->writeFloat(&elapsedTime_);
+  sgct::SharedData::Instance()->writeInt(&manualTimestep_);
+  sgct::SharedData::Instance()->writeFloat(&pitch_);
+  sgct::SharedData::Instance()->writeFloat(&yaw_);
+  sgct::SharedData::Instance()->writeFloat(&roll_);
+  sgct::SharedData::Instance()->writeFloat(&translateX_);
+  sgct::SharedData::Instance()->writeFloat(&translateY_);
+  sgct::SharedData::Instance()->writeFloat(&translateZ_);
+}
 
-void SGCTWinManager::Draw() {;
-
-  // Update time
-  oldTime_ = currentTime_;
-  currentTime_ = static_cast<float>(glfwGetTime());
-  elapsedTime_ = currentTime_ - oldTime_;
-
-  // Handle user input
-  Instance()->UpdateNavigation();
-
-  // Render
-  Instance()->renderer_->Render(elapsedTime_);
+void SGCTWinManager::Decode() {
+  sgct::SharedData::Instance()->readBool(&animationPaused_);
+  sgct::SharedData::Instance()->readBool(&fpsMode_);
+  sgct::SharedData::Instance()->readFloat(&elapsedTime_);
+  sgct::SharedData::Instance()->readInt(&manualTimestep_);
+  sgct::SharedData::Instance()->readFloat(&pitch_);
+  sgct::SharedData::Instance()->readFloat(&yaw_);
+  sgct::SharedData::Instance()->readFloat(&roll_);
+  sgct::SharedData::Instance()->readFloat(&translateX_);
+  sgct::SharedData::Instance()->readFloat(&translateY_);
+  sgct::SharedData::Instance()->readFloat(&translateZ_);
 }
 
 

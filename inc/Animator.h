@@ -22,6 +22,10 @@ public:
   // If FPS mode is on, don't wait. Update every timestep.
   void ToggleFPSMode();
 
+  void SetPaused(bool _paused);
+  void SetFPSMode(bool _fpsMode);
+  void ManualTimestep(int _manualTimestep);
+
   unsigned int CurrentTimestep() const { return currentTimestep_; }
   unsigned int NextTimestep() const { 
     return currentTimestep_ < numTimesteps_-1 ? currentTimestep_+1 : 0;

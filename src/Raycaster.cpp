@@ -64,12 +64,12 @@ Raycaster::Raycaster(Config *_config)
     cubeFrontTex_(NULL),
     cubeBackTex_(NULL),
     quadTex_(NULL),
-    pitch_(_config->StartPitch()),
-    yaw_(_config->StartYaw()),
-    roll_(_config->StartRoll()),
-    translateX_(_config->TranslateX()),
-    translateY_(_config->TranslateY()),
-    translateZ_(_config->TranslateZ()),
+    pitch_(0.f),
+    yaw_(0.f),
+    roll_(0.f),
+    translateX_(0.f),
+    translateY_(0.f),
+    translateZ_(0.f),
     model_(glm::mat4()),
     view_(glm::mat4()),
     proj_(glm::mat4()),
@@ -86,12 +86,261 @@ Raycaster::Raycaster(Config *_config)
 }
 
 Raycaster::~Raycaster() {
+  // TODO relase GL textures
 }
 
 Raycaster * Raycaster::New(Config *_config) {
   Raycaster *raycaster = new Raycaster(_config);
   raycaster->UpdateConfig();
   return raycaster;
+}
+
+bool Raycaster::Render(float _timestep) {
+
+  if (animator_ != NULL) {
+    //animator_->Update(_timestep);
+  } else {
+    WARNING("Animator not set");
+  }
+  
+  // Reset any errors
+  glGetError();
+
+  // TODO move init checks and only run them once
+  if (!matricesInitialized_) {
+    ERROR("Rendering failed, matrices not initialized");
+    return false;
+  }
+
+  if (!cubeInitialized_) {
+    ERROR("Rendering failed, cube not initialized");
+    return false;
+  }
+
+  if (!quadInitialized_) {
+    ERROR("Rendering failed, quad not initialized");
+    return false;
+  }
+
+  if (!framebuffersInitialized_) {
+    ERROR("Rendering failed, framebuffers not initialized");
+    return false;
+  }
+
+  if (!cubeFrontTex_ || !cubeBackTex_ || !quadTex_) {
+    ERROR("Rendering failed, one or more texures are not set");
+    return false;
+  }
+
+  if (!cubeShaderProgram_ || !quadShaderProgram_) {
+    ERROR("Rendering failed, one or more shaders are not set");
+    return false;
+  }
+
+  //if (!HandleKeyboard()) return false;
+  //if (!HandleMouse()) return false;
+  if (!UpdateMatrices()) return false;
+  if (!BindTransformationMatrices(cubeShaderProgram_)) return false;
+
+  // For some reason, setting 0 all across leaves the background white.
+  //glClearColor(0.f, 0.f, 0.f, 0.f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  // Render cube
+  glUseProgram(cubeShaderProgram_->Handle());
+  cubePositionAttrib_ = cubeShaderProgram_->GetAttribLocation("position");
+  if (cubePositionAttrib_ == -1) {
+    ERROR("Cube position attribute lookup failed");
+    return false;
+  }
+  glFrontFace(GL_CW);
+  glEnable(GL_CULL_FACE);
+
+  // Front
+  glBindFramebuffer(GL_FRAMEBUFFER, cubeFrontFBO_);
+  glCullFace(GL_BACK);
+  glBindVertexArray(cubeVAO_);
+  glBindBuffer(GL_ARRAY_BUFFER, cubePosbufferObject_);
+  glEnableVertexAttribArray(cubePositionAttrib_);
+  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glDrawArrays(GL_TRIANGLES, 0, 144);
+  glDisableVertexAttribArray(cubePositionAttrib_);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindVertexArray(0);
+
+  if (CheckGLError("Cube front rendering") != GL_NO_ERROR) {
+    return false;
+  }
+
+  // Back
+  glBindFramebuffer(GL_FRAMEBUFFER, cubeBackFBO_);
+  glCullFace(GL_FRONT);
+  glBindVertexArray(cubeVAO_);
+  glBindBuffer(GL_ARRAY_BUFFER, cubePosbufferObject_);
+  glEnableVertexAttribArray(cubePositionAttrib_);
+  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glDrawArrays(GL_TRIANGLES, 0, 144);
+  glDisableVertexAttribArray(cubePositionAttrib_);
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+  glBindVertexArray(0);
+
+  if (CheckGLError("Cube back rendering") != GL_NO_ERROR) {
+    return false;
+  }
+
+  glUseProgram(0);
+
+
+  unsigned int currentTimestep;
+  unsigned int nextTimestep;
+  if (animator_ != NULL) {
+    currentTimestep = animator_->CurrentTimestep();
+    nextTimestep = animator_->NextTimestep();
+  } else {
+    WARNING("Animator not set");
+    currentTimestep = 0;
+    nextTimestep = 1;
+  }
+
+
+  // TODO temp
+  traversalConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
+  traversalConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
+  traversalConstants_.numOTNodes_ = (int)tsp_->NumOTNodes();
+  traversalConstants_.timestep_ = currentTimestep;
+  
+  kernelConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
+  kernelConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
+  kernelConstants_.numOTNodes_ = (int)tsp_->NumOTNodes();
+  kernelConstants_.numBoxesPerAxis_ = (int)tsp_->NumBricksPerAxis();
+  kernelConstants_.timestep_ = currentTimestep;
+  kernelConstants_.rootLevel_ = (int)tsp_->NumOTLevels() - 1;
+  kernelConstants_.paddedBrickDim_ = (int)tsp_->PaddedBrickDim();
+
+  // Add updated traversal constants
+  if (!clManager_->AddBuffer("TSPTraversal", tspConstantsArg_,
+                             reinterpret_cast<void*>(&traversalConstants_),
+                             sizeof(TraversalConstants),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false;
+  // TODO test brick request list
+  std::vector<int> brickRequest(tsp_->NumTotalNodes(), 0);
+  if (!clManager_->AddBuffer("TSPTraversal", tspBrickListArg_,
+                             reinterpret_cast<void*>(&brickRequest[0]), 
+                             brickRequest.size()*sizeof(int),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_WRITE)) return false;
+
+  
+  if (!clManager_->PrepareProgram("TSPTraversal")) return false;
+  if (!clManager_->LaunchProgram("TSPTraversal", 
+                                 winWidth_,
+                                 winHeight_, 
+                                 config_->LocalWorkSizeX(),
+                                 config_->LocalWorkSizeY()))
+                                 return false;
+  if (!clManager_->FinishProgram("TSPTraversal")) return false;
+
+  if (!clManager_->ReadBuffer("TSPTraversal", tspBrickListArg_,
+                              reinterpret_cast<void*>(&brickRequest[0]),
+                              brickRequest.size()*sizeof(int),
+                              true)) return false;
+
+  //INFO(" ");
+  //for (unsigned int i=0; i< brickRequest.size(); ++i) {
+  //    if (brickRequest[i] > 0) {
+  //        INFO("Req brick " << i);
+  //    }
+  //}
+
+  if (!clManager_->ReleaseBuffer("TSPTraversal", tspBrickListArg_)) return false;
+  if (!clManager_->ReleaseBuffer("TSPTraversal", tspConstantsArg_)) return false;
+  
+  // Build a brick list from the request list
+  if (!brickManager_->BuildBrickList(brickRequest)) return false;
+  // Apply the brick list, update the texture atlas
+  if (!brickManager_->UpdateAtlas()) return false;
+
+  // When the texture atlas contains the correct bricks, run second pass
+ 
+  // Add kernel constants
+  if (!clManager_->AddBuffer("RaycasterTSP", constantsArg_,
+                             reinterpret_cast<void*>(&kernelConstants_),
+                             sizeof(KernelConstants),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false;
+
+  // Add brick list
+  if (!clManager_->
+    AddBuffer("RaycasterTSP", brickListArg_,
+              reinterpret_cast<void*>(&(brickManager_->BrickList()[0])),
+              brickManager_->BrickList().size()*sizeof(int),
+              CLManager::COPY_HOST_PTR,
+              CLManager::READ_ONLY)) return false;
+              
+
+  if (!clManager_->PrepareProgram("RaycasterTSP")) return false;
+  if (!clManager_->LaunchProgram("RaycasterTSP",
+                                 winWidth_,
+                                 winHeight_, 
+                                 config_->LocalWorkSizeX(),
+                                 config_->LocalWorkSizeY())) 
+                                 return false;
+  if (!clManager_->FinishProgram("RaycasterTSP")) return false;
+  
+  if (!clManager_->ReleaseBuffer("RaycasterTSP", constantsArg_)) return false;
+  if (!clManager_->ReleaseBuffer("RaycasterTSP", brickListArg_)) return false;
+
+  
+
+
+  // Render to framebuffer using quad
+  glBindFramebuffer(GL_FRAMEBUFFER, SGCTWinManager::Instance()->FBOHandle());
+
+  if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
+  
+  glDisable(GL_CULL_FACE);
+
+  glUseProgram(quadShaderProgram_->Handle());
+  quadPositionAttrib_ = quadShaderProgram_->GetAttribLocation("position");
+  if (quadPositionAttrib_ == -1) {
+    ERROR("Quad position attribute lookup failed");
+    return false;
+  }
+  glCullFace(GL_BACK);
+  glBindVertexArray(quadVAO_);
+  glBindBuffer(GL_ARRAY_BUFFER, quadPosbufferObject_);
+  glEnableVertexAttribArray(quadPositionAttrib_);
+  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glDrawArrays(GL_TRIANGLES, 0, 6);
+  glDisableVertexAttribArray(quadPositionAttrib_);
+  glBindVertexArray(0);
+
+  glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+  if (CheckGLError("Quad rendering") != GL_NO_ERROR) {
+    return false;
+  }
+
+  glUseProgram(0);
+  
+  /*
+  
+  // Wait for transfer to pinned mem to complete
+  clHandler_->FinishQueue(CLHandler::TRANSFER);
+
+  // Signal that the next frame is ready
+  clHandler_->SetActiveIndex(nextIndex);
+
+  */
+
+  // Window manager takes care of swapping buffers
+  return true;
 }
 
 // TODO Move out hardcoded values
@@ -370,254 +619,8 @@ void Raycaster::SetQuadShaderProgram(ShaderProgram *_quadShaderProgram) {
   quadShaderProgram_ = _quadShaderProgram;
 }
 
-bool Raycaster::Render(float _timestep) {
-
-  if (animator_ != NULL) {
-    animator_->Update(_timestep);
-  } else {
-    WARNING("Animator not set");
-  }
-  
-  // Reset any errors
-  glGetError();
-
-  // TODO move init checks and only run them once
-  if (!matricesInitialized_) {
-    ERROR("Rendering failed, matrices not initialized");
-    return false;
-  }
-
-  if (!cubeInitialized_) {
-    ERROR("Rendering failed, cube not initialized");
-    return false;
-  }
-
-  if (!quadInitialized_) {
-    ERROR("Rendering failed, quad not initialized");
-    return false;
-  }
-
-  if (!framebuffersInitialized_) {
-    ERROR("Rendering failed, framebuffers not initialized");
-    return false;
-  }
-
-  if (!cubeFrontTex_ || !cubeBackTex_ || !quadTex_) {
-    ERROR("Rendering failed, one or more texures are not set");
-    return false;
-  }
-
-  if (!cubeShaderProgram_ || !quadShaderProgram_) {
-    ERROR("Rendering failed, one or more shaders are not set");
-    return false;
-  }
-
-  if (!HandleKeyboard()) return false;
-  if (!HandleMouse()) return false;
-  if (!UpdateMatrices()) return false;
-  if (!BindTransformationMatrices(cubeShaderProgram_)) return false;
-
-  // For some reason, setting 0 all across leaves the background white.
-  glClearColor(0.f, 0.f, 0.f, 0.f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  // Render cube
-  glUseProgram(cubeShaderProgram_->Handle());
-  cubePositionAttrib_ = cubeShaderProgram_->GetAttribLocation("position");
-  if (cubePositionAttrib_ == -1) {
-    ERROR("Cube position attribute lookup failed");
-    return false;
-  }
-  glFrontFace(GL_CW);
-  glEnable(GL_CULL_FACE);
-
-  // Front
-  glBindFramebuffer(GL_FRAMEBUFFER, cubeFrontFBO_);
-  glCullFace(GL_BACK);
-  glBindVertexArray(cubeVAO_);
-  glBindBuffer(GL_ARRAY_BUFFER, cubePosbufferObject_);
-  glEnableVertexAttribArray(cubePositionAttrib_);
-  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glDrawArrays(GL_TRIANGLES, 0, 144);
-  glDisableVertexAttribArray(cubePositionAttrib_);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glBindVertexArray(0);
-
-  if (CheckGLError("Cube front rendering") != GL_NO_ERROR) {
-    return false;
-  }
-
-  // Back
-  glBindFramebuffer(GL_FRAMEBUFFER, cubeBackFBO_);
-  glCullFace(GL_FRONT);
-  glBindVertexArray(cubeVAO_);
-  glBindBuffer(GL_ARRAY_BUFFER, cubePosbufferObject_);
-  glEnableVertexAttribArray(cubePositionAttrib_);
-  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glDrawArrays(GL_TRIANGLES, 0, 144);
-  glDisableVertexAttribArray(cubePositionAttrib_);
-  glBindBuffer(GL_ARRAY_BUFFER, 0);
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-  glBindVertexArray(0);
-
-  if (CheckGLError("Cube back rendering") != GL_NO_ERROR) {
-    return false;
-  }
-
-  glUseProgram(0);
 
 
-  unsigned int currentTimestep;
-  unsigned int nextTimestep;
-  if (animator_ != NULL) {
-    currentTimestep = animator_->CurrentTimestep();
-    nextTimestep = animator_->NextTimestep();
-  } else {
-    WARNING("Animator not set");
-    currentTimestep = 0;
-    nextTimestep = 1;
-  }
-
-
-  // TODO temp
-  traversalConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
-  traversalConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
-  traversalConstants_.numOTNodes_ = (int)tsp_->NumOTNodes();
-  traversalConstants_.timestep_ = currentTimestep;
-  
-  kernelConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
-  kernelConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
-  kernelConstants_.numOTNodes_ = (int)tsp_->NumOTNodes();
-  kernelConstants_.numBoxesPerAxis_ = (int)tsp_->NumBricksPerAxis();
-  kernelConstants_.timestep_ = currentTimestep;
-  kernelConstants_.rootLevel_ = (int)tsp_->NumOTLevels() - 1;
-  kernelConstants_.paddedBrickDim_ = (int)tsp_->PaddedBrickDim();
-
-  // Add updated traversal constants
-  if (!clManager_->AddBuffer("TSPTraversal", tspConstantsArg_,
-                             reinterpret_cast<void*>(&traversalConstants_),
-                             sizeof(TraversalConstants),
-                             CLManager::COPY_HOST_PTR,
-                             CLManager::READ_ONLY)) return false;
-  // TODO test brick request list
-  std::vector<int> brickRequest(tsp_->NumTotalNodes(), 0);
-  if (!clManager_->AddBuffer("TSPTraversal", tspBrickListArg_,
-                             reinterpret_cast<void*>(&brickRequest[0]), 
-                             brickRequest.size()*sizeof(int),
-                             CLManager::COPY_HOST_PTR,
-                             CLManager::READ_WRITE)) return false;
-
-  
-  if (!clManager_->PrepareProgram("TSPTraversal")) return false;
-  if (!clManager_->LaunchProgram("TSPTraversal", 
-                                 config_->WinWidth(),
-                                 config_->WinHeight(), 
-                                 config_->LocalWorkSizeX(),
-                                 config_->LocalWorkSizeY()))
-                                 return false;
-  if (!clManager_->FinishProgram("TSPTraversal")) return false;
-
-  if (!clManager_->ReadBuffer("TSPTraversal", tspBrickListArg_,
-                              reinterpret_cast<void*>(&brickRequest[0]),
-                              brickRequest.size()*sizeof(int),
-                              true)) return false;
-
-  //INFO(" ");
-  //for (unsigned int i=0; i< brickRequest.size(); ++i) {
-  //    if (brickRequest[i] > 0) {
-  //        INFO("Req brick " << i);
-  //    }
-  //}
-
-  if (!clManager_->ReleaseBuffer("TSPTraversal", tspBrickListArg_)) return false;
-  if (!clManager_->ReleaseBuffer("TSPTraversal", tspConstantsArg_)) return false;
-  
-  // Build a brick list from the request list
-  if (!brickManager_->BuildBrickList(brickRequest)) return false;
-  // Apply the brick list, update the texture atlas
-  if (!brickManager_->UpdateAtlas()) return false;
-
-  // When the texture atlas contains the correct bricks, run second pass
- 
-  // Add kernel constants
-  if (!clManager_->AddBuffer("RaycasterTSP", constantsArg_,
-                             reinterpret_cast<void*>(&kernelConstants_),
-                             sizeof(KernelConstants),
-                             CLManager::COPY_HOST_PTR,
-                             CLManager::READ_ONLY)) return false;
-
-  // Add brick list
-  if (!clManager_->
-    AddBuffer("RaycasterTSP", brickListArg_,
-              reinterpret_cast<void*>(&(brickManager_->BrickList()[0])),
-              brickManager_->BrickList().size()*sizeof(int),
-              CLManager::COPY_HOST_PTR,
-              CLManager::READ_ONLY)) return false;
-              
-
-  if (!clManager_->PrepareProgram("RaycasterTSP")) return false;
-  if (!clManager_->LaunchProgram("RaycasterTSP",
-                                 config_->WinWidth(),
-                                 config_->WinHeight(), 
-                                 config_->LocalWorkSizeX(),
-                                 config_->LocalWorkSizeY())) 
-                                 return false;
-  if (!clManager_->FinishProgram("RaycasterTSP")) return false;
-  
-  if (!clManager_->ReleaseBuffer("RaycasterTSP", constantsArg_)) return false;
-  if (!clManager_->ReleaseBuffer("RaycasterTSP", brickListArg_)) return false;
-
-  
-
-
-  // Render to framebuffer using quad
-  glBindFramebuffer(GL_FRAMEBUFFER, SGCTWinManager::Instance()->FBOHandle());
-
-
-  if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
-  
-  glDisable(GL_CULL_FACE);
-
-  glUseProgram(quadShaderProgram_->Handle());
-  quadPositionAttrib_ = quadShaderProgram_->GetAttribLocation("position");
-  if (quadPositionAttrib_ == -1) {
-    ERROR("Quad position attribute lookup failed");
-    return false;
-  }
-  glCullFace(GL_BACK);
-  glBindVertexArray(quadVAO_);
-  glBindBuffer(GL_ARRAY_BUFFER, quadPosbufferObject_);
-  glEnableVertexAttribArray(quadPositionAttrib_);
-  glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glDrawArrays(GL_TRIANGLES, 0, 6);
-  glDisableVertexAttribArray(quadPositionAttrib_);
-  glBindVertexArray(0);
-
-  glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-  if (CheckGLError("Quad rendering") != GL_NO_ERROR) {
-    return false;
-  }
-
-  glUseProgram(0);
-  
-  /*
-  
-  // Wait for transfer to pinned mem to complete
-  clHandler_->FinishQueue(CLHandler::TRANSFER);
-
-  // Signal that the next frame is ready
-  clHandler_->SetActiveIndex(nextIndex);
-
-  */
-
-  // Window manager takes care of swapping buffers
-  return true;
-}
 
 bool Raycaster::ReloadShaders() {
   glGetError();
@@ -630,13 +633,18 @@ bool Raycaster::ReloadShaders() {
   return true;
 }
 
+
 bool Raycaster::HandleMouse() {
+  /*
   if (leftMouseDown_) {
     pitch_ += config_->MousePitchFactor()*(float)(currentMouseX_-lastMouseX_);
     roll_ += config_->MouseRollFactor()*(float)(currentMouseY_ - lastMouseY_);  
   }
   return true;
+  */
+  return true;
 }
+
 
 // Don't forget to add keys to look for in window manager
 // TODO proper keyboard handling class
@@ -655,18 +663,25 @@ bool Raycaster::HandleKeyboard() {
   }
 
   // Translation
+  /*
   if (KeyPressed('Q')) translateX_ += config_->ZoomFactor();
   if (KeyPressed('A')) translateX_ -= config_->ZoomFactor();
   if (KeyPressed('W')) translateY_ += config_->ZoomFactor();
   if (KeyPressed('S')) translateY_ -= config_->ZoomFactor();
   if (KeyPressed('E')) translateZ_ += config_->ZoomFactor();
   if (KeyPressed('D')) translateZ_ -= config_->ZoomFactor();
-
-
+  */
+  
+  // Space bar, pause animation
   if (KeyPressedNoRepeat(32)) animator_->TogglePause();
+
+  // Toggle FPS mode
   if (KeyPressedNoRepeat('F')) animator_->ToggleFPSMode();
+
+  // Increase/decrease timestep manually
   if (KeyPressed('Z')) animator_->IncTimestep();
   if (KeyPressed('X')) animator_->DecTimestep();
+
   return true;
 }
 
@@ -789,4 +804,18 @@ bool Raycaster::InitCL() {
 
 void Raycaster::AddTransferFunction(TransferFunction *_transferFunction) {
   transferFunctions_.push_back(_transferFunction);
+}
+
+void Raycaster::SetModelParams(float _pitch, float _yaw, float _roll) {
+  pitch_ = _pitch;
+  yaw_ = _yaw;
+  roll_ = _roll;
+}
+
+void Raycaster::SetViewParams(float _translateX,
+                              float _translateY,
+                              float _translateZ) {
+  translateX_ = _translateX;
+  translateY_ = _translateY;
+  translateZ_ = _translateZ;
 }

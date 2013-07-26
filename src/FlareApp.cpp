@@ -27,9 +27,19 @@ int main(int argc, char **argv) {
   Config *config = Config::New("../config/flareConfig.txt");
   if (!config) exit(1);
 
+  // Init the singleton window manager and set up OpenGL context
+  SGCTWinManager::Instance()->InitEngine(argc,  argv, 
+    sgct::Engine::OpenGL_4_2_Core_Profile);
+
+  // Get viewport coordinates from SGCT
+  //const int* currentViewPort = SGCTWinManager::Instance()->GetActiveViewPort();
+
+  GLint currentViewPort[4];
+  glGetIntegerv( GL_VIEWPORT, currentViewPort);
+
   // Window dimensions
-  unsigned int width = config->WinWidth();
-  unsigned int height = config->WinHeight();
+  unsigned int width = currentViewPort[2] - currentViewPort[0];
+  unsigned int height = currentViewPort[3] - currentViewPort[1];
 
   // Create TSP structure from file
   TSP *tsp = TSP::New(config);
@@ -37,10 +47,6 @@ int main(int argc, char **argv) {
   // Run error calculations
   //if (!tsp->CalculateSpatialError()) exit(1);
   //if (!tsp->CalculateTemporalError()) exit(1);
-
-  // Init the singleton window manager and set up OpenGL context
-  SGCTWinManager::Instance()->InitEngine(argc,  argv, 
-    sgct::Engine::OpenGL_4_2_Core_Profile);
 
   // Create brick manager and init (has to be done after init OpenGL!)
   BrickManager *brickManager= BrickManager::New(config);
@@ -110,8 +116,9 @@ int main(int argc, char **argv) {
   if (!raycaster->InitCL()) return false;
 
   // Tie stuff together
+  SGCTWinManager::Instance()->SetAnimator(animator);
   SGCTWinManager::Instance()->SetConfig(config);
-  SGCTWinManager::Instance()->SetRenderer(raycaster);
+  SGCTWinManager::Instance()->SetRaycaster(raycaster);
 
   // Go!
   SGCTWinManager::Instance()->Render();
