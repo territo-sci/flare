@@ -16,24 +16,10 @@
 #include <CLManager.h>  
 #include <Config.h>
 #include <Utils.h>
+#include <SGCTWinManager.h>
 #include <sgct.h>
 
-
 using namespace osp;
-
-// TEMP for SGCT testing
-// TODO don't use global scope
-// encapsulate in classes
-Raycaster *raycaster;
-sgct::Engine *gEngine;
-
-void drawFunc();
-void initNav();
-void updateNav(); 
-
-std::vector<int> keysToCheck;
-float oldTime;
-float currentTime;
 
 int main(int argc, char **argv) {
 
@@ -45,28 +31,16 @@ int main(int argc, char **argv) {
   unsigned int width = config->WinWidth();
   unsigned int height = config->WinHeight();
 
-  // Create a WindowManager, open window to init GLEW and GLFW.
-  // This has to be done before other OpenGL/CL stuff can be initialized.
-  //WindowManager *manager = WindowManager::New(width, height, "FlareApp");
-  // if (!manager->OpenWindow()) exit(1);
-
-  // SGCT
-
-  gEngine = new sgct::Engine(argc, argv);
-
-  gEngine->setDrawFunction(drawFunc);
-  
-  // TODO select core profile with config
-  if (!gEngine->init(sgct::Engine::OpenGL_4_2_Core_Profile)) {
-    delete gEngine;
-    ERROR("Failed to init SGCT engine");
-  }
-
   // Create TSP structure from file
   TSP *tsp = TSP::New(config);
   if (!tsp->Construct()) exit(1);
+  // Run error calculations
   //if (!tsp->CalculateSpatialError()) exit(1);
   //if (!tsp->CalculateTemporalError()) exit(1);
+
+  // Init the singleton window manager and set up OpenGL context
+  SGCTWinManager::Instance()->InitEngine(argc,  argv, 
+    sgct::Engine::OpenGL_4_2_Core_Profile);
 
   // Create brick manager and init (has to be done after init OpenGL!)
   BrickManager *brickManager= BrickManager::New(config);
@@ -114,8 +88,8 @@ int main(int argc, char **argv) {
   // Create CL manager
   CLManager *clManager = CLManager::New();
 
-  // Create a raycaster and set it up
-  raycaster = Raycaster::New(config, gEngine);
+  // Set up the raycaster
+  Raycaster *raycaster = Raycaster::New(config);
   raycaster->SetWinWidth(width);
   raycaster->SetWinHeight(height);
   raycaster->InitMatrices();
@@ -135,15 +109,14 @@ int main(int argc, char **argv) {
   raycaster->SetTSP(tsp);
   if (!raycaster->InitCL()) return false;
 
-  initNav();
-  gEngine->render();
+  // Tie stuff together
+  SGCTWinManager::Instance()->SetConfig(config);
+  SGCTWinManager::Instance()->SetRenderer(raycaster);
 
   // Go!
-  //manager->SetRenderer(raycaster);
-  //manager->StartLoop();
+  SGCTWinManager::Instance()->Render();
 
   // Clean up like a good citizen
-
   delete clManager;
   delete tsp;
   delete brickManager;
@@ -153,56 +126,9 @@ int main(int argc, char **argv) {
   delete cubeShaderProgram;
   delete quadShaderProgram;
   delete transferFunction;
-  //delete manager;
   delete animator;
   delete raycaster;
   delete config;
-  delete gEngine;
-
-  
 
   exit(0);
-}
-
-
-void drawFunc() {
-
-  glClearColor(0.f, 0.f, 0.f, 0.f);
-  glClear(GL_COLOR_BUFFER_BIT);
-
-  updateNav();
-
-  raycaster->Render(0.5);
-}
-
-void initNav() {
-
-  keysToCheck.push_back('R');
-  keysToCheck.push_back('W');
-  keysToCheck.push_back('S');
-  keysToCheck.push_back('F');
-  keysToCheck.push_back(32);
-  keysToCheck.push_back('Z');
-  keysToCheck.push_back('X');
-  keysToCheck.push_back('P');
-  keysToCheck.push_back('T');
-  keysToCheck.push_back('U');
-
-}
-
-void updateNav() {
-
-  for (auto it = keysToCheck.begin(); it != keysToCheck.end(); it++) {
-    raycaster->SetKeyPressed(*it, (glfwGetKey(*it) == GLFW_PRESS));
-  }
-
-  int xMouse, yMouse;
-  glfwGetMousePos(&xMouse, &yMouse);
-  raycaster->SetMousePosition((float)xMouse, (float)yMouse);
-
-  bool leftButton = glfwGetMouseButton(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
-  bool rightButton = glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT)==GLFW_PRESS;
-  raycaster->SetMousePressed(leftButton, rightButton);
-
-
 }

@@ -82,7 +82,8 @@ add_executable(FlareApp
                TSP.cpp
                CLManager.cpp
                CLProgram.cpp
-               ShaderProgram.cpp)
+               ShaderProgram.cpp
+			   SGCTWinManager.cpp)
 
 target_link_libraries(FlareApp
                       ${GLEW_LIBRARY}

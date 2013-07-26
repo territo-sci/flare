@@ -21,7 +21,7 @@ TODO: Iteratively break away parts from it into other classes.
 #include <KernelConstants.h>
 //#include <boost/timer/timer.hpp>
 #include <TSP.h>
-#include <sgct.h>
+#include <SGCTWinManager.h>
 
 namespace osp {
 
@@ -33,12 +33,11 @@ class Animator;
 class BrickManager;
 class CLManager;
 class Config;
-class sgct::Engine;
 
 class Raycaster : public Renderer {
 public:
   
-  static Raycaster * New(Config *_config, sgct::Engine *_engine);
+  static Raycaster * New(Config *_config);
   virtual ~Raycaster();
   virtual bool Render(float _timestep);
 
@@ -95,7 +94,7 @@ public:
 
 private:
   Raycaster();
-  Raycaster(Config *_config, sgct::Engine *_engine);
+  Raycaster(Config *_config);
     
   Config *config_;
 
@@ -119,12 +118,15 @@ private:
   Texture2D *cubeBackTex_;
   Texture2D *quadTex_;
   Texture3D *volumeTex_;
-  // View params
+  // Model params
   float pitch_;
   float yaw_;
   float roll_;
-  float startZoom_;
-  float zoom_;
+  // View
+  float translateX_;
+  float translateY_;
+  float translateZ_;
+
   // Tranformation matrices
   glm::mat4 model_;
   glm::mat4 view_;
@@ -160,9 +162,6 @@ private:
   
   // Entry point for all things OpenCL
   CLManager *clManager_;
-
-  // SGCT engine handle
-  sgct::Engine *engine_;
 
   // For the corresponding CL kernel
   static const unsigned int cubeFrontArg_ = 0;

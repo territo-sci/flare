@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<Cluster masterAddress="127.0.0.1">
+	<Node ip="127.0.0.1" port="20401">
+		<Window fullscreen="false">
+			<Stereo type="none" />
+			<Pos x="100" y="0" />
+			<Size x="512" y="512" />
+		</Window>
+		<Fisheye fov="180.0" quality="medium" tilt="0.0" />
+	</Node>
+	<User eyeSeparation="0.065">
+		<Pos x="0.0" y="0.0" z="0.0" />
+	</User>
+</Cluster>

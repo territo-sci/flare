@@ -7,6 +7,8 @@
 #define SGCT_WIN_MANAGER_H_
 
 #include <sgct.h>
+#include <glm/glm.hpp>
+
 namespace osp {
 
 class Config;
@@ -14,28 +16,55 @@ class Renderer;
 
 class SGCTWinManager {
 public:
-  static SGCTWinManager * New(Config *_config);
-  ~SGCTWinManager();
+
+  static SGCTWinManager * Instance();
+   ~SGCTWinManager();
   
-  bool InitEngine();
+  void SetRenderer(Renderer *_renderer);
+  void SetConfig(Config *_config);
+
+  // Init engine, set up OpenGL context
+  bool InitEngine(int _argc, char **_argv,
+                  sgct::Engine::RunMode _runMode);
   bool Render();
 
-  void SetRenderer(Renderer *_renderer);
+  unsigned int FBOHandle() const {
+    return engine_->getFBOPtr()->getBufferID();
+  }
+
+  glm::mat4 ProjMatrix() const { 
+     return engine_->getActiveProjectionMatrix();
+  }
+
+  glm::mat4 ViewMatrix() const {
+    return engine_->getActiveViewMatrix();
+  }
 
 private:
   SGCTWinManager();
-  SGCTWinManager(Config *_config);
   SGCTWinManager(const SGCTWinManager&);
 
-  // Keep private, no config update in runtime
-  bool UpdateConfig();
-
   Config *config_;
-  sgct::Engine *gEngine_;
+  sgct::Engine *engine_;
   Renderer *renderer_;
 
-  int winWidth_;
-  int winHeight_;
+  // For keyboard functions
+  std::vector<int> keysToCheck;
+
+  // Helper methods
+  void InitNavigation();
+  void UpdateNavigation();
+
+  // Callback functions
+  static void Draw();
+
+  // Render timing variables
+  static float oldTime_;
+  static float currentTime_;
+  static float elapsedTime_;
+
+  // Singleton instance
+  static SGCTWinManager *instance_;
 
 };
 

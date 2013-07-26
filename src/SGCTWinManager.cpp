@@ -8,56 +8,56 @@
 #include <Renderer.h>
 #include <Config.h>
 #include <Utils.h>
+#include <functional>
 
 using namespace osp;
 
-SGCTWinManager * SGCTWinManager::New(Config *_config) {
-  SGCTWinManager *mgr = new SGCTWinManager(_config);
-  mgr->UpdateConfig();
-  return mgr;
+// Static variable definitions
+SGCTWinManager * SGCTWinManager::instance_= NULL;
+float SGCTWinManager::oldTime_ = 0.f;
+float SGCTWinManager::currentTime_ = 0.f;
+float SGCTWinManager::elapsedTime_ = 0.f;
+
+SGCTWinManager * SGCTWinManager::Instance() {
+  if (!instance_) {
+    instance_ = new SGCTWinManager();
+  }
+  return instance_;
 }
 
-SGCTWinManager::SGCTWinManager(Config *_config)
-  : config_(_config), gEngine_(NULL), renderer_(NULL),
-    winWidth_(0), winHeight_(0) {}
-
-SGCTWinManager::~SGCTWinManager() {}
-
-bool SGCTWinManager::UpdateConfig() {
-  winWidth_ = config_->WinWidth();
-  winHeight_ = config_->WinHeight();
-  return true;
+SGCTWinManager::SGCTWinManager() 
+  : engine_(NULL), config_(NULL), renderer_(NULL) {
 }
 
-void InitOGL() {
+void SGCTWinManager::SetRenderer(Renderer *_renderer) {
+  renderer_ = _renderer;
+}
 
-  INFO("Initializing OpenGL");
-  INFO("Initializing GLEW");
-  GLenum err = glewInit();
-  if (err != GLEW_OK) {
-    ERROR("Failed to init GLEW: " << glewGetErrorString(err));
-  } else {
-    INFO("Using GLEW " << glewGetString(GLEW_VERSION));
+void SGCTWinManager::SetConfig(Config *_config) {
+  config_ = _config;
+}
+
+SGCTWinManager::~SGCTWinManager() {
+  if (engine_) {
+    delete engine_;
+  }
+}
+
+bool SGCTWinManager::InitEngine(int _argc, char **_argv, 
+                               sgct::Engine::RunMode _runMode) {
+  if (engine_) {
+    ERROR("Engine already initialized");
+    return false;
   }
 
-}
+  engine_ = new sgct::Engine(_argc, _argv);
 
-bool SGCTWinManager::InitEngine() {
+  InitNavigation();
 
-  // TODO temp hardcode
-  int argc = 3;
-  char** argv = new char*[argc];
-  argv[0] = "FlareApp\0";
-  argv[1] = "-config\0";
-  argv[2] = "config.xml\0";
+  engine_->setDrawFunction(Draw);
 
-  gEngine_ = new sgct::Engine(argc, argv);
-
-  gEngine_->setInitOGLFunction(InitOGL);
-
-  if (!gEngine_->init(sgct::Engine::OpenGL_4_2_Core_Profile)) {
-    ERROR("Failed to init SGCT engine");
-    delete gEngine_;
+  if (engine_->init(_runMode)) {
+    ERROR("Failed to init engine");
     return false;
   }
 
@@ -65,8 +65,78 @@ bool SGCTWinManager::InitEngine() {
 }
 
 bool SGCTWinManager::Render() {
-  gEngine_->render();
+  if (!config_) {
+    ERROR("Win manager: No config");
+    return false;
+  } 
+
+  if (!renderer_) {
+    ERROR("Win Manager: No renderer");
+    return false;
+  }
+
+  engine_->render();
   return true;
+}
+
+
+// Helper definitions
+// ------------------------------------------------------------
+
+void SGCTWinManager::InitNavigation() {
+  keysToCheck.push_back('R');
+
+  // Translate X
+  keysToCheck.push_back('Q');
+  keysToCheck.push_back('A');
+
+  // Translate Y
+  keysToCheck.push_back('E');
+  keysToCheck.push_back('D');
+
+  // Translate Z
+  keysToCheck.push_back('W'); 
+  keysToCheck.push_back('S');
+
+
+  keysToCheck.push_back('F');
+  keysToCheck.push_back(32);
+  keysToCheck.push_back('Z');
+  keysToCheck.push_back('X');
+  keysToCheck.push_back('P');
+  keysToCheck.push_back('T');
+  keysToCheck.push_back('U');
+}
+
+void SGCTWinManager::UpdateNavigation() {
+  for (auto it = keysToCheck.begin(); it != keysToCheck.end(); it++) {
+    renderer_->SetKeyPressed(*it, (glfwGetKey(*it) == GLFW_PRESS));
+  }
+
+  int xMouse, yMouse;
+  glfwGetMousePos(&xMouse, &yMouse);
+  renderer_->SetMousePosition((float)xMouse, (float)yMouse);
+
+  bool leftButton = glfwGetMouseButton(GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+  bool rightButton = glfwGetMouseButton(GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+  renderer_->SetMousePressed(leftButton, rightButton);
+}
+
+// Callback definitions
+// --------------------------------------------------------------
+
+void SGCTWinManager::Draw() {;
+
+  // Update time
+  oldTime_ = currentTime_;
+  currentTime_ = static_cast<float>(glfwGetTime());
+  elapsedTime_ = currentTime_ - oldTime_;
+
+  // Handle user input
+  Instance()->UpdateNavigation();
+
+  // Render
+  Instance()->renderer_->Render(elapsedTime_);
 }
 
 

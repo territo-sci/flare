@@ -23,6 +23,7 @@
 #include <KernelConstants.h>
 #include <Config.h>
 #include <stdint.h>
+#include <SGCTWinManager.h>
 
 using namespace osp;
 
@@ -48,10 +49,9 @@ uint32_t ZOrder(uint16_t xPos, uint16_t yPos, uint16_t zPos) {
 
 const double BYTES_PER_GB = 1073741824.0;
 
-Raycaster::Raycaster(Config *_config, sgct::Engine *_engine) 
+Raycaster::Raycaster(Config *_config) 
   : Renderer(),
     config_(_config),
-    engine_(_engine),
     cubeFrontFBO_(0),
     cubeBackFBO_(0),
     renderbufferObject_(0),
@@ -67,7 +67,9 @@ Raycaster::Raycaster(Config *_config, sgct::Engine *_engine)
     pitch_(_config->StartPitch()),
     yaw_(_config->StartYaw()),
     roll_(_config->StartRoll()),
-    zoom_(_config->TranslateZ()),
+    translateX_(_config->TranslateX()),
+    translateY_(_config->TranslateY()),
+    translateZ_(_config->TranslateZ()),
     model_(glm::mat4()),
     view_(glm::mat4()),
     proj_(glm::mat4()),
@@ -86,8 +88,8 @@ Raycaster::Raycaster(Config *_config, sgct::Engine *_engine)
 Raycaster::~Raycaster() {
 }
 
-Raycaster * Raycaster::New(Config *_config, sgct::Engine *_engine) {
-  Raycaster *raycaster = new Raycaster(_config, _engine);
+Raycaster * Raycaster::New(Config *_config) {
+  Raycaster *raycaster = new Raycaster(_config);
   raycaster->UpdateConfig();
   return raycaster;
 }
@@ -96,7 +98,7 @@ Raycaster * Raycaster::New(Config *_config, sgct::Engine *_engine) {
 bool Raycaster::InitMatrices() {
   //float aspect = (float)winWidth_/(float)winHeight_;
   //proj_ = glm::perspective(40.f, aspect, 0.1f, 100.f);
-  proj_ = engine_->getActiveProjectionMatrix();
+  proj_ = SGCTWinManager::Instance()->ProjMatrix();
   matricesInitialized_ = true;
   return true;
 }
@@ -325,10 +327,10 @@ bool Raycaster::UpdateMatrices() {
   view_ = glm::rotate(glm::mat4(1.f), 180.f, glm::vec3(1.f, 0.f, 0.f));
   view_ = glm::translate(view_, glm::vec3(-0.5f, -0.5f, zoom_));
   */
-  glm::mat4 sgctView = engine_->getActiveViewMatrix();
-  view_ = glm::translate(sgctView, glm::vec3(config_->TranslateX(), 
-                                             config_->TranslateY(),
-                                             zoom_));
+  glm::mat4 sgctView = SGCTWinManager::Instance()->ViewMatrix();
+  view_ = glm::translate(sgctView, glm::vec3(translateX_, 
+                                             translateY_,
+                                             translateZ_));
   return true;
 }
 
@@ -369,8 +371,6 @@ void Raycaster::SetQuadShaderProgram(ShaderProgram *_quadShaderProgram) {
 }
 
 bool Raycaster::Render(float _timestep) {
-
-  INFO("Raycaster rendering");
 
   if (animator_ != NULL) {
     animator_->Update(_timestep);
@@ -417,6 +417,7 @@ bool Raycaster::Render(float _timestep) {
   if (!UpdateMatrices()) return false;
   if (!BindTransformationMatrices(cubeShaderProgram_)) return false;
 
+  // For some reason, setting 0 all across leaves the background white.
   glClearColor(0.f, 0.f, 0.f, 0.f);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -433,11 +434,11 @@ bool Raycaster::Render(float _timestep) {
   // Front
   glBindFramebuffer(GL_FRAMEBUFFER, cubeFrontFBO_);
   glCullFace(GL_BACK);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glBindVertexArray(cubeVAO_);
   glBindBuffer(GL_ARRAY_BUFFER, cubePosbufferObject_);
   glEnableVertexAttribArray(cubePositionAttrib_);
   glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glDrawArrays(GL_TRIANGLES, 0, 144);
   glDisableVertexAttribArray(cubePositionAttrib_);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -451,11 +452,11 @@ bool Raycaster::Render(float _timestep) {
   // Back
   glBindFramebuffer(GL_FRAMEBUFFER, cubeBackFBO_);
   glCullFace(GL_FRONT);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glBindVertexArray(cubeVAO_);
   glBindBuffer(GL_ARRAY_BUFFER, cubePosbufferObject_);
   glEnableVertexAttribArray(cubePositionAttrib_);
   glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glDrawArrays(GL_TRIANGLES, 0, 144);
   glDisableVertexAttribArray(cubePositionAttrib_);
   glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -569,57 +570,16 @@ bool Raycaster::Render(float _timestep) {
   if (!clManager_->ReleaseBuffer("RaycasterTSP", constantsArg_)) return false;
   if (!clManager_->ReleaseBuffer("RaycasterTSP", brickListArg_)) return false;
 
-  /*
-
-  // Shut down after one loop - for profiling purposes
-  if (nextTimestep == 0) return false;
-
-  bool timeToUpdate = (currentTimestep != lastTimestep_);
-  if (timeToUpdate) {
-    lastTimestep_ = currentTimestep;
-  }
-
-  pingPongIndex_ = 1-pingPongIndex_;
-  // Switch between pinned memory indices
-  CLHandler::MemIndex index = 
-    static_cast<CLHandler::MemIndex>(pingPongIndex_);
-  CLHandler::MemIndex nextIndex = 
-    static_cast<CLHandler::MemIndex>(1-pingPongIndex_);
-
-  //unsigned int timestepOffset = voxelData_->TimestepOffset(currentTimestep);
-  //float *frameData = voxelData_->DataPtr(timestepOffset);
-  //unsigned int frameSize = voxelData_->NumVoxelsPerTimestep()*sizeof(float);
-
-  reader_->ReadTimestep(currentTimestep);
-  float *frameData = voxelDataFrame_->Data();
-  unsigned int frameSize = 
-    voxelDataHeader_->NumVoxelsPerTimestep()*sizeof(float);
-
-  // Prepare and run kernel. The launch returns immediately.
-  if (!clHandler_->PrepareRaycaster()) return false;
-  if (!clHandler_->LaunchRaycaster()) return false;
-
-  // Copy next frame data to host
-  if (!clHandler_->UpdateHostMemory(nextIndex, voxelData_, nextTimestep)) {
-    return false;
-  }
-
-  // Initiate transfer of next frame from pinned memory to GMEM
-  if (!clHandler_->WriteToDevice(nextIndex)) return false;
   
-  // Wait for kernel to finish if needed and release resources 
-  if (!clHandler_->FinishRaycaster()) return false;
-  */
+
 
   // Render to framebuffer using quad
+  glBindFramebuffer(GL_FRAMEBUFFER, SGCTWinManager::Instance()->FBOHandle());
 
-  glBindFramebuffer(GL_FRAMEBUFFER, engine_->getFBOPtr()->getBufferID());
 
   if (!quadTex_->Bind(quadShaderProgram_, "quadTex", 0)) return false;
-
+  
   glDisable(GL_CULL_FACE);
-
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glUseProgram(quadShaderProgram_->Handle());
   quadPositionAttrib_ = quadShaderProgram_->GetAttribLocation("position");
@@ -628,11 +588,11 @@ bool Raycaster::Render(float _timestep) {
     return false;
   }
   glCullFace(GL_BACK);
-  glClear(GL_COLOR_BUFFER_BIT);
   glBindVertexArray(quadVAO_);
   glBindBuffer(GL_ARRAY_BUFFER, quadPosbufferObject_);
   glEnableVertexAttribArray(quadPositionAttrib_);
   glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glDrawArrays(GL_TRIANGLES, 0, 6);
   glDisableVertexAttribArray(quadPositionAttrib_);
   glBindVertexArray(0);
@@ -694,8 +654,15 @@ bool Raycaster::HandleKeyboard() {
     INFO("Animator updated");
   }
 
-  if (KeyPressed('W')) zoom_ -= config_->ZoomFactor();
-  if (KeyPressed('S')) zoom_ += config_->ZoomFactor();
+  // Translation
+  if (KeyPressed('Q')) translateX_ += config_->ZoomFactor();
+  if (KeyPressed('A')) translateX_ -= config_->ZoomFactor();
+  if (KeyPressed('W')) translateY_ += config_->ZoomFactor();
+  if (KeyPressed('S')) translateY_ -= config_->ZoomFactor();
+  if (KeyPressed('E')) translateZ_ += config_->ZoomFactor();
+  if (KeyPressed('D')) translateZ_ -= config_->ZoomFactor();
+
+
   if (KeyPressedNoRepeat(32)) animator_->TogglePause();
   if (KeyPressedNoRepeat('F')) animator_->ToggleFPSMode();
   if (KeyPressed('Z')) animator_->IncTimestep();

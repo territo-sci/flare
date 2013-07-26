@@ -139,11 +139,7 @@ bool WindowManager::StartLoop() {
     renderer_->SetMousePressed(leftButton, rightButton);
 
 
-    // Update time
-    oldTime = currentTime;
-    currentTime = static_cast<float>(glfwGetTime());
-    elapsedTime = currentTime - oldTime;
-    accTime += elapsedTime;
+
 
     
     // Draw timestep
