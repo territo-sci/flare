@@ -36,4 +36,5 @@ bin/
 *.pdb
 *.ilk
 *.dll
+*.suo
 
