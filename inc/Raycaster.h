@@ -41,6 +41,8 @@ public:
   virtual ~Raycaster();
   virtual bool Render(float _timestep);
 
+  bool Reload();
+
   bool UpdateConfig();
 
   // Reload GLSL shaders

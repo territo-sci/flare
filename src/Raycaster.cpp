@@ -67,9 +67,9 @@ Raycaster::Raycaster(Config *_config)
     pitch_(0.f),
     yaw_(0.f),
     roll_(0.f),
-    translateX_(0.f),
-    translateY_(0.f),
-    translateZ_(0.f),
+    translateX_(_config->TranslateX()),
+    translateY_(_config->TranslateY()),
+    translateZ_(_config->TranslateZ()),
     model_(glm::mat4()),
     view_(glm::mat4()),
     proj_(glm::mat4()),
@@ -642,6 +642,20 @@ bool Raycaster::HandleMouse() {
   }
   return true;
   */
+  return true;
+}
+
+bool Raycaster::Reload() {
+  if (!config_->Read()) return false; 
+   INFO("Config file read");
+   if (!UpdateConfig()) return false;
+   INFO("Config updated");
+   if (!ReloadShaders()) return false;
+   INFO("Shaders reloaded");
+   if (!ReloadTransferFunctions()) return false;
+   INFO("Transfer functions reloaded");
+   if (!animator_->UpdateConfig()) return false;
+   INFO("Animator updated");
   return true;
 }
 

@@ -31,6 +31,7 @@ sgct::SharedFloat SGCTWinManager::roll_;
 sgct::SharedFloat SGCTWinManager::translateX_;
 sgct::SharedFloat SGCTWinManager::translateY_;
 sgct::SharedFloat SGCTWinManager::translateZ_;
+sgct::SharedBool SGCTWinManager::reloadFlag_;
 
 
 SGCTWinManager * SGCTWinManager::Instance() {
@@ -85,6 +86,8 @@ bool SGCTWinManager::InitEngine(int _argc, char **_argv,
     ERROR("Failed to init engine");
     return false;
   }
+
+  reloadFlag_.setVal(false);
 
   return true;
 }
@@ -144,27 +147,37 @@ void SGCTWinManager::Keyboard(int _key, int _action) {
       break;
     case 'D':
     case 'd':
-      translateX_.setVal(translateX_.getVal() + Instance()->config_->ZoomFactor());
+      translateX_.setVal(translateX_.getVal() + 
+        Instance()->config_->ZoomFactor());
       break;
     case 'A':
     case 'a':
-      translateX_.setVal(translateX_.getVal() - Instance()->config_->ZoomFactor());
+      translateX_.setVal(translateX_.getVal() - 
+        Instance()->config_->ZoomFactor());
       break;
     case 'W':
     case 'w':
-      translateY_.setVal(translateY_.getVal() + Instance()->config_->ZoomFactor());
+      translateY_.setVal(translateY_.getVal() + 
+        Instance()->config_->ZoomFactor());
       break;
     case 'S':
     case 's':
-      translateY_.setVal(translateY_.getVal() - Instance()->config_->ZoomFactor());
+      translateY_.setVal(translateY_.getVal() - 
+        Instance()->config_->ZoomFactor());
       break;
     case 'Q':
     case 'q':
-      translateZ_.setVal(translateZ_.getVal() + Instance()->config_->ZoomFactor());
+      translateZ_.setVal(translateZ_.getVal() + 
+        Instance()->config_->ZoomFactor());
       break;
     case 'E':
     case 'e':
-      translateZ_.setVal(translateZ_.getVal() - Instance()->config_->ZoomFactor());
+      translateZ_.setVal(translateZ_.getVal() - 
+        Instance()->config_->ZoomFactor());
+      break;
+    case 'R':
+    case 'r':
+      reloadFlag_.setVal(true);
       break;
 
 
@@ -205,14 +218,25 @@ void SGCTWinManager::PreSync() {
 }
 
 void SGCTWinManager::PostDraw() {
-  // Reset manual timestep
   if (Instance()->engine_->isMaster()) {
+
+    // Reset manual timestep
     manualTimestep_.setVal(0);
+
+    // Reset reload flag
+    reloadFlag_.setVal(false);
   }
+
+
 }
 
 
 void SGCTWinManager::Draw() {
+
+  // Reload config if flag is set
+  if (reloadFlag_.getVal()) {
+    Instance()->raycaster_->Reload();
+  }
 
   // Update animator with synchronized time
   Instance()->animator_->SetPaused(animationPaused_.getVal());
@@ -245,6 +269,7 @@ void SGCTWinManager::Encode() {
   sgct::SharedData::Instance()->writeFloat(&translateX_);
   sgct::SharedData::Instance()->writeFloat(&translateY_);
   sgct::SharedData::Instance()->writeFloat(&translateZ_);
+  sgct::SharedData::Instance()->writeBool(&reloadFlag_);
 }
 
 void SGCTWinManager::Decode() {
@@ -258,6 +283,7 @@ void SGCTWinManager::Decode() {
   sgct::SharedData::Instance()->readFloat(&translateX_);
   sgct::SharedData::Instance()->readFloat(&translateY_);
   sgct::SharedData::Instance()->readFloat(&translateZ_);
+  sgct::SharedData::Instance()->readBool(&reloadFlag_);
 }
 
 

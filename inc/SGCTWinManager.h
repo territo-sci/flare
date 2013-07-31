@@ -60,6 +60,9 @@ private:
   static sgct::SharedBool fpsMode_;
   static sgct::SharedInt manualTimestep_;
 
+  // Flag for reloading config
+  static sgct::SharedBool reloadFlag_;
+
   // Navigation state
   // Model params
   static sgct::SharedFloat pitch_;

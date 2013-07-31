@@ -4,8 +4,13 @@ win_width           512
 win_height          512
 
 # Local kernel work size
+# Can't be changed during runtime
 local_worksize_x    16
 local_worksize_y    16
+
+# Scaling division to make textures smaller
+# Saves OpenCL threads
+texture_division_factor 1
 
 # Filenames
 # Don't change during runtime
@@ -23,10 +28,10 @@ tsp_traversal_stepsize          0.05
 
 # Ray caster constants
 raycaster_stepsize              0.05
-raycaster_intensity             10
+raycaster_intensity             15
 
 # Animation speed
-animator_refresh_interval       0.15
+animator_refresh_interval       0.30
 
 # Various paths
 raycaster_kernel_filename       ../kernels/RaycasterTSP.cl
@@ -44,9 +49,9 @@ start_yaw                       0.0
 # View
 
 # Works well for standalone.xml
-#translate_x                     -0.5
-#translate_y                     -0.5
-#translate_z                     -2
+translate_x                     -2
+translate_y                     -2
+translate_z                     -2
 
 # For fisheye.xml
 #translate_x                    -0.05
@@ -54,9 +59,9 @@ start_yaw                       0.0
 #translate_z                    0.0
 
 # Zero
-translate_x 0
-translate_y 0
-translate_z 0
+#translate_x 0
+#translate_y 0
+#translate_z 0
 
 # Navigation
 # If mouse motion seems backwards, flip the sign of the roll and/or pitch factors

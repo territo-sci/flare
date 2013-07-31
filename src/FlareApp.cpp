@@ -31,15 +31,22 @@ int main(int argc, char **argv) {
   SGCTWinManager::Instance()->InitEngine(argc,  argv, 
     sgct::Engine::OpenGL_4_2_Core_Profile);
 
-  // Get viewport coordinates from SGCT
-  //const int* currentViewPort = SGCTWinManager::Instance()->GetActiveViewPort();
-
+  // Get the viewport coordinates from OpenGL
   GLint currentViewPort[4];
   glGetIntegerv( GL_VIEWPORT, currentViewPort);
-
+  
+  // Make sure texture width/height and global kernel worksizes are 
+  // multiples of the local worksize
+ 
   // Window dimensions
   unsigned int width = currentViewPort[2] - currentViewPort[0];
   unsigned int height = currentViewPort[3] - currentViewPort[1];
+  unsigned int xFactor = width/config->LocalWorkSizeX();
+  unsigned int yFactor = height/config->LocalWorkSizeY();
+  width = xFactor * config->LocalWorkSizeX();
+  height = yFactor * config->LocalWorkSizeY();
+  width /= config->TextureDivisionFactor();
+  height /= config->TextureDivisionFactor();
 
   // Create TSP structure from file
   TSP *tsp = TSP::New(config);

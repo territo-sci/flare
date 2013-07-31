@@ -158,9 +158,12 @@ bool Config::Read() {
       } else if (variable == "local_worksize_x") {
         ss >> localWorkSizeY_;
         INFO("Local worksize Y: " << localWorkSizeY_);
+      } else if (variable == "texture_division_factor") {
+        ss >> textureDivisionFactor_;
+        INFO("Texture division factor: " << textureDivisionFactor_);
       } else { 
         ERROR("Variable name " << variable << " unknown");
-      }
+      } 
     }
   }
 

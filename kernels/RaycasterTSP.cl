@@ -477,6 +477,8 @@ __kernel void RaycasterTSP(__global __read_only image2d_t _cubeFront,
                                 _transferFunction,  // transfer function
                                 _tsp,               // TSP tree struct
                                 _brickList);        // brick list
+                                
+  //color = 0.0001*color + cubeFrontColor;
 
   write_imagef(_output, intCoords, _constants->intensity_*color);
   

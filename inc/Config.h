@@ -23,8 +23,9 @@ public:
 
   int WinWidth() const { return winWidth_; }
   int WinHeight() const { return winHeight_; }
-  int LocalWorkSizeX() const { return localWorkSizeX_; }
-  int LocalWorkSizeY() const { return localWorkSizeY_; }
+  int TextureDivisionFactor() const { return textureDivisionFactor_; }
+  unsigned int LocalWorkSizeX() const { return localWorkSizeX_; }
+  unsigned int LocalWorkSizeY() const { return localWorkSizeY_; }
   std::string TSPFilename() const { return TSPFilename_; }
   std::string TFFilename() const { return TFFilename_; }
   std::string RaycasterKernelFilename()const{return raycasterKernelFilename_;}
@@ -60,8 +61,9 @@ private:
 
   int winWidth_;
   int winHeight_;
-  int localWorkSizeX_;
-  int localWorkSizeY_;
+  int textureDivisionFactor_;
+  unsigned int localWorkSizeX_;
+  unsigned int localWorkSizeY_;
   std::string TSPFilename_;
   std::string TFFilename_;
   std::string raycasterKernelFilename_;
