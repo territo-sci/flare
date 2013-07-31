@@ -126,7 +126,7 @@ bool BrickManager::InitAtlas() {
 
 }
 
-bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
+bool BrickManager::BuildBrickList(std::vector<int> &_brickRequest) {
 
   int numBricks = 0;
 
@@ -141,8 +141,6 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
   int zCoord = 0;
   for (unsigned int i=0; i<_brickRequest.size(); ++i) {
     if (_brickRequest[i] > 0) {
-
-      //INFO(i);
         
       if (xCoord >= static_cast<int>(xNumBricks_) || 
           yCoord >= static_cast<int>(yNumBricks_) || 
@@ -175,6 +173,10 @@ bool BrickManager::BuildBrickList(std::vector<int> _brickRequest) {
       brickList_[3*i + 2] = -1;
     
     }
+
+    // Reset brick list during iteration
+    _brickRequest[i] = 0;
+
   }
 
   //INFO("Num bricks used: " << numBricks);

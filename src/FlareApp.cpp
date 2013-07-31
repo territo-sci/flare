@@ -121,7 +121,8 @@ int main(int argc, char **argv) {
   // Tie CL manager to renderer
   raycaster->SetCLManager(clManager);
   raycaster->SetTSP(tsp);
-  if (!raycaster->InitCL()) return false;
+  if (!raycaster->InitCL()) exit(1);
+  if (!raycaster->InitPipeline()) exit(1);
 
   // Tie stuff together
   SGCTWinManager::Instance()->SetAnimator(animator);

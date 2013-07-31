@@ -136,8 +136,6 @@ bool Raycaster::Render(float _timestep) {
     return false;
   }
 
-  //if (!HandleKeyboard()) return false;
-  //if (!HandleMouse()) return false;
   if (!UpdateMatrices()) return false;
   if (!BindTransformationMatrices(cubeShaderProgram_)) return false;
 
@@ -206,40 +204,23 @@ bool Raycaster::Render(float _timestep) {
   }
 
   // Set correct timesteps
-  if (!clManager_->SetInt("TSPTraversal", tspTimestepArg_, currentTimestep)) 
-    return false;
   if (!clManager_->SetInt("RaycasterTSP", timestepArg_, currentTimestep))
     return false;
 
-
-  // TODO test brick request list
-  std::vector<int> brickRequest(tsp_->NumTotalNodes(), 0);
-  if (!clManager_->AddBuffer("TSPTraversal", tspBrickListArg_,
-                             reinterpret_cast<void*>(&brickRequest[0]), 
-                             brickRequest.size()*sizeof(int),
-                             CLManager::COPY_HOST_PTR,
-                             CLManager::READ_WRITE)) return false;
-
-  
-  if (!clManager_->PrepareProgram("TSPTraversal")) return false;
-  if (!clManager_->LaunchProgram("TSPTraversal", 
-                                 winWidth_,
-                                 winHeight_, 
-                                 config_->LocalWorkSizeX(),
-                                 config_->LocalWorkSizeY()))
-                                 return false;
+  if (!LaunchTSPTraversal(currentTimestep)) return false;
   if (!clManager_->FinishProgram("TSPTraversal")) return false;
 
   if (!clManager_->ReadBuffer("TSPTraversal", tspBrickListArg_,
-                              reinterpret_cast<void*>(&brickRequest[0]),
-                              brickRequest.size()*sizeof(int),
+                              reinterpret_cast<void*>(&brickRequest_[0]),
+                              brickRequest_.size()*sizeof(int),
                               true)) return false;
 
-
   if (!clManager_->ReleaseBuffer("TSPTraversal",tspBrickListArg_))return false;
-  
+
   // Build a brick list from the request list
-  if (!brickManager_->BuildBrickList(brickRequest)) return false;
+  if (!brickManager_->BuildBrickList(brickRequest_)) return false;
+  
+
   // Apply the brick list, update the texture atlas
   if (!brickManager_->DiskToPBO(BrickManager::EVEN)) return false;
   if (!brickManager_->PBOToAtlas(BrickManager::EVEN)) return false;
@@ -272,8 +253,6 @@ bool Raycaster::Render(float _timestep) {
   if (!clManager_->FinishProgram("RaycasterTSP")) return false;
   
   if (!clManager_->ReleaseBuffer("RaycasterTSP", brickListArg_)) return false;
-
-  
 
 
   // Render to framebuffer using quad
@@ -320,6 +299,75 @@ bool Raycaster::Render(float _timestep) {
   // Window manager takes care of swapping buffers
   return true;
 }
+
+bool Raycaster::LaunchTSPTraversal(unsigned int _timestep) {
+
+  if (!clManager_->SetInt("TSPTraversal", tspTimestepArg_, _timestep)) {
+    ERROR("RunTSPTraversal() - Failed to set timestep");
+    return false;
+  }
+
+  if (!clManager_->AddBuffer("TSPTraversal", tspBrickListArg_,
+                             reinterpret_cast<void*>(&brickRequest_[0]),
+                             brickRequest_.size()*sizeof(int),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_WRITE)) return false;
+
+  if (!clManager_->PrepareProgram("TSPTraversal")) return false;
+  if (!clManager_->LaunchProgram("TSPTraversal",
+                                 winWidth_,
+                                 winHeight_,
+                                 config_->LocalWorkSizeX(),
+                                 config_->LocalWorkSizeY())) return false;
+
+  return true;
+}
+
+
+
+bool Raycaster::InitPipeline() {
+
+  INFO("Initializing pipeline");
+
+  if (!tsp_) {
+    ERROR("InitPipeline(): No TSP set");
+    return false;
+  }
+
+  if (!brickManager_) {
+    ERROR("InitPipeline(): No BrickManager set");
+    return false;
+  }
+
+  // Allocate space for the brick request list
+  // Use 0 as default value
+  brickRequest_.resize(tsp_->NumTotalNodes(), 0);
+
+  // Run TSP traversal for timestep 0
+  if (!LaunchTSPTraversal(0)) {
+    ERROR("InitPipeline() - failed to launch TSP traversal");
+    return false;
+  }
+
+  // Finish TSP traversal and read results into brick request
+  if (!clManager_->FinishProgram("TSPTraversal")) return false;
+
+  if (!clManager_->ReadBuffer("TSPTraversal", tspBrickListArg_,
+                              reinterpret_cast<void*>(&brickRequest_[0]),
+                              brickRequest_.size()*sizeof(int),
+                              true)) return false;
+
+  // Free device memory
+  if (!clManager_->ReleaseBuffer("TSPTraversal",tspBrickListArg_))return false;
+
+  // Upload data for timestep 0 to atlas
+  if (!brickManager_->BuildBrickList(brickRequest_)) return false;
+  if (!brickManager_->DiskToPBO(BrickManager::EVEN)) return false;
+  if (!brickManager_->PBOToAtlas(BrickManager::EVEN)) return false;
+
+  return true;
+}
+
 
 // TODO Move out hardcoded values
 bool Raycaster::InitMatrices() {

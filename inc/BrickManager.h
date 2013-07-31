@@ -34,7 +34,9 @@ public:
 
   bool InitAtlas();
 
-  bool BuildBrickList(std::vector<int> _brickRequest);
+  // Build brick list from request list
+  // Resets values in _brickRequest to 0
+  bool BuildBrickList(std::vector<int> &_brickRequest);
 
   // Upload bricks from memory buffer to PBO using the brick list
   bool DiskToPBO(BUFFER_INDEX _pboIndex);

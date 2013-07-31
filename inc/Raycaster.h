@@ -44,6 +44,9 @@ public:
   // Called by the SGCT window manager
   bool Reload();
 
+  // Init pipeline for double buffered setup
+  bool InitPipeline();
+
   // Reload GLSL shaders
   bool ReloadShaders();
   // Reload transfer function file
@@ -161,6 +164,8 @@ private:
  
   // Brick manager with access to brick data
   BrickManager *brickManager_;
+
+  bool LaunchTSPTraversal(unsigned int _timestep);
 
   // Brick request list
   std::vector<int> brickRequest_;
