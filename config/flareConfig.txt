@@ -15,8 +15,8 @@ texture_division_factor 1
 # Filenames
 # Don't change during runtime
 # (Transfer function values can be changed during runtime though)
-tsp_filename                    ../../data/enlil_32_16_32.tsp
-transferfunction_filename       ../transferfunctions/fire.txt
+tsp_filename                    ../enlil_128_32_32.tsp
+transferfunction_filename       transferfunctions/fire.txt
 
 # Error tolerances 
 spatial_error_tolerance         0
@@ -27,19 +27,19 @@ temporal_error_tolerance        0
 tsp_traversal_stepsize          0.05
 
 # Ray caster constants
-raycaster_stepsize              0.05
-raycaster_intensity             15
+raycaster_stepsize              0.02
+raycaster_intensity             5
 
 # Animation speed
-animator_refresh_interval       0.30
+animator_refresh_interval       0.10
 
 # Various paths
-raycaster_kernel_filename       ../kernels/RaycasterTSP.cl
-tsp_traversal_kernel_filename   ../kernels/TSPTraversal.cl
-cube_shader_vert_filename       ../shaders/cubeVert.glsl	
-cube_shader_frag_filename       ../shaders/cubeFrag.glsl
-quad_shader_vert_filename       ../shaders/quadVert.glsl
-quad_shader_frag_filename       ../shaders/quadFrag.glsl
+raycaster_kernel_filename       kernels/RaycasterTSP.cl
+tsp_traversal_kernel_filename   kernels/TSPTraversal.cl
+cube_shader_vert_filename       shaders/cubeVert.glsl	
+cube_shader_frag_filename       shaders/cubeFrag.glsl
+quad_shader_vert_filename       shaders/quadVert.glsl
+quad_shader_frag_filename       shaders/quadFrag.glsl
 
 # Model
 start_pitch                     -30.0
@@ -49,23 +49,13 @@ start_yaw                       0.0
 # View
 
 # Works well for standalone.xml
-translate_x                     -2
-translate_y                     -2
-translate_z                     -2
-
-# For fisheye.xml
-#translate_x                    -0.05
-#translate_y                    0.1
-#translate_z                    0.0
-
-# Zero
-#translate_x 0
-#translate_y 0
-#translate_z 0
+translate_x                     0
+translate_y                     0
+translate_z                     0
 
 # Navigation
 # If mouse motion seems backwards, flip the sign of the roll and/or pitch factors
-mouse_pitch_factor              -0.1
+mouse_pitch_factor              0.1
 mouse_roll_factor               0.1
 zoom_factor                     0.1
 

@@ -24,7 +24,7 @@ using namespace osp;
 int main(int argc, char **argv) {
 
   // Start with reading a config file
-  Config *config = Config::New("../config/flareConfig.txt");
+  Config *config = Config::New("config/flareConfig.txt");
   if (!config) exit(1);
 
   // Init the singleton window manager and set up OpenGL context

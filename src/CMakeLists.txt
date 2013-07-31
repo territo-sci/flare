@@ -1,12 +1,22 @@
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_modules")
 
 if (NOT WIN32)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -lX11")
 	find_package(OpenGL REQUIRED)
-	find_package(GLFW REQUIRED)
+	#find_package(GLFW REQUIRED)
 	find_package(OpenCL REQUIRED)
 	find_package(GLEW REQUIRED)
-	find_package(Boost COMPONENTS timer system REQUIRED)
+	find_package(Boost COMPONENTS system REQUIRED)
+	find_package(X11 REQUIRED)
+		
+	# SGCT
+  	find_library(SGCT_RELEASE_LIBRARY NAMES sgct)
+	find_library(SGCT_DEBUG_LIBRARY NAMES sgct_d)
+ 	set(SGCT_LINK_LIBRARY optimized ${SGCT_RELEASE_LIBRARY} debug ${SGCT_DEBUG_LIBRARY})
+	set(SGCT_INCLUDE_DIRECTORY "/usr/include")
+
+
+
 endif ()
 
 #set(Boost_INCLUDE_DIR "C:/alebo68/boost")
@@ -50,24 +60,24 @@ if (WIN32)
 endif ()
 
 
-set(GLM_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../external/glm")
+set(GLM_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/external/glm/glm-0.9.4.4")
 
 include_directories(${CMAKE_SOURCE_DIR}/inc
                     ${OPENGL_INCLUDE_DIR}
                     ${OPENCL_INCLUDE_DIRS}
-                    ${GLFW_INCLUDE_DIRS}
+                    #${GLFW_INCLUDE_DIRS}
                     ${GLEW_INCLUDE_PATH}
                     ${GLM_INCLUDE_DIR}
                     ${Boost_INCLUDE_DIR}
-					${SGCT_INCLUDE_DIRECTORY}
+		    ${X11_INCLUDE_DIR}
+		    ${SGCT_INCLUDE_DIRECTORY}
 					)
-
 link_directories(${Boost_LIBRARY_DIR})
 
 add_executable(FlareApp
                FlareApp.cpp
                BrickManager.cpp
-			   Config.cpp
+	       Config.cpp
                Utils.cpp
                #WindowManager.cpp
                Renderer.cpp
@@ -83,12 +93,13 @@ add_executable(FlareApp
                CLManager.cpp
                CLProgram.cpp
                ShaderProgram.cpp
-			   SGCTWinManager.cpp)
+	       SGCTWinManager.cpp)
 
 target_link_libraries(FlareApp
                       ${GLEW_LIBRARY}
-                      ${GLFW_LIBRARY}
+                      #${GLFW_LIBRARY}
                       ${OPENGL_LIBRARY}
                       ${OPENCL_LIBRARIES}
                       ${Boost_LIBRARIES}
-					  ${SGCT_LINK_LIBRARY})
+		      ${X11_LIBRARIES} -lGL -lGLU -lX11 -lXrandr -lpthread -lrt
+		      ${SGCT_LINK_LIBRARY})

@@ -2,8 +2,8 @@
  * Author: Victor Sand (victor.sand@gmail.com)
  * 
  */
-#include <GL/glew.h>
-#include <GL/glfw.h>
+
+#include <sgct.h>
 #ifndef _WIN32
   #include <GL/glx.h>
 #endif
