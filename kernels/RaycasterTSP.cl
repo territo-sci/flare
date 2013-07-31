@@ -5,7 +5,6 @@ struct KernelConstants {
   int numValuesPerNode_;
   int numOTNodes_;
   int numBoxesPerAxis_;
-  int timestep_;
   float temporalTolerance_;
   float spatialTolerance_;
   int rootLevel_;
@@ -232,7 +231,7 @@ void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
 
 bool TraverseBST(int _otNodeIndex, int *_brickIndex,
                  __constant __read_only struct KernelConstants *_constants,
-                 __global __read_only int *_tsp) {
+                 __global __read_only int *_tsp, const int _timestep) {
   // Start att the root of the current BST
   int bstNodeIndex = _otNodeIndex;
   bool bstRoot = true;
@@ -240,7 +239,8 @@ bool TraverseBST(int _otNodeIndex, int *_brickIndex,
   int timespanEnd = _constants->numTimesteps_;
 
   while (true) {
-    *_brickIndex = BrickIndex(bstNodeIndex, _constants->numValuesPerNode_,
+    *_brickIndex = BrickIndex(bstNodeIndex, 
+                              _constants->numValuesPerNode_,
                               _tsp);
 
     // Check temporal error
@@ -264,7 +264,7 @@ bool TraverseBST(int _otNodeIndex, int *_brickIndex,
         // Keep traversing
         bstNodeIndex = ChildNodeIndex(bstNodeIndex, &timespanStart,
                                       &timespanEnd, 
-                                      _constants->timestep_,
+                                      _timestep,
                                       _constants->numValuesPerNode_,
                                       _constants->numOTNodes_,
                                       bstRoot, _tsp);
@@ -279,7 +279,7 @@ bool TraverseBST(int _otNodeIndex, int *_brickIndex,
       // Keep traversing
       bstNodeIndex = ChildNodeIndex(bstNodeIndex, &timespanStart,
                                     &timespanEnd,
-                                    _constants->timestep_,
+                                    _timestep,
                                     _constants->numValuesPerNode_,
                                     _constants->numOTNodes_,
                                     bstRoot, _tsp);
@@ -351,7 +351,8 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
                       __constant struct KernelConstants *_constants,
                       __global __read_only float *_transferFunction,
                       __global __read_only int *_tsp,
-                      __global __read_only int *_brickList) {
+                      __global __read_only int *_brickList,
+                      const int _timestep) {
 
   float stepsize = _constants->stepsize_;
   // Sample point
@@ -388,7 +389,8 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
       bool bstSuccess = TraverseBST(otNodeIndex,
                                     &brickIndex,
                                     _constants,
-                                    _tsp);
+                                    _tsp,
+                                    _timestep);
 
       if (bstSuccess || 
           IsOctreeLeaf(otNodeIndex, _constants->numValuesPerNode_, _tsp)) {
@@ -451,7 +453,8 @@ __kernel void RaycasterTSP(__global __read_only image2d_t _cubeFront,
                            __constant struct KernelConstants *_constants,
                            __global __read_only float *_transferFunction,
                            __global __read_only int *_tsp,
-                           __global __read_only int *_brickList) {
+                           __global __read_only int *_brickList,
+                           const int _timestep) {
 
   // Kernel should be launched in 2D with one work item per pixel
   int2 intCoords = (int2)(get_global_id(0), get_global_id(1));
@@ -476,7 +479,8 @@ __kernel void RaycasterTSP(__global __read_only image2d_t _cubeFront,
                                 _constants,         // kernel constants
                                 _transferFunction,  // transfer function
                                 _tsp,               // TSP tree struct
-                                _brickList);        // brick list
+                                _brickList,
+                                _timestep); 
                                 
   //color = 0.0001*color + cubeFrontColor;
 

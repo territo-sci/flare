@@ -255,6 +255,14 @@ bool CLProgram::PrepareProgram() {
   return true;
 }
 
+bool CLProgram::SetInt(unsigned int _argNr, int _val) {
+  error_ = clSetKernelArg(kernel_, _argNr, sizeof(int), &_val);
+  if (!clManager_->CheckSuccess(error_, "SetInt")) {
+    ERROR("Failed to set integer value");
+    return false;
+  }
+  return true;
+}
 
 bool CLProgram::LaunchProgram(unsigned int _gx, unsigned int _gy,
                               unsigned int _lx, unsigned int _ly) {

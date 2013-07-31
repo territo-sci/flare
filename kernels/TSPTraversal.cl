@@ -4,7 +4,6 @@ struct TraversalConstants {
   int numTimesteps_;
   int numValuesPerNode_;
   int numOTNodes_;
-  int timestep_;
   float temporalTolerance_;
   float spatialTolerance_;
 };
@@ -267,7 +266,8 @@ void TraverseOctree(float3 _rayO,
                     float _maxDist,
                     __constant struct TraversalConstants *_constants,
                     __global volatile int *_reqList,
-                    __global __read_only int *_tsp) {
+                    __global __read_only int *_tsp,
+                    const int _timestep) {
 
   // Choose a stepsize that guarantees that we don't miss any bricks
   // TODO dynamic depending on brick dimensions
@@ -293,7 +293,7 @@ void TraverseOctree(float3 _rayO,
       int brickIndex = 0;
       bool bstSuccess = TraverseBST(otNodeIndex, 
                                     &brickIndex,
-                                    _constants->timestep_,
+                                    _timestep,
                                     _constants,
                                     _reqList,
                                     _tsp);
@@ -352,7 +352,8 @@ __kernel void TSPTraversal(__global __read_only image2d_t _cubeFront,
                            __global __read_only image2d_t _cubeBack,
                            __constant struct TraversalConstants *_constants,
                            __global __read_only int *_tsp,
-                           __global int *_reqList) {
+                           __global int *_reqList,
+                           const int _timestep) {
     
     // Kernel should be launched in 2D with one work item per pixel
     int2 intCoords = (int2)(get_global_id(0), get_global_id(1));
@@ -371,7 +372,7 @@ __kernel void TSPTraversal(__global __read_only image2d_t _cubeFront,
     
     // Traverse octree and fill the brick request list
     TraverseOctree(cubeFrontColor.xyz, direction, maxDist,
-                   _constants,  _reqList, _tsp);
+                   _constants,  _reqList, _tsp, _timestep);
 
     return;
 

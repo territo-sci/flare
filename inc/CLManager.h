@@ -58,19 +58,6 @@ public:
   bool AddTexture(std::string _programName, unsigned int _argNr,
                 cl_mem _texture, Permissions _permissions);
 
-  /*
-  // Add (update) transfer function
-  bool AddTransferFunction(std::string _programName, unsigned int _argNr,
-                           TransferFunction *_transferFunction);
-  // Add (update) kernel constants
-  bool AddKernelConstants(std::string _programName, unsigned int _argNr,
-                          KernelConstants *_kernelConstants);
-  // Add (update) traversal constants
-  bool AddTraversalConstants(std::string _programName, unsigned int _argNr,
-                             TraversalConstants *_traversalConstants);
-  */
-
-
   bool AddBuffer(std::string _programName, unsigned int _argNr,
                  void *_hostPtr, unsigned int _sizeInBytes,
                  AllocMode _allocMode, Permissions _permissions);
@@ -79,8 +66,11 @@ public:
                   void *_hostPtr, unsigned int _sizeInBytes,
                   bool _blocking);
 
+  // Free resources
   bool ReleaseBuffer(std::string _programName, unsigned int _argNr);
 
+  // Set the value of an integer argument
+  bool SetInt(std::string _programName, unsigned int _argNr, int _val);
   
   // Aquire any shared textures, set up kernel arguments etc
   bool PrepareProgram(std::string _programName);

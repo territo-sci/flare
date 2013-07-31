@@ -108,32 +108,36 @@ bool SGCTWinManager::Render() {
 }
 
 void SGCTWinManager::InitNavigation() {
-
   animationPaused_.setVal(false);
-  fpsMode_.setVal(false);
+
+  // FPS mode should be OFF for cluster syncing
+  fpsMode_.setVal(true);
   manualTimestep_.setVal(0);
 
-  pitch_.setVal(0.f);
-  yaw_.setVal(0.f);
-  roll_.setVal(0.f);
+  // Read initial values from config
+  Config *c = Instance()->config_;
 
-  translateX_.setVal(0.f);
-  translateY_.setVal(0.f);
-  translateZ_.setVal(0.f);
+  pitch_.setVal(c->StartPitch());
+  yaw_.setVal(c->StartYaw());
+  roll_.setVal(c->StartRoll());
 
+  translateX_.setVal(c->TranslateX());
+  translateY_.setVal(c->TranslateY());
+  translateZ_.setVal(c->TranslateZ());
 }
+
 
 void SGCTWinManager::Keyboard(int _key, int _action) {
 
   if (Instance()->engine_->isMaster()) {
 
+    if (_action == GLFW_PRESS) {
+
     switch(_key) {
     case 32: // space bar
       // Toggle animation paused
       INFO("Pausing");
-      if (_action == GLFW_PRESS) {
-        animationPaused_.setVal(!animationPaused_.getVal());
-      }
+      animationPaused_.setVal(!animationPaused_.getVal());
       break;
     case 'Z':
     case 'z':
@@ -179,6 +183,17 @@ void SGCTWinManager::Keyboard(int _key, int _action) {
     case 'r':
       reloadFlag_.setVal(true);
       break;
+    case 'F':
+    case 'f':
+      fpsMode_.setVal(!fpsMode_.getVal());
+      if (fpsMode_.getVal()) {
+        INFO("Updating animation ASAP");
+      } else {
+        INFO("Using refresh interval variable");
+      }
+      break;
+
+    }
 
 
     }
@@ -210,10 +225,13 @@ void SGCTWinManager::PreSync() {
     // Update mouse
     if (leftMouseButton_) {
       sgct::Engine::getMousePos(&currentMouseX_, &currentMouseY_);
-      pitch_.setVal(pitch_.getVal() + Instance()->config_->MousePitchFactor()*(float)(currentMouseX_-lastMouseX_));
-      roll_.setVal(roll_.getVal() + Instance()->config_->MouseRollFactor()*(float)(currentMouseY_-lastMouseY_));
+      pitch_.setVal(pitch_.getVal() + 
+                    Instance()->config_->MousePitchFactor() * 
+                    static_cast<float>(currentMouseX_-lastMouseX_));
+      roll_.setVal(roll_.getVal() +
+                   Instance()->config_->MouseRollFactor() *
+                   static_cast<float>(currentMouseY_-lastMouseY_));
     }
-
   }
 }
 

@@ -22,12 +22,13 @@
 using namespace osp;
 
 int main(int argc, char **argv) {
-
+  
   // Start with reading a config file
   Config *config = Config::New("config/flareConfig.txt");
   if (!config) exit(1);
 
   // Init the singleton window manager and set up OpenGL context
+  SGCTWinManager::Instance()->SetConfig(config);
   SGCTWinManager::Instance()->InitEngine(argc,  argv, 
     sgct::Engine::OpenGL_4_2_Core_Profile);
 
@@ -124,7 +125,6 @@ int main(int argc, char **argv) {
 
   // Tie stuff together
   SGCTWinManager::Instance()->SetAnimator(animator);
-  SGCTWinManager::Instance()->SetConfig(config);
   SGCTWinManager::Instance()->SetRaycaster(raycaster);
 
   // Go!

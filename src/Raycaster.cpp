@@ -91,7 +91,6 @@ Raycaster::~Raycaster() {
 
 Raycaster * Raycaster::New(Config *_config) {
   Raycaster *raycaster = new Raycaster(_config);
-  raycaster->UpdateConfig();
   return raycaster;
 }
 
@@ -206,27 +205,13 @@ bool Raycaster::Render(float _timestep) {
     nextTimestep = 1;
   }
 
+  // Set correct timesteps
+  if (!clManager_->SetInt("TSPTraversal", tspTimestepArg_, currentTimestep)) 
+    return false;
+  if (!clManager_->SetInt("RaycasterTSP", timestepArg_, currentTimestep))
+    return false;
 
-  // TODO temp
-  traversalConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
-  traversalConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
-  traversalConstants_.numOTNodes_ = (int)tsp_->NumOTNodes();
-  traversalConstants_.timestep_ = currentTimestep;
-  
-  kernelConstants_.numTimesteps_ = (int)tsp_->NumTimesteps();
-  kernelConstants_.numValuesPerNode_ = (int)tsp_->NumValuesPerNode();
-  kernelConstants_.numOTNodes_ = (int)tsp_->NumOTNodes();
-  kernelConstants_.numBoxesPerAxis_ = (int)tsp_->NumBricksPerAxis();
-  kernelConstants_.timestep_ = currentTimestep;
-  kernelConstants_.rootLevel_ = (int)tsp_->NumOTLevels() - 1;
-  kernelConstants_.paddedBrickDim_ = (int)tsp_->PaddedBrickDim();
 
-  // Add updated traversal constants
-  if (!clManager_->AddBuffer("TSPTraversal", tspConstantsArg_,
-                             reinterpret_cast<void*>(&traversalConstants_),
-                             sizeof(TraversalConstants),
-                             CLManager::COPY_HOST_PTR,
-                             CLManager::READ_ONLY)) return false;
   // TODO test brick request list
   std::vector<int> brickRequest(tsp_->NumTotalNodes(), 0);
   if (!clManager_->AddBuffer("TSPTraversal", tspBrickListArg_,
@@ -250,20 +235,14 @@ bool Raycaster::Render(float _timestep) {
                               brickRequest.size()*sizeof(int),
                               true)) return false;
 
-  //INFO(" ");
-  //for (unsigned int i=0; i< brickRequest.size(); ++i) {
-  //    if (brickRequest[i] > 0) {
-  //        INFO("Req brick " << i);
-  //    }
-  //}
 
-  if (!clManager_->ReleaseBuffer("TSPTraversal", tspBrickListArg_)) return false;
-  if (!clManager_->ReleaseBuffer("TSPTraversal", tspConstantsArg_)) return false;
+  if (!clManager_->ReleaseBuffer("TSPTraversal",tspBrickListArg_))return false;
   
   // Build a brick list from the request list
   if (!brickManager_->BuildBrickList(brickRequest)) return false;
   // Apply the brick list, update the texture atlas
-  if (!brickManager_->UpdateAtlas()) return false;
+  if (!brickManager_->DiskToPBO(BrickManager::EVEN)) return false;
+  if (!brickManager_->PBOToAtlas(BrickManager::EVEN)) return false;
 
   // When the texture atlas contains the correct bricks, run second pass
  
@@ -292,7 +271,6 @@ bool Raycaster::Render(float _timestep) {
                                  return false;
   if (!clManager_->FinishProgram("RaycasterTSP")) return false;
   
-  if (!clManager_->ReleaseBuffer("RaycasterTSP", constantsArg_)) return false;
   if (!clManager_->ReleaseBuffer("RaycasterTSP", brickListArg_)) return false;
 
   
@@ -554,17 +532,6 @@ bool Raycaster::ReloadTransferFunctions() {
   return true;
 }
 
-bool Raycaster::UpdateConfig() {
-  kernelConstants_.stepsize_ = config_->RaycasterStepsize();
-  kernelConstants_.intensity_ = config_->RaycasterIntensity();
-  kernelConstants_.temporalTolerance_ = config_->TemporalErrorTolerance(); 
-  kernelConstants_.spatialTolerance_ = config_->SpatialErrorTolerance();
-  traversalConstants_.stepsize_ = config_->TSPTraversalStepsize();
-  traversalConstants_.temporalTolerance_ = config_->TemporalErrorTolerance();
-  traversalConstants_.spatialTolerance_ = config_->SpatialErrorTolerance(); 
-  return true;
-}
-
 bool Raycaster::UpdateMatrices() {
   model_ = glm::mat4(1.f);
   model_ = glm::translate(model_, glm::vec3(0.5f, 0.5f, 0.5f));
@@ -648,8 +615,8 @@ bool Raycaster::HandleMouse() {
 bool Raycaster::Reload() {
   if (!config_->Read()) return false; 
    INFO("Config file read");
-   if (!UpdateConfig()) return false;
-   INFO("Config updated");
+   if (!UpdateKernelConstants()) return false;
+   INFO("Kernel constants updated");
    if (!ReloadShaders()) return false;
    INFO("Shaders reloaded");
    if (!ReloadTransferFunctions()) return false;
@@ -663,40 +630,8 @@ bool Raycaster::Reload() {
 // Don't forget to add keys to look for in window manager
 // TODO proper keyboard handling class
 bool Raycaster::HandleKeyboard() {
-  if (KeyPressedNoRepeat('R')) {
-    if (!config_->Read()) return false; 
-    INFO("Config file read");
-    if (!UpdateConfig()) return false;
-    INFO("Config updated");
-    if (!ReloadShaders()) return false;
-    INFO("Shaders reloaded");
-    if (!ReloadTransferFunctions()) return false;
-    INFO("Transfer functions reloaded");
-    if (!animator_->UpdateConfig()) return false;
-    INFO("Animator updated");
-  }
-
-  // Translation
-  /*
-  if (KeyPressed('Q')) translateX_ += config_->ZoomFactor();
-  if (KeyPressed('A')) translateX_ -= config_->ZoomFactor();
-  if (KeyPressed('W')) translateY_ += config_->ZoomFactor();
-  if (KeyPressed('S')) translateY_ -= config_->ZoomFactor();
-  if (KeyPressed('E')) translateZ_ += config_->ZoomFactor();
-  if (KeyPressed('D')) translateZ_ -= config_->ZoomFactor();
-  */
-  
-  // Space bar, pause animation
-  if (KeyPressedNoRepeat(32)) animator_->TogglePause();
-
-  // Toggle FPS mode
-  if (KeyPressedNoRepeat('F')) animator_->ToggleFPSMode();
-
-  // Increase/decrease timestep manually
-  if (KeyPressed('Z')) animator_->IncTimestep();
-  if (KeyPressed('X')) animator_->DecTimestep();
-
-  return true;
+  ERROR("DEPRECATED");
+  return false;
 }
 
 bool Raycaster::KeyPressedNoRepeat(int _key) {
@@ -753,21 +688,18 @@ bool Raycaster::InitCL() {
   }
   if (!clManager_->BuildProgram("TSPTraversal")) return false;
   if (!clManager_->CreateKernel("TSPTraversal")) return false;
-
   cl_mem cubeFrontCLmem;
   if (!clManager_->AddTexture("TSPTraversal", tspCubeFrontArg_, 
                               cubeFrontTex_, CLManager::TEXTURE_2D,
                               CLManager::READ_ONLY, cubeFrontCLmem)) {
     return false;
   }
-
   cl_mem cubeBackCLmem;
   if (!clManager_->AddTexture("TSPTraversal", tspCubeBackArg_,
                               cubeBackTex_, CLManager::TEXTURE_2D,
                               CLManager::READ_ONLY, cubeBackCLmem)) {
     return false;
   }
-
   if (!clManager_->AddBuffer("TSPTraversal", tspTSPArg_,
                              reinterpret_cast<void*>(tsp_->Data()),
                              tsp_->Size()*sizeof(int),
@@ -782,17 +714,13 @@ bool Raycaster::InitCL() {
   }
   if (!clManager_->BuildProgram("RaycasterTSP")) return false;
   if (!clManager_->CreateKernel("RaycasterTSP")) return false;
-
   if (!clManager_->AddTexture("RaycasterTSP", cubeFrontArg_, cubeFrontCLmem,  
                               CLManager::READ_ONLY)) return false;
-
   if (!clManager_->AddTexture("RaycasterTSP", cubeBackArg_, cubeBackCLmem, 
                               CLManager::READ_ONLY)) return false;
-
   if (!clManager_->AddTexture("RaycasterTSP", quadArg_, quadTex_, 
                               CLManager::TEXTURE_2D, 
                               CLManager::WRITE_ONLY)) return false;
-
   if (!clManager_->AddTexture("RaycasterTSP", textureAtlasArg_, 
                               brickManager_->TextureAtlas(),
                               CLManager::TEXTURE_3D, 
@@ -810,6 +738,58 @@ bool Raycaster::InitCL() {
   if (!clManager_->AddBuffer("RaycasterTSP", tspArg_,
                              reinterpret_cast<void*>(tsp_->Data()),
                              tsp_->Size()*sizeof(int),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false;
+
+  // Update and add kernel constants
+  if (!UpdateKernelConstants()) return false;
+
+  return true;
+}
+
+bool Raycaster::UpdateKernelConstants() {
+
+  INFO("Updating kernel constants");
+
+  if (!tsp_) {
+    ERROR("TSP not set, cannot update kernel constants");
+    return false;
+  }
+
+  if (!config_) {
+    ERROR("Config not set, cannot update kernel constants");
+    return false;
+  }
+
+  kernelConstants_.stepsize_ = config_->RaycasterStepsize();
+  kernelConstants_.intensity_ = config_->RaycasterIntensity();
+  kernelConstants_.numTimesteps_ = static_cast<int>(tsp_->NumTimesteps());
+  kernelConstants_.numValuesPerNode_ = 
+    static_cast<int>(tsp_->NumValuesPerNode());
+  kernelConstants_.numOTNodes_ = static_cast<int>(tsp_->NumOTNodes());
+  kernelConstants_.numBoxesPerAxis_ =
+    static_cast<int>(tsp_->NumBricksPerAxis());
+  kernelConstants_.temporalTolerance_ = config_->TemporalErrorTolerance();
+  kernelConstants_.spatialTolerance_ = config_->SpatialErrorTolerance();
+  kernelConstants_.rootLevel_ = static_cast<int>(tsp_->NumOTLevels()) - 1;
+  kernelConstants_.paddedBrickDim_ = static_cast<int>(tsp_->PaddedBrickDim());
+
+  traversalConstants_.stepsize_ = config_->TSPTraversalStepsize();
+  traversalConstants_.numTimesteps_ = static_cast<int>(tsp_->NumTimesteps());
+  traversalConstants_.numValuesPerNode_ = 
+    static_cast<int>(tsp_->NumValuesPerNode());
+  traversalConstants_.numOTNodes_ = static_cast<int>(tsp_->NumOTNodes());
+  traversalConstants_.temporalTolerance_ = config_->TemporalErrorTolerance();
+  traversalConstants_.spatialTolerance_ = config_->SpatialErrorTolerance(); 
+
+  if (!clManager_->AddBuffer("RaycasterTSP", constantsArg_,
+                             reinterpret_cast<void*>(&kernelConstants_),
+                             sizeof(KernelConstants),
+                             CLManager::COPY_HOST_PTR,
+                             CLManager::READ_ONLY)) return false;
+  if (!clManager_->AddBuffer("TSPTraversal", tspConstantsArg_,
+                             reinterpret_cast<void*>(&traversalConstants_),
+                             sizeof(TraversalConstants),
                              CLManager::COPY_HOST_PTR,
                              CLManager::READ_ONLY)) return false;
 

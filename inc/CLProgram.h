@@ -63,6 +63,8 @@ public:
                   cl_bool _blocking);
 
   bool ReleaseBuffer(unsigned int _argNr);
+
+  bool SetInt(unsigned int _argNr, int _val);
    
   bool PrepareProgram();
   bool LaunchProgram(unsigned int _gx, unsigned int _gy,

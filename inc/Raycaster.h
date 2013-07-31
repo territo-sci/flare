@@ -41,9 +41,8 @@ public:
   virtual ~Raycaster();
   virtual bool Render(float _timestep);
 
+  // Called by the SGCT window manager
   bool Reload();
-
-  bool UpdateConfig();
 
   // Reload GLSL shaders
   bool ReloadShaders();
@@ -163,11 +162,17 @@ private:
   // Brick manager with access to brick data
   BrickManager *brickManager_;
 
+  // Brick request list
+  std::vector<int> brickRequest_;
+
   // TSP tree structure (not actual data)
   TSP *tsp_;
   
   // Entry point for all things OpenCL
   CLManager *clManager_;
+
+  // Helper function for updating and binding kernel constants
+  bool UpdateKernelConstants();
 
   // For the corresponding CL kernel
   static const unsigned int cubeFrontArg_ = 0;
@@ -178,12 +183,14 @@ private:
   static const unsigned int transferFunctionArg_ = 5; 
   static const unsigned int tspArg_ = 6;
   static const unsigned int brickListArg_ = 7;
+  static const unsigned int timestepArg_ = 8;
 
   static const unsigned int tspCubeFrontArg_ = 0;
   static const unsigned int tspCubeBackArg_ = 1;
   static const unsigned int tspConstantsArg_ = 2;
   static const unsigned int tspTSPArg_ = 3;
   static const unsigned int tspBrickListArg_ = 4;
+  static const unsigned int tspTimestepArg_ = 5;
 
   
   // Timer and timer constants 

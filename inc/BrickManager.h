@@ -35,7 +35,12 @@ public:
   bool InitAtlas();
 
   bool BuildBrickList(std::vector<int> _brickRequest);
-  bool UpdateAtlas();
+
+  // Upload bricks from memory buffer to PBO using the brick list
+  bool DiskToPBO(BUFFER_INDEX _pboIndex);
+
+  // Init transfer from PBO to texture atlas
+  bool PBOToAtlas(BUFFER_INDEX _pboIndex);
 
   std::vector<int> BrickList() { return brickList_; }
   Texture3D * TextureAtlas() { return textureAtlas_; }

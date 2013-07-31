@@ -215,11 +215,10 @@ bool BrickManager::FillVolume(float *_in, float *_out,
 }
 
 // TODO find buffer size
-// TODO use two PBOs
-bool BrickManager::UpdateAtlas() {
+bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
 
   // Map PBO
-  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[EVEN]);
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[_pboIndex]);
   glBufferData(GL_PIXEL_UNPACK_BUFFER, volumeSize_, 0, GL_STREAM_DRAW);
   float *mappedBuffer = reinterpret_cast<float*>(
     glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_WRITE_ONLY));
@@ -282,14 +281,16 @@ bool BrickManager::UpdateAtlas() {
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
-  // Now a whole timestep is in the PBO. Upload it to the texture.
-  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[EVEN]);
+  return true;
+}
+
+bool BrickManager::PBOToAtlas(BUFFER_INDEX _pboIndex) {
+  glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[_pboIndex]);
   if (!textureAtlas_->UpdateSubRegion(0, 0, 0,
                                       textureAtlas_->Dim(0),
                                       textureAtlas_->Dim(1),
                                       textureAtlas_->Dim(2),
                                       0)) return false;
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-  return true;
+   return true;
 }

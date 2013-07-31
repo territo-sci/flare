@@ -15,7 +15,6 @@ struct KernelConstants {
   int numValuesPerNode_;
   int numOTNodes_;
   int numBoxesPerAxis_;
-  int timestep_;
   float temporalTolerance_;
   float spatialTolerance_;
   int rootLevel_;
@@ -27,8 +26,6 @@ struct TraversalConstants {
   int numTimesteps_;
   int numValuesPerNode_;
   int numOTNodes_;
-  // TODO get rid of timestep, put as separate arg?
-  int timestep_;
   float temporalTolerance_;
   float spatialTolerance_;
 };

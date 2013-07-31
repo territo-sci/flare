@@ -245,42 +245,6 @@ bool osp::CLManager::AddTexture(std::string _programName,
     return clPrograms_[_programName]->AddTexture(_argNr, _texture, flag);
 }
 
-/*
-bool CLManager::AddTransferFunction(std::string _programName,
-                                    unsigned int _argNr, 
-                                    TransferFunction *_transferFunction) {
-  if (clPrograms_.find(_programName) == clPrograms_.end()) {
-    ERROR("Program " << _programName << " not found");
-    return false;
-  }
-  return clPrograms_[_programName]->AddTransferFunction(_argNr, 
-                                                      _transferFunction);
-}
-
-
-bool CLManager::AddKernelConstants(std::string _programName, 
-                                   unsigned int _argNr, 
-                                   KernelConstants *_kernelConstants) {
-  if (clPrograms_.find(_programName) == clPrograms_.end()) {
-    ERROR("Program " << _programName << " not found");
-    return false;
-  }
-  return clPrograms_[_programName]->AddKernelConstants(_argNr,
-                                                     _kernelConstants);
-}
-
-bool CLManager::AddTraversalConstants(std::string _programName,
-                                      unsigned int _argNr,
-                                      TraversalConstants *_traversalConstants){
-  if (clPrograms_.find(_programName) == clPrograms_.end()) {
-    ERROR("Program " << _programName << " not found");
-    return false;
-  } 
-  return clPrograms_[_programName]->AddTraversalConstants(_argNr,
-                                                       _traversalConstants);
-}
-
-*/
 
 bool CLManager::AddBuffer(std::string _programName, unsigned int _argNr,
                           void *_hostPtr, unsigned int _sizeInBytes,
@@ -323,6 +287,19 @@ bool CLManager::PrepareProgram(std::string _programName) {
   }
   if (!clPrograms_[_programName]->PrepareProgram()) {
     ERROR("Error when preparing program " << _programName);
+    return false;
+  }
+  return true;
+}
+
+bool CLManager::SetInt(std::string _programName, unsigned int _argNr, 
+                       int _val) {
+  if (clPrograms_.find(_programName) == clPrograms_.end()) {
+    ERROR("Program " << _programName << " not found");
+    return false;
+  }
+  if (!clPrograms_[_programName]->SetInt(_argNr, _val)) {
+    ERROR(_programName << " SetInt()");
     return false;
   }
   return true;

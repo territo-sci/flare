@@ -27,11 +27,11 @@ temporal_error_tolerance        0
 tsp_traversal_stepsize          0.05
 
 # Ray caster constants
-raycaster_stepsize              0.02
-raycaster_intensity             5
+raycaster_stepsize              0.01
+raycaster_intensity             2
 
 # Animation speed
-animator_refresh_interval       0.10
+animator_refresh_interval       0.30
 
 # Various paths
 raycaster_kernel_filename       kernels/RaycasterTSP.cl
@@ -49,15 +49,15 @@ start_yaw                       0.0
 # View
 
 # Works well for standalone.xml
-translate_x                     0
-translate_y                     0
-translate_z                     0
+translate_x                     -0.5
+translate_y                     -0.5
+translate_z                     -1.0
 
 # Navigation
 # If mouse motion seems backwards, flip the sign of the roll and/or pitch factors
-mouse_pitch_factor              0.1
-mouse_roll_factor               0.1
-zoom_factor                     0.1
+mouse_pitch_factor              -0.05
+mouse_roll_factor               0.05
+zoom_factor                     0.05
 
 
 
