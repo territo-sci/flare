@@ -23,6 +23,7 @@
 #include <KernelConstants.h>
 #include <Config.h>
 #include <stdint.h>
+#include <unistd.h> // sync()
 #include <SGCTWinManager.h>
 
 using namespace osp;
@@ -96,9 +97,15 @@ Raycaster * Raycaster::New(Config *_config) {
 
 bool Raycaster::Render(float _timestep) {
 
-  if (animator_ != NULL) {
-    //animator_->Update(_timestep);
-  } else {
+  // Clear cache for benchmarking
+  if (config_->ClearCache()) {
+    sync();
+    std::ofstream ofs("/proc/sys/vm/drop_caches");
+    ofs << "3" << std::endl;
+    ofs.close();
+  }
+
+  if (animator_ == NULL) {
     WARNING("Animator not set");
   }
   
@@ -191,7 +198,6 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
 
-
   unsigned int currentTimestep;
   unsigned int nextTimestep;
   if (animator_ != NULL) {
@@ -203,46 +209,48 @@ bool Raycaster::Render(float _timestep) {
     nextTimestep = 1;
   }
 
-  // Set correct timesteps
-  if (!clManager_->SetInt("RaycasterTSP", timestepArg_, currentTimestep))
-    return false;
+  // Choose buffers
+  BrickManager::BUFFER_INDEX currentBuf, nextBuf;
+  if (currentTimestep % 2 == 0) {
+    currentBuf = BrickManager::EVEN;
+    nextBuf = BrickManager::ODD;
+  } else {
+    currentBuf = BrickManager::ODD;
+    nextBuf = BrickManager::EVEN;
+  }
 
-  if (!LaunchTSPTraversal(currentTimestep)) return false;
+  // When starting a rendering iteration, the PBO corresponding to the
+  // current timestep is loaded with the data.
+
+  // Launch traversal of the next timestep
+  if (!LaunchTSPTraversal(nextTimestep)) return false;
+  
+  // While traversal of next step is working, upload current data to atlas
+  if (!brickManager_->PBOToAtlas(currentBuf)) return false;
+  
+  // Make sure the traversal kernel is done
   if (!clManager_->FinishProgram("TSPTraversal")) return false;
 
+  // Read buffer and release the memory
   if (!clManager_->ReadBuffer("TSPTraversal", tspBrickListArg_,
                               reinterpret_cast<void*>(&brickRequest_[0]),
                               brickRequest_.size()*sizeof(int),
                               true)) return false;
 
   if (!clManager_->ReleaseBuffer("TSPTraversal",tspBrickListArg_))return false;
-
-  // Build a brick list from the request list
-  if (!brickManager_->BuildBrickList(brickRequest_)) return false;
   
-
-  // Apply the brick list, update the texture atlas
-  if (!brickManager_->DiskToPBO(BrickManager::EVEN)) return false;
-  if (!brickManager_->PBOToAtlas(BrickManager::EVEN)) return false;
-
-  // When the texture atlas contains the correct bricks, run second pass
- 
-  // Add kernel constants
-  if (!clManager_->AddBuffer("RaycasterTSP", constantsArg_,
-                             reinterpret_cast<void*>(&kernelConstants_),
-                             sizeof(KernelConstants),
-                             CLManager::COPY_HOST_PTR,
-                             CLManager::READ_ONLY)) return false;
+  // When traversal of next timestep is done, launch raycasting kernel
+  if (!clManager_->SetInt("RaycasterTSP", timestepArg_, currentTimestep)) 
+    return false;
 
   // Add brick list
   if (!clManager_->
     AddBuffer("RaycasterTSP", brickListArg_,
-              reinterpret_cast<void*>(&(brickManager_->BrickList()[0])),
-              brickManager_->BrickList().size()*sizeof(int),
-              CLManager::COPY_HOST_PTR,
-              CLManager::READ_ONLY)) return false;
+      reinterpret_cast<void*>(&(brickManager_->BrickList(currentBuf)[0])),
+      brickManager_->BrickList(currentBuf).size()*sizeof(int),
+      CLManager::COPY_HOST_PTR,
+      CLManager::READ_ONLY)) return false;
               
-
   if (!clManager_->PrepareProgram("RaycasterTSP")) return false;
   if (!clManager_->LaunchProgram("RaycasterTSP",
                                  winWidth_,
@@ -250,10 +258,15 @@ bool Raycaster::Render(float _timestep) {
                                  config_->LocalWorkSizeX(),
                                  config_->LocalWorkSizeY())) 
                                  return false;
-  if (!clManager_->FinishProgram("RaycasterTSP")) return false;
-  
-  if (!clManager_->ReleaseBuffer("RaycasterTSP", brickListArg_)) return false;
 
+  // While the raycaster kernel is working, build next brick list and start 
+  // upload to the next PBO
+  if (!brickManager_->BuildBrickList(nextBuf, brickRequest_)) return false;
+  if (!brickManager_->DiskToPBO(nextBuf)) return false;
+
+  // Finish raycaster and render current frame
+  if (!clManager_->FinishProgram("RaycasterTSP")) return false;
+  if (!clManager_->ReleaseBuffer("RaycasterTSP", brickListArg_)) return false;
 
   // Render to framebuffer using quad
   glBindFramebuffer(GL_FRAMEBUFFER, SGCTWinManager::Instance()->FBOHandle());
@@ -286,16 +299,6 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
   
-  /*
-  
-  // Wait for transfer to pinned mem to complete
-  clHandler_->FinishQueue(CLHandler::TRANSFER);
-
-  // Signal that the next frame is ready
-  clHandler_->SetActiveIndex(nextIndex);
-
-  */
-
   // Window manager takes care of swapping buffers
   return true;
 }
@@ -360,10 +363,11 @@ bool Raycaster::InitPipeline() {
   // Free device memory
   if (!clManager_->ReleaseBuffer("TSPTraversal",tspBrickListArg_))return false;
 
-  // Upload data for timestep 0 to atlas
-  if (!brickManager_->BuildBrickList(brickRequest_)) return false;
+  // Upload data for timestep 0 to PBO
+  if (!brickManager_->BuildBrickList(BrickManager::EVEN, 
+                                     brickRequest_)) return false;
   if (!brickManager_->DiskToPBO(BrickManager::EVEN)) return false;
-  if (!brickManager_->PBOToAtlas(BrickManager::EVEN)) return false;
+  //if (!brickManager_->PBOToAtlas(BrickManager::EVEN)) return false;
 
   return true;
 }

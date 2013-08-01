@@ -17,6 +17,7 @@ Config::Config(const std::string &_configFilename)
   : configFilename_(_configFilename),
     winWidth_(512),
     winHeight_(512),
+    clearCache_(false),
     localWorkSizeX_(16),
     localWorkSizeY_(16),
     TSPFilename_("notSet"),
@@ -161,6 +162,9 @@ bool Config::Read() {
       } else if (variable == "texture_division_factor") {
         ss >> textureDivisionFactor_;
         INFO("Texture division factor: " << textureDivisionFactor_);
+      } else if (variable == "clear_cache") {
+        ss >> clearCache_;
+        INFO("Clearing cache: " << clearCache_);
       } else { 
         ERROR("Variable name " << variable << " unknown");
       } 

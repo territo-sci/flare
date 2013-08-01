@@ -23,6 +23,7 @@ public:
 
   int WinWidth() const { return winWidth_; }
   int WinHeight() const { return winHeight_; }
+  bool ClearCache() const { return clearCache_; }
   int TextureDivisionFactor() const { return textureDivisionFactor_; }
   unsigned int LocalWorkSizeX() const { return localWorkSizeX_; }
   unsigned int LocalWorkSizeY() const { return localWorkSizeY_; }
@@ -61,6 +62,7 @@ private:
 
   int winWidth_;
   int winHeight_;
+  bool clearCache_;
   int textureDivisionFactor_;
   unsigned int localWorkSizeX_;
   unsigned int localWorkSizeY_;

@@ -256,11 +256,6 @@ void SGCTWinManager::Draw() {
     Instance()->raycaster_->Reload();
   }
 
-  // Update animator with synchronized time
-  Instance()->animator_->SetPaused(animationPaused_.getVal());
-  Instance()->animator_->SetFPSMode(fpsMode_.getVal());
-  Instance()->animator_->Update(elapsedTime_.getVal());
-  Instance()->animator_->ManualTimestep(manualTimestep_.getVal());
 
   // Set model and view params
   Instance()->raycaster_->SetModelParams(pitch_.getVal(),
@@ -273,6 +268,12 @@ void SGCTWinManager::Draw() {
   if (!Instance()->raycaster_->Render(elapsedTime_.getVal())) {
     exit(1);
   }
+
+  // Update animator with synchronized time
+  Instance()->animator_->SetPaused(animationPaused_.getVal());
+  Instance()->animator_->SetFPSMode(fpsMode_.getVal());
+  Instance()->animator_->Update(elapsedTime_.getVal());
+  Instance()->animator_->ManualTimestep(manualTimestep_.getVal());
 
 }
 

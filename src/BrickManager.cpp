@@ -97,6 +97,9 @@ bool BrickManager::ReadHeader() {
 
   hasReadHeader_ = true;
 
+  // Hold two brick lists
+  brickLists_.resize(2);
+
   return true;
 }
 
@@ -126,13 +129,14 @@ bool BrickManager::InitAtlas() {
 
 }
 
-bool BrickManager::BuildBrickList(std::vector<int> &_brickRequest) {
+bool BrickManager::BuildBrickList(BUFFER_INDEX _bufIdx,
+                                  std::vector<int> &_brickRequest) {
 
   int numBricks = 0;
 
   // Assume the brick request list has the correct size
   // TODO init step
-  brickList_.resize(_brickRequest.size()*3);
+  brickLists_[_bufIdx].resize(_brickRequest.size()*3);
 
   // For every non-zero entry in the request list, assign a texture atlas
   // coordinate. For zero entries, signal "no brick" using -1.
@@ -149,9 +153,9 @@ bool BrickManager::BuildBrickList(std::vector<int> &_brickRequest) {
         return false;
       }
 
-      brickList_[3*i + 0] = xCoord;
-      brickList_[3*i + 1] = yCoord;
-      brickList_[3*i + 2] = zCoord;
+      brickLists_[_bufIdx][3*i + 0] = xCoord;
+      brickLists_[_bufIdx][3*i + 1] = yCoord;
+      brickLists_[_bufIdx][3*i + 2] = zCoord;
       
       numBricks++;
 
@@ -168,9 +172,9 @@ bool BrickManager::BuildBrickList(std::vector<int> &_brickRequest) {
 
     } else {
 
-      brickList_[3*i + 0] = -1;
-      brickList_[3*i + 1] = -1;
-      brickList_[3*i + 2] = -1;
+      brickLists_[_bufIdx][3*i + 0] = -1;
+      brickLists_[_bufIdx][3*i + 1] = -1;
+      brickLists_[_bufIdx][3*i + 2] = -1;
     
     }
 
@@ -232,23 +236,24 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
 
   // Loop over brick request list
   unsigned int brickIndex = 0;
-  while (brickIndex < brickList_.size()/3) {
+  while (brickIndex < brickLists_[_pboIndex].size()/3) {
 
     // Find first active brick index in list
-    while (brickIndex<brickList_.size()/3 && brickList_[3*brickIndex]== -1) {
+    while (brickIndex<brickLists_[_pboIndex].size()/3 && 
+          brickLists_[_pboIndex][3*brickIndex]== -1) {
       brickIndex++;
     }
 
     // If we are at the end of the list, exit
-    if (brickIndex == brickList_.size()/3) {
+    if (brickIndex == brickLists_[_pboIndex].size()/3) {
       break;
     }
 
     // Find a sequence of consecutive bricks in list
     unsigned int sequence = 0;
     unsigned int brickIndexProbe = brickIndex;
-    while (brickIndexProbe < brickList_.size()/3 &&
-           brickList_[3*brickIndexProbe] != -1) {
+    while (brickIndexProbe < brickLists_[_pboIndex].size()/3 &&
+           brickLists_[_pboIndex][3*brickIndexProbe] != -1) {
       sequence++;
       brickIndexProbe++;
     }
@@ -263,9 +268,12 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
     // For each brick in the buffer, put it the correct buffer spot
     for (unsigned int i=0; i<sequence; ++i) {
 
-      unsigned int x=static_cast<unsigned int>(brickList_[3*(brickIndex+i)+0]);
-      unsigned int y=static_cast<unsigned int>(brickList_[3*(brickIndex+i)+1]);
-      unsigned int z=static_cast<unsigned int>(brickList_[3*(brickIndex+i)+2]);
+      unsigned int x=static_cast<unsigned int>(
+        brickLists_[_pboIndex][3*(brickIndex+i)+0]);
+      unsigned int y=static_cast<unsigned int>(
+        brickLists_[_pboIndex][3*(brickIndex+i)+1]);
+      unsigned int z=static_cast<unsigned int>(
+        brickLists_[_pboIndex][3*(brickIndex+i)+2]);
 
       // Put each brick in the correct buffer place.
       // This needs to be done because the values are in brick order, and

@@ -36,7 +36,7 @@ public:
 
   // Build brick list from request list
   // Resets values in _brickRequest to 0
-  bool BuildBrickList(std::vector<int> &_brickRequest);
+  bool BuildBrickList(BUFFER_INDEX _bufIdx, std::vector<int> &_brickRequest);
 
   // Upload bricks from memory buffer to PBO using the brick list
   bool DiskToPBO(BUFFER_INDEX _pboIndex);
@@ -44,7 +44,10 @@ public:
   // Init transfer from PBO to texture atlas
   bool PBOToAtlas(BUFFER_INDEX _pboIndex);
 
-  std::vector<int> BrickList() { return brickList_; }
+  std::vector<int> BrickList(BUFFER_INDEX _bufIdx) { 
+    return brickLists_[_bufIdx]; 
+  }
+
   Texture3D * TextureAtlas() { return textureAtlas_; }
 
   // Header accessors
@@ -93,7 +96,7 @@ private:
   // Texture where the actual atlas is kept
   Texture3D *textureAtlas_;
 
-  std::vector<int> brickList_;
+  std::vector<std::vector<int> > brickLists_;
 
   // Filestream to read from
   // Opened in the ReadHeader() function and closed in destructor
