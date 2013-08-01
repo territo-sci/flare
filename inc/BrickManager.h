@@ -11,6 +11,7 @@
 #include <vector>
 #include <map>
 #include <fstream>
+#include <boost/timer/timer.hpp>
 
 #define real float
 
@@ -118,6 +119,10 @@ private:
                   unsigned int _x, 
                   unsigned int _y, 
                   unsigned int _z);
+
+  // Timer and timer constants
+  boost::timer::cpu_timer timer_;
+  const double BYTES_PER_GB = 1073741824.0;
 
 };
 

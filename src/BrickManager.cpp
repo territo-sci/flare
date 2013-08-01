@@ -75,7 +75,7 @@ bool BrickManager::ReadHeader() {
   INFO("");
 
   // Keep track of where in file brick data starts
-  dataPos_ = in_.tellg();
+   dataPos_ = in_.tellg();
 
   // Allocate box list and brick buffer
   // The box list keeps track of 1 brick index, 3 coordinate and 1 size value
@@ -193,6 +193,8 @@ bool BrickManager::FillVolume(float *_in, float *_out,
                               unsigned int _y, 
                               unsigned int _z) {
 
+  //timer_.start();
+
   unsigned int xMin = _x*paddedBrickDim_;
   unsigned int yMin = _y*paddedBrickDim_;
   unsigned int zMin = _z*paddedBrickDim_;
@@ -205,17 +207,21 @@ bool BrickManager::FillVolume(float *_in, float *_out,
   for (unsigned int zValCoord=zMin; zValCoord<zMax; ++zValCoord) {
     for (unsigned int yValCoord=yMin; yValCoord<yMax; ++yValCoord) {
       for (unsigned int xValCoord=xMin; xValCoord<xMax; ++xValCoord) {
-        //INFO(xValCoord << " " << yValCoord << " " << zValCoord);
+
         unsigned int idx = 
           xValCoord + 
           yValCoord*atlasDim_ +
           zValCoord*atlasDim_*atlasDim_;
-
-        _out[idx] = _in[from];
-        from++;
+          
+          _out[idx] = _in[from];
+          from++;
       }
     }
   }
+
+  //timer_.stop();
+  //double time = timer_.elapsed().wall / 1.0e9;
+  //INFO("FillVolume: " << time << " s");
 
   return true;
 }
@@ -257,13 +263,21 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
       sequence++;
       brickIndexProbe++;
     }
+    INFO("Reading " << sequence << " bricks");
 
     // Read the sequence into a buffer
     float *seqBuffer = new float[sequence*numBrickVals_];
     std::ios::pos_type offset = static_cast<std::ios::pos_type>(brickIndex) *
                                 static_cast<std::ios::pos_type>(brickSize_);
+    timer_.start();
+
     in_.seekg(dataPos_+offset);
     in_.read(reinterpret_cast<char*>(seqBuffer), brickSize_*sequence);
+
+    timer_.stop();
+    double time = timer_.elapsed().wall / 1.0e9;
+    double mb = (brickSize_*sequence) / 1048576.0;
+    INFO("Disk read "<<mb<<" MB in "<<time<<" s, "<< mb/time<<" MB/s");
 
     // For each brick in the buffer, put it the correct buffer spot
     for (unsigned int i=0; i<sequence; ++i) {
@@ -290,6 +304,7 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
 
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
 
   return true;
 }

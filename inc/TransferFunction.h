@@ -22,9 +22,13 @@ class TransferFunction {
 public:
   static TransferFunction * New();
   ~TransferFunction();
+
   enum Interpolation {
     LINEAR = 0,
   };
+
+  // Host side sample
+  bool Sample(float &_r, float &_g, float &_b, float &_a, float _i);
 
   // Take the saved values and construct a texture
   bool ConstructTexture();
@@ -58,6 +62,12 @@ private:
   std::string inFilename_;
   std::set<MappingKey> mappingKeys_;
   Interpolation interpolation_;
+
+  // Linearly interpolate between two values. Distance
+  // is assumed to be normalized.
+  float Lerp(float _v0, float _v1, float _d) {
+    return _v0*(1.0 - _d) + _v1*_d;
+  }
 };
 
 }

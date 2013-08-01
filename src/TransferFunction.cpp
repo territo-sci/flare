@@ -32,7 +32,7 @@ TransferFunction::TransferFunction() :
 
 
 TransferFunction::TransferFunction(const TransferFunction &_tf) {
-  // TODO
+  if (floatData_) delete floatData_; 
 }
 
 
@@ -95,6 +95,35 @@ std::string TransferFunction::ToString() const {
     ss << "\n" << *it;
   }
   return ss.str();
+}
+
+bool TransferFunction::Sample(float &_r, float &_g, float &_b, float &_a, 
+                              float _i) {
+
+  if (!floatData_) {
+    ERROR("TF Sample() - no float data");
+    return false;
+  }
+
+  int i0 = static_cast<int>(floorf((width_-1)*_i));
+  int i1 = (i0 < width_-1) ? i0+1 : i0;
+  float di = _i - floor(_i);
+  
+  float tfr0 = floatData_[i0*4+0];
+  float tfr1 = floatData_[i1*4+0];
+  float tfg0 = floatData_[i0*4+1];
+  float tfg1 = floatData_[i1*4+1];
+  float tfb0 = floatData_[i0*4+2];
+  float tfb1 = floatData_[i1*4+2];
+  float tfa0 = floatData_[i0*4+3];
+  float tfa1 = floatData_[i1*4+3];
+
+  _r = Lerp(tfr0, tfr1, di);
+  _g = Lerp(tfg0, tfg1, di);
+  _b = Lerp(tfb0, tfb1, di);
+  _a = Lerp(tfa0, tfa1, di);
+
+  return true;
 }
 
 bool TransferFunction::ConstructTexture() {

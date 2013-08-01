@@ -142,7 +142,8 @@ void SGCTWinManager::Keyboard(int _key, int _action) {
     case 'Z':
     case 'z':
       // Decrease timestep
-      manualTimestep_.setVal(-1);
+      // NOTE: Can't decrease timestep with double buffered approach atm
+      //manualTimestep_.setVal(-1);
       break;
     case 'X':
     case 'x':

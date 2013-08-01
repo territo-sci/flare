@@ -97,4 +97,5 @@ void Animator::DecTimestep() {
   } else {
     currentTimestep_--;
   }
+  INFO(currentTimestep_);
 }
