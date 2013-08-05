@@ -412,6 +412,22 @@ std::list<unsigned int> TSP::CoveredLeafBricks(unsigned int _brickIndex) {
   return out;
 }
 
+
+float TSP::SquaredDist(Color _c1, Color _c2) {
+  // Weighted by the c1 opacity, because transparent voxels have
+  // less contribution to the final image
+  return _c1.a*( pow(_c1.r-_c2.r, 2.f) + pow(_c1.g-_c2.g, 2.f) + 
+    pow(_c1.b-_c2.b, 2.f) ) + pow(_c1.a-_c2.a, 2.f);
+}
+
+float TSP::ColorMean(Color _c) {
+  return sqrt( _c.a*( pow(_c.r, 2.f)+pow(_c.g, 2.f)+pow(_c.b, 2.f) ) + 
+              pow(_c.a, 2.f) );
+}
+
+
+
+
 /*
 
 bool TSP::Construct() {

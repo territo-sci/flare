@@ -23,6 +23,13 @@ public:
   static TransferFunction * New();
   ~TransferFunction();
 
+  struct Color {
+    float r;
+    float g;
+    float b;
+    float a;
+  };
+
   enum Interpolation {
     LINEAR = 0,
   };
@@ -65,9 +72,11 @@ private:
 
   // Linearly interpolate between two values. Distance
   // is assumed to be normalized.
-  float Lerp(float _v0, float _v1, float _d) {
+  inline float Lerp(float _v0, float _v1, float _d) {
     return _v0*(1.0 - _d) + _v1*_d;
   }
+
+
 };
 
 }

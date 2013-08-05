@@ -263,7 +263,7 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
       sequence++;
       brickIndexProbe++;
     }
-    INFO("Reading " << sequence << " bricks");
+    //INFO("Reading " << sequence << " bricks");
 
     // Read the sequence into a buffer
     float *seqBuffer = new float[sequence*numBrickVals_];
@@ -277,7 +277,7 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
     timer_.stop();
     double time = timer_.elapsed().wall / 1.0e9;
     double mb = (brickSize_*sequence) / 1048576.0;
-    INFO("Disk read "<<mb<<" MB in "<<time<<" s, "<< mb/time<<" MB/s");
+    //INFO("Disk read "<<mb<<" MB in "<<time<<" s, "<< mb/time<<" MB/s");
 
     // For each brick in the buffer, put it the correct buffer spot
     for (unsigned int i=0; i<sequence; ++i) {

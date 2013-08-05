@@ -31,6 +31,14 @@ public:
 
   static TSP * New(Config * _config);
   ~TSP();
+
+  // Struct for convenience
+  struct Color {
+    float r;
+    float g;
+    float b;
+    float a;
+  };
   
   bool Construct();
   bool CalculateSpatialError();
@@ -86,6 +94,13 @@ private:
   std::list<unsigned int> ChildBricks(unsigned int _brickIndex);
 
   std::ios::pos_type dataPos_;
+
+  // Calculate weighted square distance between two RGBA colors
+  // c2 should be an averaged or zero color
+  float SquaredDist(Color _c1, Color _c2);
+
+  // Calculate the color-based "mean"
+  float ColorMean(Color _c);
 
 };
 
