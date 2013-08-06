@@ -52,9 +52,6 @@ int main(int argc, char **argv) {
   // Create TSP structure from file
   TSP *tsp = TSP::New(config);
   if (!tsp->Construct()) exit(1);
-  // Run error calculations
-  //if (!tsp->CalculateSpatialError()) exit(1);
-  //if (!tsp->CalculateTemporalError()) exit(1);
 
   // Create brick manager and init (has to be done after init OpenGL!)
   BrickManager *brickManager= BrickManager::New(config);
@@ -94,6 +91,10 @@ int main(int argc, char **argv) {
   transferFunction->SetInFilename(config->TFFilename());
   if (!transferFunction->ReadFile()) exit(1);
   if (!transferFunction->ConstructTexture()) exit(1);
+  
+  // Run error calculations
+  if (!tsp->CalculateSpatialError(transferFunction)) exit(1);
+  //if (!tsp->CalculateTemporalError()) exit(1);
 
   // Create animator
   Animator *animator = Animator::New(config);

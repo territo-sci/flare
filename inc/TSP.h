@@ -17,6 +17,7 @@
 namespace osp {
 
 class Config;
+class TransferFunction;
 
 class TSP {
 public:
@@ -34,6 +35,15 @@ public:
 
   // Struct for convenience
   struct Color {
+    Color() {
+      r = g = b = a = 0.f;
+    }
+    Color(float _r, float _g, float _b, float _a) {
+      r = _r;
+      g = _g;
+      b = _b;
+      a = _a;
+    }
     float r;
     float g;
     float b;
@@ -41,7 +51,7 @@ public:
   };
   
   bool Construct();
-  bool CalculateSpatialError();
+  bool CalculateSpatialError(TransferFunction *_tf);
   bool CalculateTemporalError();
 
   int * Data() { return &data_[0]; }
@@ -99,8 +109,6 @@ private:
   // c2 should be an averaged or zero color
   float SquaredDist(Color _c1, Color _c2);
 
-  // Calculate the color-based "mean"
-  float ColorMean(Color _c);
 
 };
 

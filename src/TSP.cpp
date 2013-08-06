@@ -10,6 +10,7 @@
 #include <cmath>
 #include <list>
 #include <queue>
+#include <TransferFunction.h>
 
 using namespace osp;
 
@@ -155,7 +156,7 @@ bool TSP::Construct() {
 
 }
 
-bool TSP::CalculateSpatialError() {
+bool TSP::CalculateSpatialError(TransferFunction *_tf) {
 
   unsigned int numBrickVals = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
 
@@ -168,11 +169,12 @@ bool TSP::CalculateSpatialError() {
   }
 
   std::vector<float> buffer(numBrickVals);
+  std::vector<Color> brickAvgs(numTotalNodes_); 
+  std::vector<float> avgs(numTotalNodes_);
 
-  // First pass: Calculate average voxel value for each brick
+  // First pass: Calculate average color for each brick
   INFO("\nCalculating spatial error, first pass");
   for (unsigned int brick=0; brick<numTotalNodes_; ++brick) {
-    //INFO("\nCalculating avg for brick " << brick);
 
     // Offset in file
     std::ios::pos_type offset = dataPos_ +
@@ -181,20 +183,36 @@ bool TSP::CalculateSpatialError() {
     in.seekp(offset);
     in.read(reinterpret_cast<char*>(&buffer[0]), sizeof(float)*numBrickVals);
 
-    // Average
-    float avg = static_cast<float>(0);
+    // Mean color
+    Color brickAvg(0.f, 0.f, 0.f, 0.f);
+    // Mean value
+    float avg = 0.f;
     for (auto it=buffer.begin(); it!=buffer.end(); ++it) {
       avg += *it;
+      Color sample;
+      _tf->Sample(sample.r, sample.g, sample.b, sample.a, *it);
+      brickAvg.r += sample.r;
+      brickAvg.g += sample.g;
+      brickAvg.b += sample.b;
+      brickAvg.a += sample.a;
     }
     avg /= static_cast<float>(numBrickVals);
-
-    //INFO("Average brick value: " << avg);
-
-    // Use spatial err position in data array to store average temporarily
-    data_[brick*NUM_DATA + SPATIAL_ERR] = 
-      *reinterpret_cast<int*>(&avg);
-
+    brickAvg.r /= static_cast<float>(numBrickVals);
+    brickAvg.g /= static_cast<float>(numBrickVals);
+    brickAvg.b /= static_cast<float>(numBrickVals);
+    brickAvg.a /= static_cast<float>(numBrickVals);
+    
+    brickAvgs[brick] = brickAvg;
+    avgs[brick] = avg;
+    //INFO("Brick " << brick);
+    //INFO("Avg value: " << avgs[brick]);
+    //INFO("Avg color: " << brickAvg.r << " " << brickAvg.g << " " << brickAvg.b << " " << brickAvg.a);
   }
+    
+  // Spatial error stats
+  float minErr = 1e20f;
+  float maxErr = 0.f;
+  float avgErr = 0.f;
 
   // Second pass: For each brick, compare the covered leaf voxels with
   // the brick average
@@ -203,12 +221,15 @@ bool TSP::CalculateSpatialError() {
   
     //INFO("Calculating spatial error for brick " << brick);
     
-    // Read brick average from first pass
-    float brickAvg = 
-      *reinterpret_cast<float*>(&data_[brick*NUM_DATA + SPATIAL_ERR]);
-    //INFO("brickAvg = " << brickAvg);
+    Color avgColor = brickAvgs[brick];
+    //float avg = avgs[brick];
+    //INFO("brick avg: " << avg.r << " " << avg.g << " " << avg.b << " " << avg.a);
+    float brickColorMean = sqrt(SquaredDist(avgColor, 
+                                            Color(0.f, 0.f, 0.f, 0.f)));
+    //INFO("color mean: " << brickColorMean);
 
-    float sum = 0.f;
+    float colorSum = 0.f;
+    //float sum = 0.f;
     int numTerms = 0;
 
     // Get a list of leaf bricks that the current brick covers
@@ -228,26 +249,53 @@ bool TSP::CalculateSpatialError() {
 
       // Add to sum
       for (auto v=buffer.begin(); v!=buffer.end(); ++v) {
-        sum += (*v - brickAvg)*(*v - brickAvg);
+
+       // sum += (*v-avg)*(*v-avg);
+
+        Color sample;
+        _tf->Sample(sample.r, sample.g, sample.b, sample.a, *v);
+
+        colorSum += SquaredDist(sample, avgColor);
         numTerms++;
       }
-
     }
+
 
     // Finish calculation
     if (sizeof(float) != sizeof(int)) {
       ERROR("Float and int sizes don't match, can't reintepret");
       return false;
     }
-    sum /= static_cast<float>(numTerms);
-    float spatialErr = sqrt(sum) / brickAvg;
+    //sum /= static_cast<float>(numTerms);
+    colorSum /= static_cast<float>(numTerms);
+    //INFO("sum: " << sum);
+    float spatialErr = sqrt(colorSum) / brickColorMean;
+
+    avgErr += spatialErr;
+
+    if (spatialErr > maxErr) {
+      maxErr = spatialErr;
+    } else if (spatialErr < minErr) {
+      minErr = spatialErr;
+    }
+
+    //float scalarErr = sqrt(sum) / avg;
     //INFO("Before casting " << spatialErr);
-    data_[brick*NUM_DATA + SPATIAL_ERR] = *reinterpret_cast<int*>(&spatialErr);
+    data_[brick*NUM_DATA+SPATIAL_ERR] = *reinterpret_cast<int*>(&spatialErr);
 
     float se = *reinterpret_cast<float*>(&data_[brick*NUM_DATA + SPATIAL_ERR]);
-    //INFO("Spatial error for brick " << brick << " = " << se);
+    //INFO("");
+    //INFO("Spatial scal. error for brick " << brick << " = " << scalarErr);
+    //INFO("Spatial color error for brick " << brick << " = " << se);
     
   }
+
+  avgErr /= static_cast<float>(numTotalNodes_);
+
+  INFO("Min spatial error: " << minErr);
+  INFO("Max spatial error: " << maxErr);
+  INFO("Avg spatial error: " << avgErr);
+  INFO("");
 
   return true;
 }  
@@ -419,13 +467,6 @@ float TSP::SquaredDist(Color _c1, Color _c2) {
   return _c1.a*( pow(_c1.r-_c2.r, 2.f) + pow(_c1.g-_c2.g, 2.f) + 
     pow(_c1.b-_c2.b, 2.f) ) + pow(_c1.a-_c2.a, 2.f);
 }
-
-float TSP::ColorMean(Color _c) {
-  return sqrt( _c.a*( pow(_c.r, 2.f)+pow(_c.g, 2.f)+pow(_c.b, 2.f) ) + 
-              pow(_c.a, 2.f) );
-}
-
-
 
 
 /*

@@ -145,7 +145,7 @@ bool BrickManager::BuildBrickList(BUFFER_INDEX _bufIdx,
   int zCoord = 0;
   for (unsigned int i=0; i<_brickRequest.size(); ++i) {
     if (_brickRequest[i] > 0) {
-        
+
       if (xCoord >= static_cast<int>(xNumBricks_) || 
           yCoord >= static_cast<int>(yNumBricks_) || 
           zCoord >= static_cast<int>(zNumBricks_)) {

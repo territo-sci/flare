@@ -106,9 +106,12 @@ bool TransferFunction::Sample(float &_r, float &_g, float &_b, float &_a,
   }
 
   if (_i < 0.f || _i > 1.f) { 
-    ERROR("Invalid TF sample intensity: " << _i);
-    return false;
+    //ERROR("Invalid TF sample intensity: " << _i);
+    //return false;
   }
+
+  if (_i < 0.f) _i = 0.f;
+  if (_i > 1.0) _i = 1.f;
 
   int i0 = static_cast<int>(floorf((width_-1)*_i));
   int i1 = (i0 < width_-1) ? i0+1 : i0;

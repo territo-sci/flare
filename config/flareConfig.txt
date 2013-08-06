@@ -22,7 +22,7 @@ tsp_filename                    ../enlil_128_32_32.tsp
 transferfunction_filename       transferfunctions/fire.txt
 
 # Error tolerances 
-spatial_error_tolerance         0
+spatial_error_tolerance         0.0
 temporal_error_tolerance        0
 
 # Step size for TSP traversal
