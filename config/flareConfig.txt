@@ -23,7 +23,7 @@ transferfunction_filename       transferfunctions/fire.txt
 
 # Error tolerances 
 spatial_error_tolerance         0.0
-temporal_error_tolerance        0
+temporal_error_tolerance        0.00
 
 # Step size for TSP traversal
 # Decrease this if holes appear in the rendering

@@ -52,7 +52,7 @@ public:
   
   bool Construct();
   bool CalculateSpatialError(TransferFunction *_tf);
-  bool CalculateTemporalError();
+  bool CalculateTemporalError(TransferFunction *_tf);
 
   int * Data() { return &data_[0]; }
   unsigned int Size() { return data_.size(); }

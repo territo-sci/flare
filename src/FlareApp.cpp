@@ -93,8 +93,8 @@ int main(int argc, char **argv) {
   if (!transferFunction->ConstructTexture()) exit(1);
   
   // Run error calculations
-  if (!tsp->CalculateSpatialError(transferFunction)) exit(1);
-  //if (!tsp->CalculateTemporalError()) exit(1);
+  //if (!tsp->CalculateSpatialError(transferFunction)) exit(1);
+  //if (!tsp->CalculateTemporalError(transferFunction)) exit(1);
 
   // Create animator
   Animator *animator = Animator::New(config);
