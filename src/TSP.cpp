@@ -25,9 +25,7 @@ TSP * TSP::New(Config *_config) {
 TSP::~TSP() {
 }
 
-bool TSP::Construct() {
-
-  INFO("\nConstructing TSP tree, spatial ordering");
+bool TSP::ReadHeader() {
 
   std::fstream in;
   std::string inFilename = config_->TSPFilename();
@@ -79,6 +77,14 @@ bool TSP::Construct() {
 
   // Allocate space for TSP structure
   data_.resize(numTotalNodes_*NUM_DATA);
+
+  return true;
+
+}
+
+bool TSP::Construct() {
+
+  INFO("\nConstructing TSP tree, spatial ordering");
 
   // Loop over the OTs (one per BST node)
   for (unsigned int OT=0; OT<numBSTNodes_; ++OT) {
@@ -141,23 +147,12 @@ bool TSP::Construct() {
     }
   }
 
- 
-  /*
-  for (unsigned int i=0; i<data_.size()/4; ++i) {
-    INFO("------------------------");
-    INFO("Brick index: " << data_[i*NUM_DATA + BRICK_INDEX]);
-    INFO("Child index: " << data_[i*NUM_DATA + CHILD_INDEX]);
-    INFO("Spat. error: " << data_[i*NUM_DATA + SPATIAL_ERR]);
-    INFO("Temp. error: " << data_[i*NUM_DATA + TEMPORAL_ERR]);
-  }
-  */
-
   INFO("");
   return true;
 
 }
 
-bool TSP::CalculateSpatialError(TransferFunction *_tf) {
+bool TSP::CalculateSpatialError() {
 
   unsigned int numBrickVals = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
 
@@ -257,6 +252,7 @@ bool TSP::CalculateSpatialError(TransferFunction *_tf) {
   std::sort(medianArray.begin(), medianArray.end());
   float medError = medianArray[medianArray.size()/2];
 
+
   INFO("Min spatial std dev: " << minError);
   INFO("Max spatial std dev: " << maxError);
   INFO("Median spatial std dev: " << medError);
@@ -278,6 +274,10 @@ bool TSP::CalculateSpatialError(TransferFunction *_tf) {
   
   std::sort(stdDevs.begin(), stdDevs.end());
   float medNorm = stdDevs[stdDevs.size()/2];
+  
+  minSpatialError_ = minNorm;
+  maxSpatialError_ = maxNorm;
+  medianSpatialError_ = medNorm;
 
   INFO("Min normalized spatial std dev: " << minNorm);
   INFO("Max normalized spatial std dev: " << maxNorm);
@@ -288,7 +288,7 @@ bool TSP::CalculateSpatialError(TransferFunction *_tf) {
 }  
 
 
-bool TSP::CalculateTemporalError(TransferFunction *_tf) {
+bool TSP::CalculateTemporalError() {
 
   std::fstream in;
   std::string inFilename = config_->TSPFilename();
@@ -396,6 +396,10 @@ bool TSP::CalculateTemporalError(TransferFunction *_tf) {
   std::sort(errors.begin(), errors.end());
   float medNorm = errors[errors.size()/2];
 
+  minTemporalError_ = minNorm;
+  maxTemporalError_ = maxNorm;
+  medianTemporalError_ = medNorm;
+
   INFO("Min normalized spatial std dev: " << minNorm);
   INFO("Max normalized spatial std dev: " << maxNorm);
   INFO("Median normalized spatial std dev: " << medNorm);
@@ -487,6 +491,67 @@ float TSP::SquaredDist(Color _c1, Color _c2) {
   // less contribution to the final image
   return _c1.a*( pow(_c1.r-_c2.r, 2.f) + pow(_c1.g-_c2.g, 2.f) + 
     pow(_c1.b-_c2.b, 2.f) ) + pow(_c1.a-_c2.a, 2.f);
+}
+
+
+bool TSP::ReadCache() {
+
+  std::string cacheFilename = config_->TSPFilename() + ".cache";
+  INFO("Looking for cache file " << cacheFilename);
+  
+  std::fstream in;
+  in.open(cacheFilename.c_str(), std::ios_base::in | std::ios_base::binary);
+  if (!in.is_open()) {
+    INFO("Failed to open cache file " << cacheFilename);
+    return false;
+  }
+
+  size_t dataSize = numTotalNodes_*NUM_DATA*sizeof(int);
+  
+  in.read(reinterpret_cast<char*>(&minSpatialError_), sizeof(float));
+  in.read(reinterpret_cast<char*>(&maxSpatialError_), sizeof(float));
+  in.read(reinterpret_cast<char*>(&medianSpatialError_), sizeof(float));
+  in.read(reinterpret_cast<char*>(&minTemporalError_), sizeof(float));
+  in.read(reinterpret_cast<char*>(&maxTemporalError_), sizeof(float));
+  in.read(reinterpret_cast<char*>(&medianTemporalError_), sizeof(float));
+  in.read(reinterpret_cast<char*>(&data_[0]), dataSize);
+  in.close();
+
+  INFO("");
+  INFO("Min spatial error: " << minSpatialError_);
+  INFO("Max spatial error: " << maxSpatialError_);
+  INFO("Median spatial error: " << medianSpatialError_);
+  INFO("Min temporal error: " << minTemporalError_);
+  INFO("Max temporal error: " << maxTemporalError_);
+  INFO("Median temporal error: " << medianTemporalError_);
+
+  return true;
+}
+
+bool TSP::WriteCache() {
+  
+  std::string cacheFilename = config_->TSPFilename() + ".cache";
+  INFO("Writing cache to " << cacheFilename);
+
+  std::fstream out;
+  out.open(cacheFilename.c_str(),
+    std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
+  if (!out.is_open()) {
+    ERROR("Failed to open " << cacheFilename);
+    return false;
+  }
+
+  out.seekp(std::ios_base::beg);
+  out.write(reinterpret_cast<char*>(&minSpatialError_), sizeof(float));
+  out.write(reinterpret_cast<char*>(&maxSpatialError_), sizeof(float));
+  out.write(reinterpret_cast<char*>(&medianSpatialError_), sizeof(float));
+  out.write(reinterpret_cast<char*>(&minTemporalError_), sizeof(float));
+  out.write(reinterpret_cast<char*>(&maxTemporalError_), sizeof(float));
+  out.write(reinterpret_cast<char*>(&medianTemporalError_), sizeof(float));
+  out.write(reinterpret_cast<char*>(&data_[0]), data_.size()*sizeof(int));
+  out.close();
+
+  return true;
 }
 
 

@@ -89,10 +89,16 @@ private:
   unsigned int atlasDim_;
 
   unsigned int numBrickVals_;
-  unsigned int numBricksTot_;
+  unsigned int numBricksFrame_;
+  unsigned int numBricksTree_;
   unsigned int brickSize_;
   unsigned int volumeSize_;
   unsigned int numValsTot_;
+
+  // Texture coordinates to be assigned
+  int xCoord_;
+  int yCoord_;
+  int zCoord_;
 
   // Texture where the actual atlas is kept
   Texture3D *textureAtlas_;
@@ -112,6 +118,17 @@ private:
 
   // PBOs
   unsigned int pboHandle_[2];
+
+  // Caching, one for each PBO
+  std::vector<std::vector<int> > bricksInPBO_;
+  std::vector<std::vector<bool> > usedCoords_;
+
+  // Increment the coordinate to be assigned (handle looping)
+  void IncCoord();
+  // Linear version of the current x, y, z coordinate to be assigned
+  unsigned int LinearCoord(int _x, int _y, int _z);
+  // 3D coordinates from liner index
+  void CoordsFromLin(int _idx, int &_x, int &_y, int &_z); 
 
   // Fill a brick in the volume using a pointer to flattened brick data
   bool FillVolume(float *_in, 

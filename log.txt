@@ -1,0 +1,464 @@
+[100%] Built target FlareApp
+
+Reading config from config/flareConfig.txt
+Win width: 512
+Win height: 512
+Clearing cache: 1
+Local worksize X: 16
+Local worksize Y: 16
+Texture division factor: 1
+TSP file name: ../enlil_128_32_32.tsp
+Transfer function file name transferfunctions/fire.txt
+Spatial error tolerance: 0
+Temporal error tolerance: 0
+TSP traversal step size: 0.06
+Ray caster step size: 0.01
+Ray caster intensity: 2
+Animator refresh interval: 0.3
+Raycaster kernel file name: kernels/RaycasterTSP.cl
+TSP traversal kernel file name: kernels/TSPTraversal.cl
+Cube vertex shader file name: shaders/cubeVert.glsl
+Cube fragment shader file name: shaders/cubeFrag.glsl
+Quad vertex shader file name: shaders/quadVert.glsl
+Cube vertex shader file name: shaders/quadFrag.glsl
+Start pitch: -30
+Start roll: 30
+Start yaw: 0
+Translate X: -0.5
+Translate Y: -0.5
+Translate Z: -1
+Mouse pitch factor -0.05
+Mouse roll factor 0.05
+Zoom factor 0.05
+
+Brick dimensions: 32
+Num bricks per axis: 4
+Num timesteps: 32
+Num OT levels: 3
+Num OT nodes: 73
+Num BST levels: 6
+Num BST nodes: 63
+Looking for cache file ../enlil_128_32_32.tsp.cache
+
+Using cached TSP file
+Header reading complete
+Structure: 0
+Data dimensionality: 1
+Brick dims: 32 32 32
+Num bricks: 4 4 4
+Num timesteps: 32
+Padding width: 1
+Data size: 4
+
+Padded brick dim: 34
+Atlas dim: 136
+Initializing Texture3D
+Creating vertex shader from source file shaders/cubeVert.glsl
+Creating fragment shader from source file shaders/cubeFrag.glsl
+Creating shader program
+Linking shader program
+Creating vertex shader from source file shaders/quadVert.glsl
+Creating fragment shader from source file shaders/quadFrag.glsl
+Creating shader program
+Linking shader program
+Creating Texture2D with dimensions: 512 512
+Creating Texture2D with dimensions: 512 512
+Initializing Texture2D
+Initializing Texture2D
+Creating Texture2D with dimensions: 512 512
+Initializing Texture2D
+Initializing renderbuffer for depth
+Initializing front cube framebuffer
+Initializing back cube framebuffer
+Initializing framebuffers... complete
+Initializing OpenCL
+Number of CL platforms: 1
+Number of CL devices: 2
+Device 0 name: GeForce GTX 690
+Device 1 name: GeForce GTX 690
+Updating kernel constants
+Initializing pipeline
+
+Reading config from config/flareConfig.txt
+Win width: 512
+Win height: 512
+Clearing cache: 1
+Local worksize X: 16
+Local worksize Y: 16
+Texture division factor: 1
+TSP file name: ../enlil_128_32_32.tsp
+Transfer function file name transferfunctions/fire.txt
+Spatial error tolerance: 100
+Temporal error tolerance: 0
+TSP traversal step size: 0.06
+Ray caster step size: 0.01
+Ray caster intensity: 2
+Animator refresh interval: 0.3
+Raycaster kernel file name: kernels/RaycasterTSP.cl
+TSP traversal kernel file name: kernels/TSPTraversal.cl
+Cube vertex shader file name: shaders/cubeVert.glsl
+Cube fragment shader file name: shaders/cubeFrag.glsl
+Quad vertex shader file name: shaders/quadVert.glsl
+Cube vertex shader file name: shaders/quadFrag.glsl
+Start pitch: -30
+Start roll: 30
+Start yaw: 0
+Translate X: -0.5
+Translate Y: -0.5
+Translate Z: -1
+Mouse pitch factor -0.05
+Mouse roll factor 0.05
+Zoom factor 0.05
+
+Config file read
+Updating kernel constants
+Kernel constants updated
+Reloading shaders
+Creating vertex shader from source file shaders/cubeVert.glsl
+Creating fragment shader from source file shaders/cubeFrag.glsl
+Creating shader program
+Linking shader program
+Creating vertex shader from source file shaders/quadVert.glsl
+Creating fragment shader from source file shaders/quadFrag.glsl
+Creating shader program
+Linking shader program
+Shaders reloaded
+Reloading transfer functions
+Transfer functions reloaded
+Animator updated
+
+Reading config from config/flareConfig.txt
+Win width: 512
+Win height: 512
+Clearing cache: 1
+Local worksize X: 16
+Local worksize Y: 16
+Texture division factor: 1
+TSP file name: ../enlil_128_32_32.tsp
+Transfer function file name transferfunctions/fire.txt
+Spatial error tolerance: 0
+Temporal error tolerance: 0
+TSP traversal step size: 0.06
+Ray caster step size: 0.01
+Ray caster intensity: 2
+Animator refresh interval: 0.3
+Raycaster kernel file name: kernels/RaycasterTSP.cl
+TSP traversal kernel file name: kernels/TSPTraversal.cl
+Cube vertex shader file name: shaders/cubeVert.glsl
+Cube fragment shader file name: shaders/cubeFrag.glsl
+Quad vertex shader file name: shaders/quadVert.glsl
+Cube vertex shader file name: shaders/quadFrag.glsl
+Start pitch: -30
+Start roll: 30
+Start yaw: 0
+Translate X: -0.5
+Translate Y: -0.5
+Translate Z: -1
+Mouse pitch factor -0.05
+Mouse roll factor 0.05
+Zoom factor 0.05
+
+Config file read
+Updating kernel constants
+Kernel constants updated
+Reloading shaders
+Creating vertex shader from source file shaders/cubeVert.glsl
+Creating fragment shader from source file shaders/cubeFrag.glsl
+Creating shader program
+Linking shader program
+Creating vertex shader from source file shaders/quadVert.glsl
+Creating fragment shader from source file shaders/quadFrag.glsl
+Creating shader program
+Linking shader program
+Shaders reloaded
+Reloading transfer functions
+Transfer functions reloaded
+Animator updated
+
+Reading config from config/flareConfig.txt
+Win width: 512
+Win height: 512
+Clearing cache: 1
+Local worksize X: 16
+Local worksize Y: 16
+Texture division factor: 1
+TSP file name: ../enlil_128_32_32.tsp
+Transfer function file name transferfunctions/fire.txt
+Spatial error tolerance: 0
+Temporal error tolerance: 10
+TSP traversal step size: 0.06
+Ray caster step size: 0.01
+Ray caster intensity: 2
+Animator refresh interval: 0.3
+Raycaster kernel file name: kernels/RaycasterTSP.cl
+TSP traversal kernel file name: kernels/TSPTraversal.cl
+Cube vertex shader file name: shaders/cubeVert.glsl
+Cube fragment shader file name: shaders/cubeFrag.glsl
+Quad vertex shader file name: shaders/quadVert.glsl
+Cube vertex shader file name: shaders/quadFrag.glsl
+Start pitch: -30
+Start roll: 30
+Start yaw: 0
+Translate X: -0.5
+Translate Y: -0.5
+Translate Z: -1
+Mouse pitch factor -0.05
+Mouse roll factor 0.05
+Zoom factor 0.05
+
+Config file read
+Updating kernel constants
+Kernel constants updated
+Reloading shaders
+Creating vertex shader from source file shaders/cubeVert.glsl
+Creating fragment shader from source file shaders/cubeFrag.glsl
+Creating shader program
+Linking shader program
+Creating vertex shader from source file shaders/quadVert.glsl
+Creating fragment shader from source file shaders/quadFrag.glsl
+Creating shader program
+Linking shader program
+Shaders reloaded
+Reloading transfer functions
+Transfer functions reloaded
+Animator updated
+
+Reading config from config/flareConfig.txt
+Win width: 512
+Win height: 512
+Clearing cache: 1
+Local worksize X: 16
+Local worksize Y: 16
+Texture division factor: 1
+TSP file name: ../enlil_128_32_32.tsp
+Transfer function file name transferfunctions/fire.txt
+Spatial error tolerance: 0
+Temporal error tolerance: 1
+TSP traversal step size: 0.06
+Ray caster step size: 0.01
+Ray caster intensity: 2
+Animator refresh interval: 0.3
+Raycaster kernel file name: kernels/RaycasterTSP.cl
+TSP traversal kernel file name: kernels/TSPTraversal.cl
+Cube vertex shader file name: shaders/cubeVert.glsl
+Cube fragment shader file name: shaders/cubeFrag.glsl
+Quad vertex shader file name: shaders/quadVert.glsl
+Cube vertex shader file name: shaders/quadFrag.glsl
+Start pitch: -30
+Start roll: 30
+Start yaw: 0
+Translate X: -0.5
+Translate Y: -0.5
+Translate Z: -1
+Mouse pitch factor -0.05
+Mouse roll factor 0.05
+Zoom factor 0.05
+
+Config file read
+Updating kernel constants
+Kernel constants updated
+Reloading shaders
+Creating vertex shader from source file shaders/cubeVert.glsl
+Creating fragment shader from source file shaders/cubeFrag.glsl
+Creating shader program
+Linking shader program
+Creating vertex shader from source file shaders/quadVert.glsl
+Creating fragment shader from source file shaders/quadFrag.glsl
+Creating shader program
+Linking shader program
+Shaders reloaded
+Reloading transfer functions
+Transfer functions reloaded
+Animator updated
+
+Reading config from config/flareConfig.txt
+Win width: 512
+Win height: 512
+Clearing cache: 1
+Local worksize X: 16
+Local worksize Y: 16
+Texture division factor: 1
+TSP file name: ../enlil_128_32_32.tsp
+Transfer function file name transferfunctions/fire.txt
+Spatial error tolerance: 0
+Temporal error tolerance: 0.2
+TSP traversal step size: 0.06
+Ray caster step size: 0.01
+Ray caster intensity: 2
+Animator refresh interval: 0.3
+Raycaster kernel file name: kernels/RaycasterTSP.cl
+TSP traversal kernel file name: kernels/TSPTraversal.cl
+Cube vertex shader file name: shaders/cubeVert.glsl
+Cube fragment shader file name: shaders/cubeFrag.glsl
+Quad vertex shader file name: shaders/quadVert.glsl
+Cube vertex shader file name: shaders/quadFrag.glsl
+Start pitch: -30
+Start roll: 30
+Start yaw: 0
+Translate X: -0.5
+Translate Y: -0.5
+Translate Z: -1
+Mouse pitch factor -0.05
+Mouse roll factor 0.05
+Zoom factor 0.05
+
+Config file read
+Updating kernel constants
+Kernel constants updated
+Reloading shaders
+Creating vertex shader from source file shaders/cubeVert.glsl
+Creating fragment shader from source file shaders/cubeFrag.glsl
+Creating shader program
+Linking shader program
+Creating vertex shader from source file shaders/quadVert.glsl
+Creating fragment shader from source file shaders/quadFrag.glsl
+Creating shader program
+Linking shader program
+Shaders reloaded
+Reloading transfer functions
+Transfer functions reloaded
+Animator updated
+
+Reading config from config/flareConfig.txt
+Win width: 512
+Win height: 512
+Clearing cache: 1
+Local worksize X: 16
+Local worksize Y: 16
+Texture division factor: 1
+TSP file name: ../enlil_128_32_32.tsp
+Transfer function file name transferfunctions/fire.txt
+Spatial error tolerance: 0
+Temporal error tolerance: 0.1
+TSP traversal step size: 0.06
+Ray caster step size: 0.01
+Ray caster intensity: 2
+Animator refresh interval: 0.3
+Raycaster kernel file name: kernels/RaycasterTSP.cl
+TSP traversal kernel file name: kernels/TSPTraversal.cl
+Cube vertex shader file name: shaders/cubeVert.glsl
+Cube fragment shader file name: shaders/cubeFrag.glsl
+Quad vertex shader file name: shaders/quadVert.glsl
+Cube vertex shader file name: shaders/quadFrag.glsl
+Start pitch: -30
+Start roll: 30
+Start yaw: 0
+Translate X: -0.5
+Translate Y: -0.5
+Translate Z: -1
+Mouse pitch factor -0.05
+Mouse roll factor 0.05
+Zoom factor 0.05
+
+Config file read
+Updating kernel constants
+Kernel constants updated
+Reloading shaders
+Creating vertex shader from source file shaders/cubeVert.glsl
+Creating fragment shader from source file shaders/cubeFrag.glsl
+Creating shader program
+Linking shader program
+Creating vertex shader from source file shaders/quadVert.glsl
+Creating fragment shader from source file shaders/quadFrag.glsl
+Creating shader program
+Linking shader program
+Shaders reloaded
+Reloading transfer functions
+Transfer functions reloaded
+Animator updated
+
+Reading config from config/flareConfig.txt
+Win width: 512
+Win height: 512
+Clearing cache: 1
+Local worksize X: 16
+Local worksize Y: 16
+Texture division factor: 1
+TSP file name: ../enlil_128_32_32.tsp
+Transfer function file name transferfunctions/fire.txt
+Spatial error tolerance: 0
+Temporal error tolerance: 0.05
+TSP traversal step size: 0.06
+Ray caster step size: 0.01
+Ray caster intensity: 2
+Animator refresh interval: 0.3
+Raycaster kernel file name: kernels/RaycasterTSP.cl
+TSP traversal kernel file name: kernels/TSPTraversal.cl
+Cube vertex shader file name: shaders/cubeVert.glsl
+Cube fragment shader file name: shaders/cubeFrag.glsl
+Quad vertex shader file name: shaders/quadVert.glsl
+Cube vertex shader file name: shaders/quadFrag.glsl
+Start pitch: -30
+Start roll: 30
+Start yaw: 0
+Translate X: -0.5
+Translate Y: -0.5
+Translate Z: -1
+Mouse pitch factor -0.05
+Mouse roll factor 0.05
+Zoom factor 0.05
+
+Config file read
+Updating kernel constants
+Kernel constants updated
+Reloading shaders
+Creating vertex shader from source file shaders/cubeVert.glsl
+Creating fragment shader from source file shaders/cubeFrag.glsl
+Creating shader program
+Linking shader program
+Creating vertex shader from source file shaders/quadVert.glsl
+Creating fragment shader from source file shaders/quadFrag.glsl
+Creating shader program
+Linking shader program
+Shaders reloaded
+Reloading transfer functions
+Transfer functions reloaded
+Animator updated
+
+Reading config from config/flareConfig.txt
+Win width: 512
+Win height: 512
+Clearing cache: 1
+Local worksize X: 16
+Local worksize Y: 16
+Texture division factor: 1
+TSP file name: ../enlil_128_32_32.tsp
+Transfer function file name transferfunctions/fire.txt
+Spatial error tolerance: 0
+Temporal error tolerance: 0
+TSP traversal step size: 0.06
+Ray caster step size: 0.01
+Ray caster intensity: 2
+Animator refresh interval: 0.3
+Raycaster kernel file name: kernels/RaycasterTSP.cl
+TSP traversal kernel file name: kernels/TSPTraversal.cl
+Cube vertex shader file name: shaders/cubeVert.glsl
+Cube fragment shader file name: shaders/cubeFrag.glsl
+Quad vertex shader file name: shaders/quadVert.glsl
+Cube vertex shader file name: shaders/quadFrag.glsl
+Start pitch: -30
+Start roll: 30
+Start yaw: 0
+Translate X: -0.5
+Translate Y: -0.5
+Translate Z: -1
+Mouse pitch factor -0.05
+Mouse roll factor 0.05
+Zoom factor 0.05
+
+Config file read
+Updating kernel constants
+Kernel constants updated
+Reloading shaders
+Creating vertex shader from source file shaders/cubeVert.glsl
+Creating fragment shader from source file shaders/cubeFrag.glsl
+Creating shader program
+Linking shader program
+Creating vertex shader from source file shaders/quadVert.glsl
+Creating fragment shader from source file shaders/quadFrag.glsl
+Creating shader program
+Linking shader program
+Shaders reloaded
+Reloading transfer functions
+Transfer functions reloaded
+Animator updated

@@ -50,8 +50,18 @@ int main(int argc, char **argv) {
   height /= config->TextureDivisionFactor();
 
   // Create TSP structure from file
-  TSP *tsp = TSP::New(config);
-  if (!tsp->Construct()) exit(1);
+  TSP *tsp = TSP::New(config);  
+  if (!tsp->ReadHeader()) exit(1);
+  // Read cache if it exists, calculate otherwise
+  if (tsp->ReadCache()) {
+    INFO("\nUsing cached TSP file");
+  } else {
+    INFO("\nNo cached TSP file found");
+    if (!tsp->Construct()) exit(1);
+    if (!tsp->CalculateSpatialError()) exit(1);
+    if (!tsp->CalculateTemporalError()) exit(1);
+    if (!tsp->WriteCache()) exit(1);
+  }
 
   // Create brick manager and init (has to be done after init OpenGL!)
   BrickManager *brickManager= BrickManager::New(config);
@@ -92,9 +102,6 @@ int main(int argc, char **argv) {
   if (!transferFunction->ReadFile()) exit(1);
   if (!transferFunction->ConstructTexture()) exit(1);
   
-  // Run error calculations
-  //if (!tsp->CalculateSpatialError(transferFunction)) exit(1);
-  //if (!tsp->CalculateTemporalError(transferFunction)) exit(1);
 
   // Create animator
   Animator *animator = Animator::New(config);

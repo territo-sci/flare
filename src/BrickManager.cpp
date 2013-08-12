@@ -7,6 +7,7 @@
 #include <Texture3D.h>
 #include <Config.h>
 #include <Utils.h>
+#include <cmath>
 //#include <boost/timer/timer.hpp>
 
 using namespace osp;
@@ -18,8 +19,7 @@ BrickManager * BrickManager::New(Config *_config) {
 
 BrickManager::BrickManager(Config *_config)
   : textureAtlas_(NULL), config_(_config), atlasInitialized_(false), 
-   hasReadHeader_(false)
-{
+   hasReadHeader_(false), xCoord_(0), yCoord_(0), zCoord_(0) {
 
   // TODO move
   glGenBuffers(1, &pboHandle_[EVEN]);
@@ -90,15 +90,35 @@ bool BrickManager::ReadHeader() {
   INFO("Atlas dim: " << atlasDim_);
 
   numBrickVals_ = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
-  numBricksTot_ = numBricks_*numBricks_*numBricks_;
+  // Number of bricks per frame
+  numBricksFrame_ = numBricks_*numBricks_*numBricks_;
+
+  // Calculate number of bricks in tree
+  unsigned int numOTLevels = (unsigned int)(log((int)numBricks_)/log(2)+1);
+  unsigned int numOTNodes = (unsigned int)((pow(8, numOTLevels) - 1) / 7);
+  unsigned int numBSTNodes = (unsigned int)numTimesteps_*2 - 1;
+  numBricksTree_ = numOTNodes * numBSTNodes;
+
   brickSize_ = sizeof(float)*numBrickVals_;
-  volumeSize_ = brickSize_*numBricksTot_;
-  numValsTot_ = numBrickVals_*numBricksTot_;
+  volumeSize_ = brickSize_*numBricksFrame_;
+  numValsTot_ = numBrickVals_*numBricksFrame_;
 
   hasReadHeader_ = true;
 
   // Hold two brick lists
   brickLists_.resize(2);
+  // Make sure the brick list can hold the maximum number of bricks
+  // Each entry holds tree coordinates
+  brickLists_[EVEN].resize(numBricksTree_*3, -1);
+  brickLists_[ODD].resize(numBricksTree_*3, -1);
+
+  bricksInPBO_.resize(2);
+  bricksInPBO_[EVEN].resize(numBricksTree_, -1);
+  bricksInPBO_[ODD].resize(numBricksTree_, -1);
+
+  usedCoords_.resize(2);
+  usedCoords_[EVEN].resize(numBricksFrame_, false);
+  usedCoords_[ODD].resize(numBricksFrame_, false);
 
   return true;
 }
@@ -125,57 +145,95 @@ bool BrickManager::InitAtlas() {
   
   atlasInitialized_ = true;
 
+
   return true;
 
+}
+
+void BrickManager::IncCoord() {
+  // Update atlas coordinate
+  xCoord_++;
+  if (xCoord_ == xNumBricks_) {
+    xCoord_ = 0;
+    yCoord_++;
+    if (yCoord_ == yNumBricks_) {
+      yCoord_ = 0;
+      zCoord_++;
+      if (zCoord_ == zNumBricks_) {
+        zCoord_ = 0;
+      }
+    }
+  }
+}
+
+unsigned int BrickManager::LinearCoord(int _x, int _y, int _z) {
+ return _x + _y*xNumBricks_ + _z*xNumBricks_*yNumBricks_;
+}
+
+void BrickManager::CoordsFromLin(int _idx, int &_x, int &_y, int &_z) {
+  _x = _idx % xNumBricks_;
+  _idx /= xNumBricks_;
+  _y = _idx % yNumBricks_;
+  _idx /= yNumBricks_;
+  _z = _idx;
 }
 
 bool BrickManager::BuildBrickList(BUFFER_INDEX _bufIdx,
                                   std::vector<int> &_brickRequest) {
 
-  int numBricks = 0;
 
-  // Assume the brick request list has the correct size
-  // TODO init step
-  brickLists_[_bufIdx].resize(_brickRequest.size()*3);
+  int numBricks = 0;
+  int numCached = 0;
 
   // For every non-zero entry in the request list, assign a texture atlas
   // coordinate. For zero entries, signal "no brick" using -1.
-  int xCoord = 0;
-  int yCoord = 0;
-  int zCoord = 0;
   for (unsigned int i=0; i<_brickRequest.size(); ++i) {
+
     if (_brickRequest[i] > 0) {
 
-      if (xCoord >= static_cast<int>(xNumBricks_) || 
-          yCoord >= static_cast<int>(yNumBricks_) || 
-          zCoord >= static_cast<int>(zNumBricks_)) {
-        ERROR("atlas coord too large!");
-        return false;
+      //INFO("Checking brick " << i);
+
+      // If the brick is already in the atlas, keep the coordinate
+      if (bricksInPBO_[_bufIdx][i] != -1) {
+
+      numCached++;
+          
+       // INFO("Brick " << i << " already in atlas");
+        
+        int x, y, z;
+        CoordsFromLin(bricksInPBO_[_bufIdx][i], x, y, z);
+        brickLists_[_bufIdx][3*i + 0] = x;
+        brickLists_[_bufIdx][3*i + 1] = y;
+        brickLists_[_bufIdx][3*i + 2] = z;
+        //INFO("At coord " << x << " " << y << " " << z);
+
+        // Mark coordinate as used
+        usedCoords_[_bufIdx][bricksInPBO_[_bufIdx][i]] = true;
+
+      } else {
+
+        // If coord is already used, skip it and try the next one
+        while (usedCoords_[_bufIdx][LinearCoord(xCoord_, yCoord_, zCoord_)]) {
+          IncCoord();
+        }
+
+        brickLists_[_bufIdx][3*i + 0] = xCoord_;
+        brickLists_[_bufIdx][3*i + 1] = yCoord_;
+        brickLists_[_bufIdx][3*i + 2] = zCoord_;
+        usedCoords_[_bufIdx][LinearCoord(xCoord_, yCoord_, zCoord_)] = true;
+        
+        IncCoord();
       }
 
-      brickLists_[_bufIdx][3*i + 0] = xCoord;
-      brickLists_[_bufIdx][3*i + 1] = yCoord;
-      brickLists_[_bufIdx][3*i + 2] = zCoord;
       
       numBricks++;
-
-      // Update atlas coordinate
-      xCoord++;
-      if (xCoord == xNumBricks_) {
-        xCoord = 0;
-        yCoord++;
-        if (yCoord == yNumBricks_) {
-          yCoord = 0;
-          zCoord++;
-        }
-      }
-
+      
     } else {
 
       brickLists_[_bufIdx][3*i + 0] = -1;
       brickLists_[_bufIdx][3*i + 1] = -1;
       brickLists_[_bufIdx][3*i + 2] = -1;
-    
+
     }
 
     // Reset brick list during iteration
@@ -183,7 +241,14 @@ bool BrickManager::BuildBrickList(BUFFER_INDEX _bufIdx,
 
   }
 
-  //INFO("Num bricks used: " << numBricks);
+  // Brick list is build, reset coordinate list
+  for (auto it=usedCoords_[_bufIdx].begin(); 
+      it!=usedCoords_[_bufIdx].end(); ++it) {
+    *it = false;
+  }
+
+  INFO("Num bricks used: " << numBricks);
+  INFO("Num bricks cached: " << numCached);
 
   return true;
 }
@@ -246,7 +311,9 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
 
     // Find first active brick index in list
     while (brickIndex<brickLists_[_pboIndex].size()/3 && 
-          brickLists_[_pboIndex][3*brickIndex]== -1) {
+           brickLists_[_pboIndex][3*brickIndex]== -1) {
+      // If not used, remove from PBO cache list
+      bricksInPBO_[_pboIndex][brickIndex] = -1;
       brickIndex++;
     }
 
@@ -282,17 +349,26 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
     // For each brick in the buffer, put it the correct buffer spot
     for (unsigned int i=0; i<sequence; ++i) {
 
-      unsigned int x=static_cast<unsigned int>(
-        brickLists_[_pboIndex][3*(brickIndex+i)+0]);
-      unsigned int y=static_cast<unsigned int>(
-        brickLists_[_pboIndex][3*(brickIndex+i)+1]);
-      unsigned int z=static_cast<unsigned int>(
-        brickLists_[_pboIndex][3*(brickIndex+i)+2]);
+      // Only upload if needed
+      if (bricksInPBO_[_pboIndex][brickIndex+i] == -1) {
 
-      // Put each brick in the correct buffer place.
-      // This needs to be done because the values are in brick order, and
-      // the volume needs to be filled with one big float array.
-      FillVolume(&seqBuffer[numBrickVals_*i], mappedBuffer, x, y, z);  
+        unsigned int x=static_cast<unsigned int>(
+          brickLists_[_pboIndex][3*(brickIndex+i)+0]);
+        unsigned int y=static_cast<unsigned int>(
+          brickLists_[_pboIndex][3*(brickIndex+i)+1]);
+        unsigned int z=static_cast<unsigned int>(
+          brickLists_[_pboIndex][3*(brickIndex+i)+2]);
+
+        // Put each brick in the correct buffer place.
+        // This needs to be done because the values are in brick order, and
+        // the volume needs to be filled with one big float array.
+        FillVolume(&seqBuffer[numBrickVals_*i], mappedBuffer, x, y, z);  
+
+        // Update the atlas list since the brick will be uploaded
+        //INFO(brickIndex+i);
+        bricksInPBO_[_pboIndex][brickIndex+i] = LinearCoord(x, y, z);
+
+      }
     }
 
     delete[] seqBuffer;

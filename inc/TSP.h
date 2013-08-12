@@ -49,10 +49,18 @@ public:
     float b;
     float a;
   };
+
+  // Tries to read cached file
+  bool ReadCache();
+  // Write structure to cache
+  bool WriteCache();
+
+  bool ReadHeader();
   
+  // Functions to build TSP tree and calculate errors
   bool Construct();
-  bool CalculateSpatialError(TransferFunction *_tf);
-  bool CalculateTemporalError(TransferFunction *_tf);
+  bool CalculateSpatialError();
+  bool CalculateTemporalError();
 
   int * Data() { return &data_[0]; }
   unsigned int Size() { return data_.size(); }
@@ -90,6 +98,14 @@ private:
   unsigned int numBSTNodes_;
   unsigned int numOTLevels_;
   unsigned int numOTNodes_;
+
+  // Error stats
+  float minSpatialError_;
+  float maxSpatialError_;
+  float medianSpatialError_;
+  float minTemporalError_;
+  float maxTemporalError_;
+  float medianTemporalError_;
 
   // Returns a list of the octree leaf nodes that a given input 
   // brick covers. If the input is already a leaf, the list will

@@ -262,6 +262,8 @@ bool Raycaster::Render(float _timestep) {
   // While the raycaster kernel is working, build next brick list and start 
   // upload to the next PBO
   if (!brickManager_->BuildBrickList(nextBuf, brickRequest_)) return false;
+  
+
   if (!brickManager_->DiskToPBO(nextBuf)) return false;
 
   // Finish raycaster and render current frame

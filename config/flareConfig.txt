@@ -18,16 +18,17 @@ texture_division_factor 1
 # Filenames
 # Don't change during runtime
 # (Transfer function values can be changed during runtime though)
-tsp_filename                    ../enlil_128_32_32.tsp
+tsp_filename                    ../enlil_256_64_32.tsp
 transferfunction_filename       transferfunctions/fire.txt
 
 # Error tolerances 
-spatial_error_tolerance         0.0
-temporal_error_tolerance        0.00
+# Use -1 for no tolerance 
+spatial_error_tolerance         -1.0
+temporal_error_tolerance        0.02
 
 # Step size for TSP traversal
 # Decrease this if holes appear in the rendering
-tsp_traversal_stepsize          0.06
+tsp_traversal_stepsize          0.03
 
 # Ray caster constants
 raycaster_stepsize              0.01
