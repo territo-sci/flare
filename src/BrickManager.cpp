@@ -247,8 +247,8 @@ bool BrickManager::BuildBrickList(BUFFER_INDEX _bufIdx,
     *it = false;
   }
 
-  INFO("Num bricks used: " << numBricks);
-  INFO("Num bricks cached: " << numCached);
+  //INFO("Num bricks used: " << numBricks);
+  //INFO("Num bricks cached: " << numCached);
 
   return true;
 }
@@ -324,10 +324,15 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
 
     // Find a sequence of consecutive bricks in list
     unsigned int sequence = 0;
+    // Count number of bricks already in PBO
+    unsigned int inPBO = 0;
     unsigned int brickIndexProbe = brickIndex;
     while (brickIndexProbe < brickLists_[_pboIndex].size()/3 &&
            brickLists_[_pboIndex][3*brickIndexProbe] != -1) {
       sequence++;
+      if (bricksInPBO_[_pboIndex][brickIndexProbe++] != -1) {
+        inPBO++;
+      }
       brickIndexProbe++;
     }
     //INFO("Reading " << sequence << " bricks");
@@ -336,42 +341,51 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
     float *seqBuffer = new float[sequence*numBrickVals_];
     std::ios::pos_type offset = static_cast<std::ios::pos_type>(brickIndex) *
                                 static_cast<std::ios::pos_type>(brickSize_);
-    timer_.start();
 
-    in_.seekg(dataPos_+offset);
-    in_.read(reinterpret_cast<char*>(seqBuffer), brickSize_*sequence);
+    // Skip reading if all bricks in sequence is already in PBO
+    if (inPBO != sequence) {
+  
+      timer_.start();
 
-    timer_.stop();
-    double time = timer_.elapsed().wall / 1.0e9;
-    double mb = (brickSize_*sequence) / 1048576.0;
-    //INFO("Disk read "<<mb<<" MB in "<<time<<" s, "<< mb/time<<" MB/s");
+      in_.seekg(dataPos_+offset);
+      in_.read(reinterpret_cast<char*>(seqBuffer), brickSize_*sequence);
 
-    // For each brick in the buffer, put it the correct buffer spot
-    for (unsigned int i=0; i<sequence; ++i) {
+      timer_.stop();
+      double time = timer_.elapsed().wall / 1.0e9;
+      double mb = (brickSize_*sequence) / 1048576.0;
+      //INFO("Disk read "<<mb<<" MB in "<<time<<" s, "<< mb/time<<" MB/s");
 
-      // Only upload if needed
-      if (bricksInPBO_[_pboIndex][brickIndex+i] == -1) {
+      // For each brick in the buffer, put it the correct buffer spot
+      for (unsigned int i=0; i<sequence; ++i) {
 
-        unsigned int x=static_cast<unsigned int>(
-          brickLists_[_pboIndex][3*(brickIndex+i)+0]);
-        unsigned int y=static_cast<unsigned int>(
-          brickLists_[_pboIndex][3*(brickIndex+i)+1]);
-        unsigned int z=static_cast<unsigned int>(
-          brickLists_[_pboIndex][3*(brickIndex+i)+2]);
+        // Only upload if needed
+        // Pointless if implementation only skips reading when ALL bricks in
+        // sequence are in PBO, but could be useful if other solutions that
+        // considers part of the buffer are implemented
+        if (bricksInPBO_[_pboIndex][brickIndex+i] == -1) {
 
-        // Put each brick in the correct buffer place.
-        // This needs to be done because the values are in brick order, and
-        // the volume needs to be filled with one big float array.
-        FillVolume(&seqBuffer[numBrickVals_*i], mappedBuffer, x, y, z);  
+          unsigned int x=static_cast<unsigned int>(
+            brickLists_[_pboIndex][3*(brickIndex+i)+0]);
+          unsigned int y=static_cast<unsigned int>(
+            brickLists_[_pboIndex][3*(brickIndex+i)+1]);
+          unsigned int z=static_cast<unsigned int>(
+            brickLists_[_pboIndex][3*(brickIndex+i)+2]);
 
-        // Update the atlas list since the brick will be uploaded
-        //INFO(brickIndex+i);
-        bricksInPBO_[_pboIndex][brickIndex+i] = LinearCoord(x, y, z);
+          // Put each brick in the correct buffer place.
+          // This needs to be done because the values are in brick order, and
+          // the volume needs to be filled with one big float array.
+          FillVolume(&seqBuffer[numBrickVals_*i], mappedBuffer, x, y, z);  
 
+          // Update the atlas list since the brick will be uploaded
+          //INFO(brickIndex+i);
+          bricksInPBO_[_pboIndex][brickIndex+i] = LinearCoord(x, y, z);
+
+        }
       }
-    }
 
-    delete[] seqBuffer;
+      delete[] seqBuffer;
+
+    } // if in pbo
 
     // Update the brick index
     brickIndex += sequence;
