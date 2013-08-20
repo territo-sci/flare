@@ -10,20 +10,16 @@ if (NOT WIN32)
 	find_package(X11 REQUIRED)
 		
 	# SGCT
-  find_library(SGCT_RELEASE_LIBRARY NAMES sgct)
+ 	find_library(SGCT_RELEASE_LIBRARY NAMES sgct)
 	find_library(SGCT_DEBUG_LIBRARY NAMES sgct_d)
  	set(SGCT_LINK_LIBRARY optimized ${SGCT_RELEASE_LIBRARY} debug ${SGCT_DEBUG_LIBRARY})
 	set(SGCT_INCLUDE_DIRECTORY "/usr/include")
-
-
-
 endif ()
 
 #set(Boost_INCLUDE_DIR "C:/alebo68/boost")
 #set(Boost_LIBRARY_DIR "C:/alebo68/boost/stage/lib")
 
 if (WIN32)
-
 	# SGCT special case
 	ADD_DEFINITIONS(-D__WIN32__)
 	SET(SGCT_DEBUG_LIBRARY "C:/Program Files (x86)/SGCT/SGCT_1.5.2_x86/lib/msvc11/sgct32_d.lib" )
@@ -99,12 +95,12 @@ add_executable(FlareApp
                CLManager.cpp
                CLProgram.cpp
                ShaderProgram.cpp
-	             SGCTWinManager.cpp)
+	       SGCTWinManager.cpp)
 
 target_link_libraries(FlareApp
                       ${GLEW_LIBRARY}
                       ${OPENGL_LIBRARY}
                       ${OPENCL_LIBRARIES}
                       ${Boost_LIBRARIES}
-		                  ${X11_LIBRARIES} -lGL -lGLU -lX11 -lXrandr -lpthread -lrt
-		                  ${SGCT_LINK_LIBRARY})
+		      ${X11_LIBRARIES} -lGL -lGLU -lX11 -lXrandr -lpthread -lrt
+		      ${SGCT_LINK_LIBRARY})

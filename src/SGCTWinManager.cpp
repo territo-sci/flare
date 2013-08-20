@@ -221,12 +221,14 @@ void SGCTWinManager::PreSync() {
     elapsedTime_.setVal(currentTime_ - oldTime_);
 
     // Update automatic model transform
-    pitch_.setVal(pitch_.getVal() +
-                  Instance()->config_->PitchSpeed());
-    roll_.setVal(roll_.getVal() +
-                 Instance()->config_->RollSpeed());
-    yaw_.setVal(yaw_.getVal() +
-                Instance()->config_->YawSpeed());
+    if (!animationPaused_.getVal()) {
+      pitch_.setVal(pitch_.getVal() +
+                   Instance()->config_->PitchSpeed());
+      roll_.setVal(roll_.getVal() +
+                  Instance()->config_->RollSpeed());
+      yaw_.setVal(yaw_.getVal() +
+                  Instance()->config_->YawSpeed());
+    }
 
     // Update mouse
     if (leftMouseButton_) {

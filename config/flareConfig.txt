@@ -5,7 +5,7 @@ win_height          512
 
 # 0 to not clear cache every frame, 1 to clear it
 # Used for benchmarking purposes
-clear_cache	    1
+clear_cache	    0
 
 # Local kernel work size
 # Can't be changed during runtime
@@ -19,7 +19,7 @@ texture_division_factor 1
 # Filenames
 # Don't change during runtime
 # (Transfer function values can be changed during runtime though)
-tsp_filename                    /home/vsand/OpenSpace/enlil_enlil_64_64_64_256_16.tsp
+tsp_filename                    /media/snabba_disk/OpenSpace/processed_data/enlil_128_256_32.tsp
 transferfunction_filename       transferfunctions/fire.txt
 
 # Error tolerances 
@@ -33,14 +33,14 @@ calculate_error			0
 
 # Step size for TSP traversal
 # Decrease this if holes appear in the rendering
-tsp_traversal_stepsize          0.01
+tsp_traversal_stepsize          0.05
 
 # Ray caster constants
-raycaster_stepsize              0.005
-raycaster_intensity             1
+raycaster_stepsize              0.006
+raycaster_intensity             1.2
 
 # Animation speed
-animator_refresh_interval       0.20
+animator_refresh_interval       0.10
 
 # Various paths
 raycaster_kernel_filename       kernels/RaycasterTSP.cl
