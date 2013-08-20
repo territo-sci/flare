@@ -193,12 +193,9 @@ void SGCTWinManager::Keyboard(int _key, int _action) {
         INFO("Using refresh interval variable");
       }
       break;
-
     }
 
-
     }
-
   }
 }
 
@@ -222,6 +219,14 @@ void SGCTWinManager::PreSync() {
     oldTime_ = currentTime_;
     currentTime_ = static_cast<float>(sgct::Engine::getTime());
     elapsedTime_.setVal(currentTime_ - oldTime_);
+
+    // Update automatic model transform
+    pitch_.setVal(pitch_.getVal() +
+                  Instance()->config_->PitchSpeed());
+    roll_.setVal(roll_.getVal() +
+                 Instance()->config_->RollSpeed());
+    yaw_.setVal(yaw_.getVal() +
+                Instance()->config_->YawSpeed());
 
     // Update mouse
     if (leftMouseButton_) {

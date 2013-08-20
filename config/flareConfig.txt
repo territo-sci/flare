@@ -4,6 +4,7 @@ win_width           512
 win_height          512
 
 # 0 to not clear cache every frame, 1 to clear it
+# Used for benchmarking purposes
 clear_cache	    1
 
 # Local kernel work size
@@ -18,24 +19,28 @@ texture_division_factor 1
 # Filenames
 # Don't change during runtime
 # (Transfer function values can be changed during runtime though)
-tsp_filename                    ../enlil_128_32_32_diff.tsp
-transferfunction_filename       transferfunctions/plain.txt
+tsp_filename                    /home/vsand/OpenSpace/enlil_enlil_64_64_64_256_16.tsp
+transferfunction_filename       transferfunctions/fire.txt
 
 # Error tolerances 
 # Use -1 for no tolerance 
 spatial_error_tolerance         -1
 temporal_error_tolerance        -1
 
+# Calculate error or not (0 no, 1 yes)
+# If not used, errors will correspond to levels in tree
+calculate_error			0
+
 # Step size for TSP traversal
 # Decrease this if holes appear in the rendering
 tsp_traversal_stepsize          0.01
 
 # Ray caster constants
-raycaster_stepsize              0.01
-raycaster_intensity             2
+raycaster_stepsize              0.005
+raycaster_intensity             1
 
 # Animation speed
-animator_refresh_interval       0.30
+animator_refresh_interval       0.20
 
 # Various paths
 raycaster_kernel_filename       kernels/RaycasterTSP.cl
@@ -47,8 +52,13 @@ quad_shader_frag_filename       shaders/quadFrag.glsl
 
 # Model
 start_pitch                     -30.0
-start_roll                      30
+start_roll                      30.0
 start_yaw                       0.0
+
+# Automatic pitch/roll/yaw
+pitch_speed			0.5			
+roll_speed			0.0
+yaw_speed			0.0
 
 # View
 

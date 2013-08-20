@@ -37,34 +37,23 @@ bool TSP::ReadHeader() {
   
   // Read header
   size_t s = sizeof(unsigned int);
-  in.read(reinterpret_cast<char*>(&structure_), s);
-  in.read(reinterpret_cast<char*>(&dataDimensionality_), s);
-  // TODO remove x y z dims
-  in.read(reinterpret_cast<char*>(&brickDim_), s);
-  in.read(reinterpret_cast<char*>(&brickDim_), s);
-  in.read(reinterpret_cast<char*>(&brickDim_), s);
-  in.read(reinterpret_cast<char*>(&numBricksPerAxis_), s);
-  in.read(reinterpret_cast<char*>(&numBricksPerAxis_), s);
-  in.read(reinterpret_cast<char*>(&numBricksPerAxis_), s);
+  in.read(reinterpret_cast<char*>(&gridType_), s);
   in.read(reinterpret_cast<char*>(&numTimesteps_), s);
-  in.read(reinterpret_cast<char*>(&paddingWidth_), s);
+  in.read(reinterpret_cast<char*>(&xBrickDim_), s);
+  in.read(reinterpret_cast<char*>(&yBrickDim_), s);
+  in.read(reinterpret_cast<char*>(&zBrickDim_), s);
+  in.read(reinterpret_cast<char*>(&xNumBricks_), s);
+  in.read(reinterpret_cast<char*>(&yNumBricks_), s);
+  in.read(reinterpret_cast<char*>(&zNumBricks_), s);
   in.read(reinterpret_cast<char*>(&dataSize_), s);
   dataPos_ = in.tellg();
 
   in.close();
 
-  INFO("Brick dimensions: " << brickDim_);
-  INFO("Num bricks per axis: " << numBricksPerAxis_);
-  INFO("Num timesteps: " << numTimesteps_);
+  paddedBrickDim_ = xBrickDim_ + 2*paddingWidth_;
 
-  if (paddingWidth_ > 1) {
-    ERROR("Padding width > 1 unsupported");
-    return false;
-  }
-
-  paddedBrickDim_ = brickDim_ + 2*paddingWidth_;
-
-  numOTLevels_ = (unsigned int)(log((int)numBricksPerAxis_)/log(2) + 1);
+  // TODO support dimensions of different size
+  numOTLevels_ = (unsigned int)(log((int)xNumBricks_)/log(2) + 1);
   numOTNodes_ = (unsigned int)((pow(8, numOTLevels_) - 1) / 7);
   numBSTLevels_ = (unsigned int)(log((int)numTimesteps_)/log(2) + 1);
   numBSTNodes_ = (unsigned int)numTimesteps_*2 - 1;
@@ -251,7 +240,6 @@ bool TSP::CalculateSpatialError() {
   
   std::sort(medianArray.begin(), medianArray.end());
   float medError = medianArray[medianArray.size()/2];
-
 
   INFO("Min spatial std dev: " << minError);
   INFO("Max spatial std dev: " << maxError);

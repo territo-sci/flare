@@ -52,25 +52,21 @@ bool BrickManager::ReadHeader() {
   in_.seekg(std::ios_base::beg);
   
   size_t s = sizeof(unsigned int);
-  in_.read(reinterpret_cast<char*>(&structure_), s);
-  in_.read(reinterpret_cast<char*>(&dataDimensionality_), s);
+  in_.read(reinterpret_cast<char*>(&gridType_), s);
+  in_.read(reinterpret_cast<char*>(&numTimesteps_), s);
   in_.read(reinterpret_cast<char*>(&xBrickDim_), s);
   in_.read(reinterpret_cast<char*>(&yBrickDim_), s);
   in_.read(reinterpret_cast<char*>(&zBrickDim_), s);
   in_.read(reinterpret_cast<char*>(&xNumBricks_), s);
   in_.read(reinterpret_cast<char*>(&yNumBricks_), s);
   in_.read(reinterpret_cast<char*>(&zNumBricks_), s);
-  in_.read(reinterpret_cast<char*>(&numTimesteps_), s);
-  in_.read(reinterpret_cast<char*>(&paddingWidth_), s);
   in_.read(reinterpret_cast<char*>(&dataSize_), s);
   
   INFO("Header reading complete");
-  INFO("Structure: " << structure_);
-  INFO("Data dimensionality: " << dataDimensionality_);
+  INFO("Grid type: " << gridType_);
+  INFO("Num timesteps: " << numTimesteps_);
   INFO("Brick dims: " << xBrickDim_ << " " << yBrickDim_ <<" "<< zBrickDim_);
   INFO("Num bricks: " << xNumBricks_ <<" "<< yNumBricks_ <<" "<< zNumBricks_);
-  INFO("Num timesteps: " << numTimesteps_);
-  INFO("Padding width: " << paddingWidth_);
   INFO("Data size: " << dataSize_);
   INFO("");
 

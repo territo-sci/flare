@@ -58,9 +58,13 @@ int main(int argc, char **argv) {
   } else {
     INFO("\nNo cached TSP file found");
     if (!tsp->Construct()) exit(1);
-    if (!tsp->CalculateSpatialError()) exit(1);
-    if (!tsp->CalculateTemporalError()) exit(1);
-    if (!tsp->WriteCache()) exit(1);
+    if (config->CalculateError() == 0) {
+      INFO("Not calculating errors");
+    } else {
+      if (!tsp->CalculateSpatialError()) exit(1);
+      if (!tsp->CalculateTemporalError()) exit(1);
+      if (!tsp->WriteCache()) exit(1);
+    }
   }
 
   // Create brick manager and init (has to be done after init OpenGL!)

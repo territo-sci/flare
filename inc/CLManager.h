@@ -118,6 +118,8 @@ private:
   // Maximum allocatable size for each device
   cl_ulong maxMemAllocSize_[MAX_DEVICES];
   char deviceName_[MAX_NAME_LENGTH];
+  char driverVersion_[MAX_NAME_LENGTH];
+  char platformVersion_[MAX_NAME_LENGTH];
   cl_context context_;
   cl_command_queue commandQueues_[NUM_QUEUE_INDICES];
 

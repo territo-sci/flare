@@ -52,15 +52,14 @@ public:
   Texture3D * TextureAtlas() { return textureAtlas_; }
 
   // Header accessors
-  unsigned int Structure() const { return structure_; }
-  unsigned int DataDimensionality() const { return dataDimensionality_; }
+  unsigned int GridType() const { return gridType_; }
+  unsigned int NumTimesteps() const { return numTimesteps_; }
   unsigned int XBrickDim() const { return xBrickDim_; }
   unsigned int YBrickDim() const { return yBrickDim_; }
   unsigned int ZBrickDim() const { return zBrickDim_; }
   unsigned int XNumBricks() const { return xNumBricks_; }
   unsigned int YNumBricks() const { return yNumBricks_; }
   unsigned int ZNumBricks() const { return zNumBricks_; }
-  unsigned int NumTimesteps() const { return numTimesteps_; }
   unsigned int PaddingWidth() const { return paddingWidth_; }
   unsigned int DataSize() const { return dataSize_; }
 
@@ -71,22 +70,22 @@ private:
   BrickManager(const BrickManager&);
 
   // Header data
-  unsigned int structure_;
-  unsigned int dataDimensionality_;
+  unsigned int gridType_;
+  unsigned int numTimesteps_;
   unsigned int xBrickDim_;
   unsigned int yBrickDim_;
   unsigned int zBrickDim_;
   unsigned int xNumBricks_;
   unsigned int yNumBricks_;
   unsigned int zNumBricks_;
-  unsigned int numTimesteps_;
-  unsigned int paddingWidth_;
   unsigned int dataSize_;
 
   unsigned int numBricks_;
   unsigned int brickDim_;
   unsigned int paddedBrickDim_;
   unsigned int atlasDim_;
+
+  const unsigned int paddingWidth_ = 1;
 
   unsigned int numBrickVals_;
   unsigned int numBricksFrame_;

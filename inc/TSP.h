@@ -65,9 +65,10 @@ public:
   int * Data() { return &data_[0]; }
   unsigned int Size() { return data_.size(); }
 
-  unsigned int BrickDim() const { return brickDim_; }
+  // TODO support dimensions of differens sizes
+  unsigned int BrickDim() const { return xBrickDim_; }
   unsigned int PaddedBrickDim() const { return paddedBrickDim_; }
-  unsigned int NumBricksPerAxis() const { return numBricksPerAxis_; }
+  unsigned int NumBricksPerAxis() const { return xNumBricks_; }
   unsigned int NumTimesteps() const { return numTimesteps_; }
   unsigned int NumTotalNodes() const { return numTotalNodes_; }
   unsigned int NumValuesPerNode() const { return NUM_DATA; }
@@ -85,19 +86,26 @@ private:
   // Holds the actual structure
   std::vector<int> data_;
 
-  unsigned int structure_;
-  unsigned int dataDimensionality_;
-  unsigned int brickDim_;
-  unsigned int paddedBrickDim_;
-  unsigned int numBricksPerAxis_;
+  // Data from file
+  unsigned int gridType_;
   unsigned int numTimesteps_;
-  unsigned int paddingWidth_;
+  unsigned int xBrickDim_;
+  unsigned int yBrickDim_;
+  unsigned int zBrickDim_;
+  unsigned int xNumBricks_;
+  unsigned int yNumBricks_;
+  unsigned int zNumBricks_;
   unsigned int dataSize_;
+  
+  // Additional metadata
+  unsigned int paddedBrickDim_;
   unsigned int numTotalNodes_;
   unsigned int numBSTLevels_;
   unsigned int numBSTNodes_;
   unsigned int numOTLevels_;
   unsigned int numOTNodes_;
+
+  const unsigned int paddingWidth_ = 1;
 
   // Error stats
   float minSpatialError_;

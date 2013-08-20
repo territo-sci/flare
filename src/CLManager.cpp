@@ -49,6 +49,16 @@ bool CLManager::InitPlatform() {
   if (numPlatforms_ > 1) {
     WARNING("More than one platform found, this is unsupported");
   }
+
+  error_ = clGetPlatformInfo(platforms_[0], CL_PLATFORM_VERSION,
+           sizeof(platformVersion_), platformVersion_, NULL);
+  if (CheckSuccess(error_, "InitPlatform() printing platform version")) {
+    INFO("Platform version: " << platformVersion_);
+  } else {
+    return false;
+  }
+
+
   return true;
 }
 
@@ -74,6 +84,13 @@ bool CLManager::InitDevices() {
                              sizeof(deviceName_), deviceName_, NULL);
     if (CheckSuccess(error_, "InitDevices() printing info")) {
       INFO("Device " << i << " name: " << deviceName_);
+    } else {
+      return false;
+    }
+    error_ = clGetDeviceInfo(devices_[i], CL_DRIVER_VERSION,
+                             sizeof(driverVersion_), driverVersion_, NULL);
+    if (CheckSuccess(error_, "InitDevices() printing driver versio")) {
+      INFO("Driver version " << driverVersion_);
     } else {
       return false;
     }

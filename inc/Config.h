@@ -51,7 +51,10 @@ public:
   float TranslateX() const { return translateX_; }
   float TranslateY() const { return translateY_; }
   float TranslateZ() const { return translateZ_; }
-
+  int CalculateError() const { return calculateError_; }
+  float PitchSpeed() const { return pitchSpeed_; }
+  float RollSpeed() const { return rollSpeed_; }
+  float YawSpeed() const { return yawSpeed_; }
 
 private:
   Config();
@@ -89,6 +92,12 @@ private:
   float translateX_;
   float translateY_;
   float translateZ_;
+  int calculateError_;
+  float pitchSpeed_;
+  float rollSpeed_;
+  float yawSpeed_;
+
+
 };
 
 }

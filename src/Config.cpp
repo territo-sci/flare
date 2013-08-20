@@ -42,7 +42,11 @@ Config::Config(const std::string &_configFilename)
     startYaw_(0.f),
     translateX_(0.f),
     translateY_(0.f),
-    translateZ_(0.f)
+    translateZ_(0.f),
+    calculateError_(1),
+    pitchSpeed_(0.f),
+    rollSpeed_(0.f),
+    yawSpeed_(0.f)
 {}
     
 Config::~Config() {}
@@ -165,6 +169,18 @@ bool Config::Read() {
       } else if (variable == "clear_cache") {
         ss >> clearCache_;
         INFO("Clearing cache: " << clearCache_);
+      } else if (variable == "calculate_error") {
+        ss >> calculateError_;
+        INFO("Calculate error: " << calculateError_);
+      } else if (variable == "pitch_speed") {
+        ss >> pitchSpeed_;
+        INFO("Pitch speed: " << pitchSpeed_);
+      } else if (variable == "roll_speed") {
+        ss >> rollSpeed_;
+        INFO("Roll speed: " << rollSpeed_);
+      } else if (variable == "yaw_speed") {
+        ss >> yawSpeed_;
+        INFO("Yaw speed: " << yawSpeed_);
       } else { 
         ERROR("Variable name " << variable << " unknown");
       } 
