@@ -12,7 +12,7 @@
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
 #include <math.h>
-//#include <Texture1D.h>
+#include <Texture2D.h>
 
 using namespace osp;
 
@@ -21,7 +21,7 @@ TransferFunction * TransferFunction::New() {
 }
 
 TransferFunction::TransferFunction() : 
-  //texture_(NULL),
+  texture_(NULL),
   floatData_(NULL),
   width_(0),
   lower_(0.f),
@@ -200,11 +200,12 @@ bool TransferFunction::ConstructTexture() {
     }
 
     // Create and fill the texture
-    //std::vector<unsigned int> dim(1);
-    //dim[0] = width_;
-    //texture_ = Texture1D::New(dim);
-    //texture_->Init(values);
-    //generatedTexture_ = true; 
+    std::vector<unsigned int> dim(2);
+    dim[0] = width_;
+    dim[1] = 1;
+    texture_ = Texture2D::New(dim);
+    texture_->Init(&floatData_[0]);
+    generatedTexture_ = true; 
     
     //delete[] values;
   } else {

@@ -36,7 +36,10 @@ float Lerp(float _v0, float _v1, float _d) {
   return _v0*(1.0 - _d) + _v1*_d;
 }
 
-float4 TransferFunction(__global __read_only float *_tf, float _i) {
+/*
+float4 TransferFunction(__global __read_only image2d_t _tf, 
+                        const sampler_t _tfSampler, 
+                        float _i) {
   // TODO remove  hard-coded value and change to 1D texture
   int i0 = (int)floor(1023.0*_i);
   int i1 = (i0 < 1023) ? i0+1 : i0;
@@ -58,11 +61,17 @@ float4 TransferFunction(__global __read_only float *_tf, float _i) {
 
   return clamp((float4)(tfr, tfg, tfb, tfa), (float4)(0.0), (float4)(1.0));
   //return (float4)(tfr, tfg, tfb, tfa);
+  float2 sampleCoords = (float2)(1.0, _i);
+  return read_imagef(_tf, _tfSampler, sampleCoords);
 }
+*/
+
+/*
 // Return index to the octree root (same index as BST root at that OT node)
 int OctreeRootNodeIndex() {
   return 0;
 }
+*/
 
 // Return index to left BST child (low timespan)
 int LeftBST(int _bstNodeIndex, int _numValuesPerNode, int _numOTNodes,
@@ -209,7 +218,8 @@ void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
                  int _boxesPerAxis, int _paddedBrickDim, int _level,
                  const sampler_t _atlasSampler,
                  __global __read_only image3d_t _textureAtlas,
-                 __global __read_only float *_transferFunction,
+                 __global __read_only image2d_t _transferFunction,
+                 const sampler_t _tfSampler,
                  __global __read_only int *_brickList) {
 
   // Find the texture atlas coordinates for the point
@@ -223,7 +233,7 @@ void SampleAtlas(float4 *_color, float3 _coords, int _brickIndex,
   // Sample the atlas
   float sample = read_imagef(_textureAtlas, _atlasSampler, a4).x;
   // Composition
-  float4 tf = TransferFunction(_transferFunction, sample);
+  float4 tf = read_imagef(_transferFunction, _tfSampler, (float2)(sample, 0.0));
   *_color += (1.0 - _color->w)*tf;
 
 }
@@ -349,7 +359,7 @@ void UpdateOffset(float3 *_offset, float _boxDim, int _child) {
 float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
                       __global __read_only image3d_t _textureAtlas,
                       __constant struct KernelConstants *_constants,
-                      __global __read_only float *_transferFunction,
+                      __global __read_only image2d_t _transferFunction,
                       __global __read_only int *_tsp,
                       __global __read_only int *_brickList,
                       const int _timestep) {
@@ -362,11 +372,16 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
   // Cumulative color for ray to return
   float4 color = (float4)(0.0);
 
- 
   // Sampler for texture atlas
   const sampler_t atlasSampler = CLK_FILTER_LINEAR |
                                  CLK_NORMALIZED_COORDS_TRUE |
                                  CLK_ADDRESS_CLAMP_TO_EDGE;
+
+                                
+  // Sampler for transfer function texture 
+  const sampler_t tfSampler = CLK_FILTER_LINEAR |
+                              CLK_NORMALIZED_COORDS_TRUE |
+                              CLK_ADDRESS_CLAMP_TO_EDGE;
 
   // Traverse until sample point is outside of volume
   while (traversed < _maxDist) {
@@ -378,7 +393,7 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
     int child;
     int level = _constants->rootLevel_;
 
-    int otNodeIndex = OctreeRootNodeIndex();
+    int otNodeIndex = 0;
 
     // Rely on finding a leaf for loop termination
     while (true) {
@@ -406,7 +421,8 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
                     _constants->paddedBrickDim_,
                     level, 
                     atlasSampler, _textureAtlas,
-                    _transferFunction, _brickList); 
+                    _transferFunction,
+                    tfSampler, _brickList); 
         break;
 
       } else {
@@ -451,7 +467,8 @@ __kernel void RaycasterTSP(__global __read_only image2d_t _cubeFront,
                            __global __write_only image2d_t _output,
                            __global __read_only image3d_t _textureAtlas,
                            __constant struct KernelConstants *_constants,
-                           __global __read_only float *_transferFunction,
+                           __global __read_only image2d_t _transferFunction,
+                           //__global __read_only float *_transferFunction,
                            __global __read_only int *_tsp,
                            __global __read_only int *_brickList,
                            const int _timestep) {

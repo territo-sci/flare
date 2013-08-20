@@ -6,7 +6,7 @@ Author: Victor Sand (victor.sand@gmail.com)
 Transfer function class that consists of a number of MappingKeys. When
 the mapping keys are added, the transfer function can be constructed by
 interpolating between the MappingKey values.
-TODO Use Texture1D for implementation when OpenCL 1.2 works
+TODO Use Texture1D for implementation when OpenCL 1.2 is supported 
 */
 
 #include <MappingKey.h>
@@ -16,7 +16,7 @@ TODO Use Texture1D for implementation when OpenCL 1.2 works
 
 namespace osp {
 
-//class Texture1D;
+class Texture2D;
   
 class TransferFunction {
 public:
@@ -48,7 +48,7 @@ public:
 
   // Accessors
   unsigned int Width() const { return width_; }
-  //Texture1D * Texture() { return texture_; }
+  Texture2D * Texture() { return texture_; }
   
   // TODO temp
   float * FloatData() { return floatData_; }
@@ -61,7 +61,7 @@ private:
   TransferFunction(const TransferFunction &_tf);
   float *floatData_;
   
-  //Texture1D *texture_;
+  Texture2D *texture_;
   unsigned int width_;
   float lower_;
   float upper_;

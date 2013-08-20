@@ -36,8 +36,8 @@ calculate_error			0
 tsp_traversal_stepsize          0.05
 
 # Ray caster constants
-raycaster_stepsize              0.006
-raycaster_intensity             1.2
+raycaster_stepsize              0.005
+raycaster_intensity             0.9
 
 # Animation speed
 animator_refresh_interval       0.10

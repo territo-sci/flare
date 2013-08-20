@@ -568,21 +568,15 @@ bool Raycaster::InitFramebuffers() {
 
 
 bool Raycaster::ReloadTransferFunctions() {
+
   INFO("Reloading transfer functions");
   if (!transferFunctions_[0]->ReadFile()) return false;
   if (!transferFunctions_[0]->ConstructTexture()) return false;
 
-  float* tfData = transferFunctions_[0]->FloatData();
-  unsigned int tfSize = sizeof(float)*transferFunctions_[0]->Width()*4;
-  if (!clManager_->ReleaseBuffer("RaycasterTSP", transferFunctionArg_)) {
-    return false;
-  }
-
-  if (!clManager_->AddBuffer("RaycasterTSP", transferFunctionArg_,
-                             reinterpret_cast<void*>(tfData),
-                             tfSize,
-                             CLManager::COPY_HOST_PTR,
-                             CLManager::READ_ONLY)) return false;
+  if (!clManager_->AddTexture("RaycasterTSP", transferFunctionArg_,
+                              transferFunctions_[0]->Texture(),
+                              CLManager::TEXTURE_2D,
+                              CLManager::READ_ONLY)) return false;
   return true;
 }
 
@@ -779,15 +773,19 @@ bool Raycaster::InitCL() {
                               brickManager_->TextureAtlas(),
                               CLManager::TEXTURE_3D, 
                               CLManager::READ_ONLY)) return false;
+  if (!clManager_->AddTexture("RaycasterTSP", transferFunctionArg_,
+                              transferFunctions_[0]->Texture(),
+                              CLManager::TEXTURE_2D,
+                              CLManager::READ_ONLY)) return false;
 
   // Add transfer function
-  float* tfData = transferFunctions_[0]->FloatData();
-  unsigned int tfSize = sizeof(float)*transferFunctions_[0]->Width()*4;
-  if (!clManager_->AddBuffer("RaycasterTSP", transferFunctionArg_,
-                             reinterpret_cast<void*>(tfData),
-                             tfSize,
-                             CLManager::COPY_HOST_PTR,
-                             CLManager::READ_ONLY)) return false;
+  //float* tfData = transferFunctions_[0]->FloatData();
+  //unsigned int tfSize = sizeof(float)*transferFunctions_[0]->Width()*4;
+  //if (!clManager_->AddBuffer("RaycasterTSP", transferFunctionArg_,
+  //                           reinterpret_cast<void*>(tfData),
+  //                           tfSize,
+  //                           CLManager::COPY_HOST_PTR,
+  //                           CLManager::READ_ONLY)) return false;
 
   if (!clManager_->AddBuffer("RaycasterTSP", tspArg_,
                              reinterpret_cast<void*>(tsp_->Data()),
