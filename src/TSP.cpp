@@ -48,7 +48,6 @@ bool TSP::ReadHeader() {
   in.read(reinterpret_cast<char*>(&dataSize_), s);
   dataPos_ = in.tellg();
 
-  in.close();
 
   paddedBrickDim_ = xBrickDim_ + 2*paddingWidth_;
 
@@ -63,6 +62,30 @@ bool TSP::ReadHeader() {
   INFO("Num OT nodes: " << numOTNodes_);
   INFO("Num BST levels: " << numBSTLevels_);
   INFO("Num BST nodes: " << numBSTNodes_);
+
+  /*
+  // Check for inf/NaN
+  unsigned int numBrickVals = xBrickDim_*yBrickDim_*zBrickDim_;
+  std::vector<float> brickBuffer(numBrickVals);
+  INFO("Checking for inf/NaN...");
+  for (unsigned int i=0; i<numTotalNodes_; ++i) {
+    in.read(reinterpret_cast<char*>(&brickBuffer[0]), 
+                sizeof(float)*numBrickVals);
+    for (auto it=brickBuffer.begin(); it!=brickBuffer.end(); ++it) {
+      if (isnan(*it)) {
+        std::cerr << "NaN detected: " << *it << std::endl;
+        return false;
+      } 
+      if (isinf(*it)) {
+        std::cerr << "inf detected: " << *it << std::endl;
+        return false;
+      }
+    }
+  }
+  INFO("Checking for inf/NaN... complete");
+  */
+  
+  in.close();
 
   // Allocate space for TSP structure
   data_.resize(numTotalNodes_*NUM_DATA);

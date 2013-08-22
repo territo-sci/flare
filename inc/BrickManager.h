@@ -12,6 +12,7 @@
 #include <map>
 #include <fstream>
 #include <boost/timer/timer.hpp>
+#include <stdio.h>
 
 #define real float
 
@@ -106,11 +107,17 @@ private:
 
   // Filestream to read from
   // Opened in the ReadHeader() function and closed in destructor
+  /*
   std::ifstream in_;
 
   // Points to the first brick data (just after the header)
   // This is set when the ReadHeader() function is run
   std::ios::pos_type dataPos_;
+  */
+
+  // C-style I/O
+  std::FILE *file_;
+  size_t dataPos_;
 
   bool hasReadHeader_;
   bool atlasInitialized_;

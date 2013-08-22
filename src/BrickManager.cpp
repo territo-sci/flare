@@ -8,6 +8,7 @@
 #include <Config.h>
 #include <Utils.h>
 #include <cmath>
+#include <limits>
 //#include <boost/timer/timer.hpp>
 
 using namespace osp;
@@ -19,7 +20,7 @@ BrickManager * BrickManager::New(Config *_config) {
 
 BrickManager::BrickManager(Config *_config)
   : textureAtlas_(NULL), config_(_config), atlasInitialized_(false), 
-   hasReadHeader_(false), xCoord_(0), yCoord_(0), zCoord_(0) {
+   hasReadHeader_(false), xCoord_(0), yCoord_(0), zCoord_(0), file_(NULL) {
 
   // TODO move
   glGenBuffers(1, &pboHandle_[EVEN]);
@@ -28,9 +29,9 @@ BrickManager::BrickManager(Config *_config)
 }
 
 BrickManager::~BrickManager() {
-  if (in_.is_open()) {
-    in_.close();
-  }
+  //if (in_.is_open()) {
+  //  in_.close();
+  //}
 }
 
 
@@ -42,6 +43,35 @@ bool BrickManager::ReadHeader() {
   }
 
   std::string inFilename = config_->TSPFilename();
+
+  if (file_) {
+    ERROR("File pointer is not NULL");
+    return false;
+  }
+
+  file_ = fopen(inFilename.c_str(), "r");
+  if (!file_) {
+    ERROR("Failed to open file: " << inFilename);
+    return false;
+  }
+
+  // Read unsigned ints in header
+  size_t dataSize = sizeof(unsigned int);
+  fread(reinterpret_cast<void*>(&gridType_), dataSize, 1, file_);
+  fread(reinterpret_cast<void*>(&numTimesteps_), dataSize, 1, file_);
+  fread(reinterpret_cast<void*>(&xBrickDim_), dataSize, 1, file_);
+  fread(reinterpret_cast<void*>(&yBrickDim_), dataSize, 1, file_);
+  fread(reinterpret_cast<void*>(&zBrickDim_), dataSize, 1, file_);
+  fread(reinterpret_cast<void*>(&xNumBricks_), dataSize, 1, file_);
+  fread(reinterpret_cast<void*>(&yNumBricks_), dataSize, 1, file_);
+  fread(reinterpret_cast<void*>(&zNumBricks_), dataSize, 1, file_);
+  fread(reinterpret_cast<void*>(&dataSize_), dataSize, 1, file_);
+
+
+
+
+
+  /*
   in_.open(inFilename.c_str(), std::ios_base::in | std::ios_base::binary);
 
   if (!in_.is_open()) {
@@ -61,6 +91,7 @@ bool BrickManager::ReadHeader() {
   in_.read(reinterpret_cast<char*>(&yNumBricks_), s);
   in_.read(reinterpret_cast<char*>(&zNumBricks_), s);
   in_.read(reinterpret_cast<char*>(&dataSize_), s);
+  */
   
   INFO("Header reading complete");
   INFO("Grid type: " << gridType_);
@@ -70,8 +101,11 @@ bool BrickManager::ReadHeader() {
   INFO("Data size: " << dataSize_);
   INFO("");
 
+  // Keep track of position for data in file
+  dataPos_ = ftell(file_);
+
   // Keep track of where in file brick data starts
-   dataPos_ = in_.tellg();
+  //dataPos_ = in_.tellg();
 
   // Allocate box list and brick buffer
   // The box list keeps track of 1 brick index, 3 coordinate and 1 size value
@@ -94,10 +128,52 @@ bool BrickManager::ReadHeader() {
   unsigned int numOTNodes = (unsigned int)((pow(8, numOTLevels) - 1) / 7);
   unsigned int numBSTNodes = (unsigned int)numTimesteps_*2 - 1;
   numBricksTree_ = numOTNodes * numBSTNodes;
+  INFO("Num OT levels: " << numOTLevels);
+  INFO("Num OT nodes: " << numOTNodes);
+  INFO("Num BST nodes: " << numBSTNodes);
+  INFO("Num bricks in tree: " << numBricksTree_);
+  INFO("Num values per brick: " << numBrickVals_);
 
   brickSize_ = sizeof(float)*numBrickVals_;
   volumeSize_ = brickSize_*numBricksFrame_;
   numValsTot_ = numBrickVals_*numBricksFrame_;
+
+
+  fseek(file_, 0, SEEK_END);
+  size_t fileSize = ftell(file_);
+  INFO("file size: " << fileSize);
+  size_t calcFileSize = size_t(numBricksTree_)*(size_t)brickSize_ + dataPos_;
+  INFO("calculated file size: " << calcFileSize);
+
+  if (fileSize != calcFileSize) {
+    ERROR("Sizes don't match");
+    return false;
+  }
+  
+  /*
+  // Check for inf/NaN using C-style streams
+  std::vector<float> brickBuffer(numBrickVals_);
+  INFO("Checking for inf/NaN...");
+  for (unsigned int i=0; i<numBricksTree_; ++i) {
+    size_t offset = dataPos_ + (size_t)i * size_t(brickSize_);
+    //INFO("Checking brick " << i << " offset " << offset);
+    fseek(file_, offset, SEEK_SET);
+    //INFO("ftell: " << ftell(file_));
+    fread(reinterpret_cast<void*>(&brickBuffer[0]), (size_t)brickSize_, 1, file_);
+    for (auto it=brickBuffer.begin(); it!=brickBuffer.end(); ++it) {
+      if (isnan(*it)) {
+        std::cerr << "NaN detected: " << *it << std::endl;
+        return false;
+      } 
+      if (isinf(*it)) {
+        std::cerr << "inf detected: " << *it << std::endl;
+        return false;
+      }
+    }
+  }
+  INFO("Checked the whole thing!");
+  INFO("Last position: " << ftell(file_));
+  */
 
   hasReadHeader_ = true;
 
@@ -221,7 +297,6 @@ bool BrickManager::BuildBrickList(BUFFER_INDEX _bufIdx,
         IncCoord();
       }
 
-      
       numBricks++;
       
     } else {
@@ -275,6 +350,13 @@ bool BrickManager::FillVolume(float *_in, float *_out,
           zValCoord*atlasDim_*atlasDim_;
           
           _out[idx] = _in[from];
+          /*
+          if (isnan(_out[idx]) || isinf(_out[idx])) {
+            INFO("Sneddies!");
+            INFO(_out[idx]);
+            return false;
+          }
+          */
           from++;
       }
     }
@@ -289,7 +371,7 @@ bool BrickManager::FillVolume(float *_in, float *_out,
 
 // TODO find buffer size
 bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
-
+  
   // Map PBO
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboHandle_[_pboIndex]);
   glBufferData(GL_PIXEL_UNPACK_BUFFER, volumeSize_, 0, GL_STREAM_DRAW);
@@ -335,24 +417,57 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
 
     // Read the sequence into a buffer
     float *seqBuffer = new float[sequence*numBrickVals_];
-    std::ios::pos_type offset = static_cast<std::ios::pos_type>(brickIndex) *
+    size_t bufSize = sequence*numBrickVals_*sizeof(float);
+    /*
+    std::ios::pos_type offset = dataPos_ +
+                                static_cast<std::ios::pos_type>(brickIndex) *
                                 static_cast<std::ios::pos_type>(brickSize_);
+    */
+
+    size_t offset = dataPos_ + (size_t)brickIndex * size_t(brickSize_);
 
     // Skip reading if all bricks in sequence is already in PBO
     if (inPBO != sequence) {
   
-      timer_.start();
+      //timer_.start();
 
-      in_.seekg(dataPos_+offset);
+      /* 
+      std::streamoff off = static_cast<std::streamoff>(offset);
+      in_.seekg(off);
+      if (in_.tellg() == -1) {
+        ERROR("Failed to get input stream position");
+        INFO("offset: " << offset);
+        INFO("streamoff max: " << std::numeric_limits<std::streamoff>::max());
+        INFO("size_t max: " << std::numeric_limits<size_t>::max());
+        return false;
+      }
+      INFO("in.tellg(): " << in_.tellg());
       in_.read(reinterpret_cast<char*>(seqBuffer), brickSize_*sequence);
+      */
 
-      timer_.stop();
-      double time = timer_.elapsed().wall / 1.0e9;
-      double mb = (brickSize_*sequence) / 1048576.0;
+      fseek(file_, offset, SEEK_SET);
+      fread(reinterpret_cast<void*>(seqBuffer), bufSize, 1, file_);
+      if (ferror(file_) != 0) {
+        ERROR("File reading error");
+        perror(" ");
+        return false;
+      }
+
+      //timer_.stop();
+      //double time = timer_.elapsed().wall / 1.0e9;
+      //double mb = (brickSize_*sequence) / 1048576.0;
       //INFO("Disk read "<<mb<<" MB in "<<time<<" s, "<< mb/time<<" MB/s");
 
       // For each brick in the buffer, put it the correct buffer spot
       for (unsigned int i=0; i<sequence; ++i) {
+
+        for (unsigned int j=0; j<numBrickVals_; ++j) {
+          if (isnan(seqBuffer[j]) || isinf(seqBuffer[j])) {
+            INFO("Sneddies!");
+            INFO(j << " " << seqBuffer[j]);
+            return false;
+          }
+        }
 
         // Only upload if needed
         // Pointless if implementation only skips reading when ALL bricks in
@@ -390,7 +505,6 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
 
   glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
 
   return true;
 }

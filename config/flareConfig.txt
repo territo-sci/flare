@@ -1,20 +1,20 @@
 # Window dimensions
 # Don't change during runtime
-win_width           512
-win_height          512
+win_width           		512
+win_height          		512
 
 # 0 to not clear cache every frame, 1 to clear it
 # Used for benchmarking purposes
-clear_cache	    0
+clear_cache	    		0
 
 # Local kernel work size
 # Can't be changed during runtime
-local_worksize_x    16
-local_worksize_y    16
+local_worksize_x    		16
+local_worksize_y    		16
 
 # Scaling division to make textures smaller
 # Saves OpenCL threads
-texture_division_factor 1
+texture_division_factor 	1
 
 # Filenames
 # Don't change during runtime
@@ -36,11 +36,11 @@ calculate_error			0
 tsp_traversal_stepsize          0.05
 
 # Ray caster constants
-raycaster_stepsize              0.005
-raycaster_intensity             0.9
+raycaster_stepsize              0.008
+raycaster_intensity             1.1
 
 # Animation speed
-animator_refresh_interval       0.10
+animator_refresh_interval       0.50
 
 # Various paths
 raycaster_kernel_filename       kernels/RaycasterTSP.cl
@@ -56,7 +56,7 @@ start_roll                      30.0
 start_yaw                       0.0
 
 # Automatic pitch/roll/yaw
-pitch_speed			0.5			
+pitch_speed			0.6			
 roll_speed			0.0
 yaw_speed			0.0
 
