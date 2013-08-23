@@ -5,7 +5,7 @@
 
 #include <TSP.h>
 #include <Config.h>
-#include <fstream>
+#include <stdio.h>
 #include <Utils.h>
 #include <cmath>
 #include <list>
@@ -27,30 +27,30 @@ TSP::~TSP() {
 
 bool TSP::ReadHeader() {
 
-  std::fstream in;
+  INFO("Reading header");
+
   std::string inFilename = config_->TSPFilename();
-  in.open(inFilename.c_str(), std::ios_base::in | std::ios_base::binary);
-  if (!in.is_open()) {
-    ERROR("TSP Construct failed to open " << inFilename);
+  std::FILE *in = fopen(inFilename.c_str(), "r");
+  if (!in) {
+    ERROR("Failed to open " << inFilename);
     return false;
   }
   
   // Read header
   size_t s = sizeof(unsigned int);
-  in.read(reinterpret_cast<char*>(&gridType_), s);
-  in.read(reinterpret_cast<char*>(&numTimesteps_), s);
-  in.read(reinterpret_cast<char*>(&xBrickDim_), s);
-  in.read(reinterpret_cast<char*>(&yBrickDim_), s);
-  in.read(reinterpret_cast<char*>(&zBrickDim_), s);
-  in.read(reinterpret_cast<char*>(&xNumBricks_), s);
-  in.read(reinterpret_cast<char*>(&yNumBricks_), s);
-  in.read(reinterpret_cast<char*>(&zNumBricks_), s);
-  in.read(reinterpret_cast<char*>(&dataSize_), s);
-  dataPos_ = in.tellg();
+  fread(reinterpret_cast<void*>(&gridType_), s, 1, in);
+  fread(reinterpret_cast<void*>(&numOrigTimesteps_), s, 1, in);
+  fread(reinterpret_cast<void*>(&numTimesteps_), s, 1, in);
+  fread(reinterpret_cast<void*>(&xBrickDim_), s, 1, in);
+  fread(reinterpret_cast<void*>(&yBrickDim_), s, 1, in);
+  fread(reinterpret_cast<void*>(&zBrickDim_), s, 1, in);
+  fread(reinterpret_cast<void*>(&xNumBricks_), s, 1, in);
+  fread(reinterpret_cast<void*>(&yNumBricks_), s, 1, in);
+  fread(reinterpret_cast<void*>(&zNumBricks_), s, 1, in);
 
+  dataPos_ = ftello(in);
 
   paddedBrickDim_ = xBrickDim_ + 2*paddingWidth_;
-
   // TODO support dimensions of different size
   numOTLevels_ = (unsigned int)(log((int)xNumBricks_)/log(2) + 1);
   numOTNodes_ = (unsigned int)((pow(8, numOTLevels_) - 1) / 7);
@@ -63,29 +63,7 @@ bool TSP::ReadHeader() {
   INFO("Num BST levels: " << numBSTLevels_);
   INFO("Num BST nodes: " << numBSTNodes_);
 
-  /*
-  // Check for inf/NaN
-  unsigned int numBrickVals = xBrickDim_*yBrickDim_*zBrickDim_;
-  std::vector<float> brickBuffer(numBrickVals);
-  INFO("Checking for inf/NaN...");
-  for (unsigned int i=0; i<numTotalNodes_; ++i) {
-    in.read(reinterpret_cast<char*>(&brickBuffer[0]), 
-                sizeof(float)*numBrickVals);
-    for (auto it=brickBuffer.begin(); it!=brickBuffer.end(); ++it) {
-      if (isnan(*it)) {
-        std::cerr << "NaN detected: " << *it << std::endl;
-        return false;
-      } 
-      if (isinf(*it)) {
-        std::cerr << "inf detected: " << *it << std::endl;
-        return false;
-      }
-    }
-  }
-  INFO("Checking for inf/NaN... complete");
-  */
-  
-  in.close();
+  fclose(in);
 
   // Allocate space for TSP structure
   data_.resize(numTotalNodes_*NUM_DATA);
@@ -168,11 +146,10 @@ bool TSP::CalculateSpatialError() {
 
   unsigned int numBrickVals = paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
 
-  std::fstream in;
   std::string inFilename = config_->TSPFilename();
-  in.open(inFilename.c_str(), std::ios_base::in | std::ios_base::binary);
-  if (!in.is_open()) {
-    ERROR("TSP CalculateSpatialError failed to open " << inFilename);
+  std::FILE *in = fopen(inFilename.c_str(), "r");
+  if (!in) {
+    ERROR("Failed to open" << inFilename);
     return false;
   }
 
@@ -185,13 +162,12 @@ bool TSP::CalculateSpatialError() {
   for (unsigned int brick=0; brick<numTotalNodes_; ++brick) {
 
     // Offset in file
-    std::ios::pos_type offset = dataPos_ +
-      static_cast<std::ios::pos_type>(brick*numBrickVals*sizeof(float));
+    off offset = dataPos_ + static_cast<off>(brick*numBrickVals*sizeof(float));
+    fseeko(in, offset, SEEK_SET);
 
-    in.seekp(offset);
-    in.read(reinterpret_cast<char*>(&buffer[0]), sizeof(float)*numBrickVals);
+    fread(reinterpret_cast<void*>(&buffer[0]), 
+      static_cast<size_t>(numBrickVals)*sizeof(float), 1, in);
 
-    // TODO parallelize
     float average = 0.f;
     for (auto it=buffer.begin(); it!=buffer.end(); ++it) {
       average += *it;
@@ -210,7 +186,7 @@ bool TSP::CalculateSpatialError() {
   INFO("Calculating spatial error, second pass");
   for (unsigned int brick=0; brick<numTotalNodes_; ++brick) {
   
-    // Fetch mean color and compute scalar analouge
+    // Fetch mean intensity 
     float brickAvg = averages[brick];
 
     // Sum  for std dev computation
@@ -225,10 +201,10 @@ bool TSP::CalculateSpatialError() {
          lb!=coveredLeafBricks.end(); ++lb) {
 
       // Read brick
-      std::ios::pos_type offset = dataPos_ +
-        static_cast<std::ios::pos_type>((*lb)*numBrickVals*sizeof(float));
-      in.seekp(offset);
-      in.read(reinterpret_cast<char*>(&buffer[0]), sizeof(float)*numBrickVals);
+      off offset = dataPos_+static_cast<off>((*lb)*numBrickVals*sizeof(float));
+      fseeko(in, offset, SEEK_SET);
+      fread(reinterpret_cast<void*>(&buffer[0]),
+            static_cast<size_t>(numBrickVals)*sizeof(float), 1, in);
 
       // Add to sum
       for (auto v=buffer.begin(); v!=buffer.end(); ++v) {
@@ -245,8 +221,6 @@ bool TSP::CalculateSpatialError() {
 
     stdDev /= static_cast<float>(coveredLeafBricks.size()*numBrickVals);
     stdDev = sqrt(stdDev);
-    //stdDev = pow(stdDev, 0.1f);
-    //INFO(brick << " " << " std dev: " << stdDev);
 
     if (stdDev < minError) {
       minError = stdDev;
@@ -254,13 +228,13 @@ bool TSP::CalculateSpatialError() {
       maxError = stdDev;
     }
 
-    //data_[brick*NUM_DATA+SPATIAL_ERR] = *reinterpret_cast<int*>(&stdDev);
     stdDevs[brick] = stdDev;
     medianArray[brick] = stdDev;
     
   }
 
-  
+  fclose(in);
+
   std::sort(medianArray.begin(), medianArray.end());
   float medError = medianArray[medianArray.size()/2];
 
@@ -301,11 +275,10 @@ bool TSP::CalculateSpatialError() {
 
 bool TSP::CalculateTemporalError() {
 
-  std::fstream in;
   std::string inFilename = config_->TSPFilename();
-  in.open(inFilename.c_str(), std::ios_base::in | std::ios_base::binary);
-  if (!in.is_open()) {
-    ERROR("TSP CalculateTemporalError failed to open " << inFilename);
+  std::FILE *in = fopen(inFilename.c_str(), "r");
+  if (!in) {
+    ERROR("Failed to open " << inFilename);
     return false;
   }
 
@@ -332,12 +305,10 @@ bool TSP::CalculateTemporalError() {
     std::vector<float> voxelStdDevs(numBrickVals);
 
     // Read the whole brick to fill the averages
-    std::ios::pos_type offset = dataPos_ +
-      static_cast<std::ios::pos_type>(brick*numBrickVals*sizeof(float));
-
-    in.seekp(offset);
-    in.read(reinterpret_cast<char*>(&voxelAverages[0]), 
-            sizeof(float)*numBrickVals);
+    off offset = dataPos_+static_cast<off>(brick*numBrickVals*sizeof(float));
+    fseeko(in, offset, SEEK_SET);
+    fread(reinterpret_cast<void*>(&voxelAverages[0]), 
+          static_cast<size_t>(numBrickVals)*sizeof(float), 1, in);
 
     // Build a list of the BST leaf bricks (within the same octree level) that
     // this brick covers
@@ -352,13 +323,11 @@ bool TSP::CalculateTemporalError() {
            leaf != coveredBricks.end(); ++leaf) {
 
         // Sample the leaves at the corresponding voxel position
-        std::ios::pos_type sampleOffset = dataPos_ +
-          static_cast<std::ios::pos_type>(
-            (*leaf*numBrickVals+voxel)*sizeof(float));
-
+        off sampleOffset = dataPos_ +
+          static_cast<off>((*leaf*numBrickVals+voxel)*sizeof(float));
+        fseeko(in, sampleOffset, SEEK_SET);
         float sample;
-        in.seekp(sampleOffset);
-        in.read(reinterpret_cast<char*>(&sample), sizeof(float));
+        fread(reinterpret_cast<void*>(&sample), sizeof(float), 1, in);
 
         stdDev += pow(sample-voxelAverages[voxel], 2.f);
       }
@@ -380,7 +349,7 @@ bool TSP::CalculateTemporalError() {
 
   } // for all bricks
   
-  in.close();
+  fclose(in);
 
   std::sort(meanArray.begin(), meanArray.end());
   float medErr = meanArray[meanArray.size()/2];
@@ -390,11 +359,10 @@ bool TSP::CalculateTemporalError() {
   INFO("Max temporal error: " << maxErr);
   INFO("Median temporal error: " << medErr); 
 
-  // Normalize errors
+  // Adjust errors using user-provided exponents
   float minNorm = 1e20f;
   float maxNorm = 0.f;
   for (unsigned int i=0; i<numTotalNodes_; ++i) {
-    //float normalized = (stdDevs[i]-minError)/(maxError-minError);
     errors[i] = pow(errors[i], 0.25f);
     data_[i*NUM_DATA+TEMPORAL_ERR] = *reinterpret_cast<int*>(&errors[i]);
     if (errors[i] < minNorm) {
@@ -415,7 +383,6 @@ bool TSP::CalculateTemporalError() {
   INFO("Max normalized spatial std dev: " << maxNorm);
   INFO("Median normalized spatial std dev: " << medNorm);
   INFO("");
-
 
   return true;
 }
@@ -510,23 +477,22 @@ bool TSP::ReadCache() {
   std::string cacheFilename = config_->TSPFilename() + ".cache";
   INFO("Looking for cache file " << cacheFilename);
   
-  std::fstream in;
-  in.open(cacheFilename.c_str(), std::ios_base::in | std::ios_base::binary);
-  if (!in.is_open()) {
-    INFO("Failed to open cache file " << cacheFilename);
+  std::FILE *in = fopen(cacheFilename.c_str(), "r");
+  if (!in) {
+    ERROR("Failed to open " << cacheFilename);
     return false;
   }
-
-  size_t dataSize = numTotalNodes_*NUM_DATA*sizeof(int);
   
-  in.read(reinterpret_cast<char*>(&minSpatialError_), sizeof(float));
-  in.read(reinterpret_cast<char*>(&maxSpatialError_), sizeof(float));
-  in.read(reinterpret_cast<char*>(&medianSpatialError_), sizeof(float));
-  in.read(reinterpret_cast<char*>(&minTemporalError_), sizeof(float));
-  in.read(reinterpret_cast<char*>(&maxTemporalError_), sizeof(float));
-  in.read(reinterpret_cast<char*>(&medianTemporalError_), sizeof(float));
-  in.read(reinterpret_cast<char*>(&data_[0]), dataSize);
-  in.close();
+  fread(reinterpret_cast<void*>(&minSpatialError_), sizeof(float), 1, in);
+  fread(reinterpret_cast<void*>(&maxSpatialError_), sizeof(float), 1, in);
+  fread(reinterpret_cast<void*>(&medianSpatialError_), sizeof(float), 1, in);
+  fread(reinterpret_cast<void*>(&minTemporalError_), sizeof(float), 1, in);
+  fread(reinterpret_cast<void*>(&maxTemporalError_), sizeof(float), 1, in);
+  fread(reinterpret_cast<void*>(&medianTemporalError_), sizeof(float), 1, in);
+  size_t dataSize = static_cast<size_t>(numTotalNodes_*NUM_DATA)*sizeof(int);
+  fread(reinterpret_cast<void*>(&data_[0]), dataSize, 1, in);
+
+  fclose(in);
 
   INFO("");
   INFO("Min spatial error: " << minSpatialError_);
@@ -544,23 +510,21 @@ bool TSP::WriteCache() {
   std::string cacheFilename = config_->TSPFilename() + ".cache";
   INFO("Writing cache to " << cacheFilename);
 
-  std::fstream out;
-  out.open(cacheFilename.c_str(),
-    std::ios_base::out | std::ios_base::binary | std::ios_base::trunc);
-  if (!out.is_open()) {
-    ERROR("Failed to open " << cacheFilename);
+  std::FILE *out = fopen(cacheFilename.c_str(), "w");
+  if (!out) {
+    ERROR("Failed to init " << cacheFilename);
     return false;
   }
 
-  out.seekp(std::ios_base::beg);
-  out.write(reinterpret_cast<char*>(&minSpatialError_), sizeof(float));
-  out.write(reinterpret_cast<char*>(&maxSpatialError_), sizeof(float));
-  out.write(reinterpret_cast<char*>(&medianSpatialError_), sizeof(float));
-  out.write(reinterpret_cast<char*>(&minTemporalError_), sizeof(float));
-  out.write(reinterpret_cast<char*>(&maxTemporalError_), sizeof(float));
-  out.write(reinterpret_cast<char*>(&medianTemporalError_), sizeof(float));
-  out.write(reinterpret_cast<char*>(&data_[0]), data_.size()*sizeof(int));
-  out.close();
+  fwrite(reinterpret_cast<void*>(&minSpatialError_), sizeof(float), 1, out);
+  fwrite(reinterpret_cast<void*>(&maxSpatialError_), sizeof(float), 1, out);
+  fwrite(reinterpret_cast<void*>(&medianSpatialError_), sizeof(float), 1, out);
+  fwrite(reinterpret_cast<void*>(&minTemporalError_), sizeof(float), 1, out);
+  fwrite(reinterpret_cast<void*>(&maxTemporalError_), sizeof(float), 1, out);
+  fwrite(reinterpret_cast<void*>(&medianTemporalError_), sizeof(float), 1,out);
+  fwrite(reinterpret_cast<void*>(&data_[0]), data_.size()*sizeof(float),1,out);
+
+  fclose(out);
 
   return true;
 }

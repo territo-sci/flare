@@ -13,13 +13,14 @@ local_worksize_x    		16
 local_worksize_y    		16
 
 # Scaling division to make textures smaller
-# Saves OpenCL threads
+# Saves OpenCL threads 
+# (A factor of 2 results in half the number of threads per dimension etc)
 texture_division_factor 	1
 
 # Filenames
 # Don't change during runtime
 # (Transfer function values can be changed during runtime though)
-tsp_filename                    /media/snabba_disk/OpenSpace/processed_data/enlil_128_256_32.tsp
+tsp_filename                    /media/snabba_disk/OpenSpace/processed_data/enlil_128_24_32.tsp
 transferfunction_filename       transferfunctions/fire.txt
 
 # Error tolerances 

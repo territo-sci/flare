@@ -56,45 +56,22 @@ bool BrickManager::ReadHeader() {
   }
 
   // Read unsigned ints in header
-  size_t dataSize = sizeof(unsigned int);
-  fread(reinterpret_cast<void*>(&gridType_), dataSize, 1, file_);
-  fread(reinterpret_cast<void*>(&numTimesteps_), dataSize, 1, file_);
-  fread(reinterpret_cast<void*>(&xBrickDim_), dataSize, 1, file_);
-  fread(reinterpret_cast<void*>(&yBrickDim_), dataSize, 1, file_);
-  fread(reinterpret_cast<void*>(&zBrickDim_), dataSize, 1, file_);
-  fread(reinterpret_cast<void*>(&xNumBricks_), dataSize, 1, file_);
-  fread(reinterpret_cast<void*>(&yNumBricks_), dataSize, 1, file_);
-  fread(reinterpret_cast<void*>(&zNumBricks_), dataSize, 1, file_);
-  fread(reinterpret_cast<void*>(&dataSize_), dataSize, 1, file_);
-
-
-
-
-
-  /*
-  in_.open(inFilename.c_str(), std::ios_base::in | std::ios_base::binary);
-
-  if (!in_.is_open()) {
-    ERROR("Failed to open " << inFilename);
-    return false;
-  }
-
-  in_.seekg(std::ios_base::beg);
-  
   size_t s = sizeof(unsigned int);
-  in_.read(reinterpret_cast<char*>(&gridType_), s);
-  in_.read(reinterpret_cast<char*>(&numTimesteps_), s);
-  in_.read(reinterpret_cast<char*>(&xBrickDim_), s);
-  in_.read(reinterpret_cast<char*>(&yBrickDim_), s);
-  in_.read(reinterpret_cast<char*>(&zBrickDim_), s);
-  in_.read(reinterpret_cast<char*>(&xNumBricks_), s);
-  in_.read(reinterpret_cast<char*>(&yNumBricks_), s);
-  in_.read(reinterpret_cast<char*>(&zNumBricks_), s);
-  in_.read(reinterpret_cast<char*>(&dataSize_), s);
-  */
+  fread(reinterpret_cast<void*>(&gridType_), s, 1, file_);
+  fread(reinterpret_cast<void*>(&numOrigTimesteps_), s, 1, file_);
+  fread(reinterpret_cast<void*>(&numTimesteps_), s, 1, file_);
+  fread(reinterpret_cast<void*>(&xBrickDim_), s, 1, file_);
+  fread(reinterpret_cast<void*>(&yBrickDim_), s, 1, file_);
+  fread(reinterpret_cast<void*>(&zBrickDim_), s, 1, file_);
+  fread(reinterpret_cast<void*>(&xNumBricks_), s, 1, file_);
+  fread(reinterpret_cast<void*>(&yNumBricks_), s, 1, file_);
+  fread(reinterpret_cast<void*>(&zNumBricks_), s, 1, file_);
+  //fread(reinterpret_cast<void*>(&s_), s, 1, file_);
+
   
   INFO("Header reading complete");
   INFO("Grid type: " << gridType_);
+  INFO("Original num timesteps: " << numOrigTimesteps_);
   INFO("Num timesteps: " << numTimesteps_);
   INFO("Brick dims: " << xBrickDim_ << " " << yBrickDim_ <<" "<< zBrickDim_);
   INFO("Num bricks: " << xNumBricks_ <<" "<< yNumBricks_ <<" "<< zNumBricks_);
@@ -103,13 +80,6 @@ bool BrickManager::ReadHeader() {
 
   // Keep track of position for data in file
   dataPos_ = ftell(file_);
-
-  // Keep track of where in file brick data starts
-  //dataPos_ = in_.tellg();
-
-  // Allocate box list and brick buffer
-  // The box list keeps track of 1 brick index, 3 coordinate and 1 size value
-  //boxList_.resize(xNumBricks_*yNumBricks_*zNumBricks_*5);
 
   brickDim_ = xBrickDim_;
   numBricks_ = xNumBricks_;
@@ -138,7 +108,6 @@ bool BrickManager::ReadHeader() {
   volumeSize_ = brickSize_*numBricksFrame_;
   numValsTot_ = numBrickVals_*numBricksFrame_;
 
-
   fseek(file_, 0, SEEK_END);
   size_t fileSize = ftell(file_);
   INFO("file size: " << fileSize);
@@ -149,31 +118,6 @@ bool BrickManager::ReadHeader() {
     ERROR("Sizes don't match");
     return false;
   }
-  
-  /*
-  // Check for inf/NaN using C-style streams
-  std::vector<float> brickBuffer(numBrickVals_);
-  INFO("Checking for inf/NaN...");
-  for (unsigned int i=0; i<numBricksTree_; ++i) {
-    size_t offset = dataPos_ + (size_t)i * size_t(brickSize_);
-    //INFO("Checking brick " << i << " offset " << offset);
-    fseek(file_, offset, SEEK_SET);
-    //INFO("ftell: " << ftell(file_));
-    fread(reinterpret_cast<void*>(&brickBuffer[0]), (size_t)brickSize_, 1, file_);
-    for (auto it=brickBuffer.begin(); it!=brickBuffer.end(); ++it) {
-      if (isnan(*it)) {
-        std::cerr << "NaN detected: " << *it << std::endl;
-        return false;
-      } 
-      if (isinf(*it)) {
-        std::cerr << "inf detected: " << *it << std::endl;
-        return false;
-      }
-    }
-  }
-  INFO("Checked the whole thing!");
-  INFO("Last position: " << ftell(file_));
-  */
 
   hasReadHeader_ = true;
 
@@ -216,7 +160,6 @@ bool BrickManager::InitAtlas() {
   if (!textureAtlas_->Init()) return false;
   
   atlasInitialized_ = true;
-
 
   return true;
 

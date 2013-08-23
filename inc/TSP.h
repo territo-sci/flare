@@ -9,6 +9,13 @@
 #ifndef TSP_H_
 #define TSP_H_
 
+// Make sure to use 64 bits for file offset
+#define _FILE_OFFSET_BITS 64
+
+// For easy switching between offset types
+// (off_t, off64_t etc)
+#define off off64_t
+
 #include <vector>
 #include <list>
 #include <string>
@@ -34,6 +41,7 @@ public:
   ~TSP();
 
   // Struct for convenience
+  // Note: UNUSED in this implementation
   struct Color {
     Color() {
       r = g = b = a = 0.f;
@@ -69,6 +77,7 @@ public:
   unsigned int BrickDim() const { return xBrickDim_; }
   unsigned int PaddedBrickDim() const { return paddedBrickDim_; }
   unsigned int NumBricksPerAxis() const { return xNumBricks_; }
+  unsigned int NumOrigTimesteps() const { return numOrigTimesteps_; }
   unsigned int NumTimesteps() const { return numTimesteps_; }
   unsigned int NumTotalNodes() const { return numTotalNodes_; }
   unsigned int NumValuesPerNode() const { return NUM_DATA; }
@@ -88,6 +97,7 @@ private:
 
   // Data from file
   unsigned int gridType_;
+  unsigned int numOrigTimesteps_;
   unsigned int numTimesteps_;
   unsigned int xBrickDim_;
   unsigned int yBrickDim_;
@@ -95,7 +105,7 @@ private:
   unsigned int xNumBricks_;
   unsigned int yNumBricks_;
   unsigned int zNumBricks_;
-  unsigned int dataSize_;
+  //unsigned int dataSize_;
   
   // Additional metadata
   unsigned int paddedBrickDim_;
@@ -127,7 +137,9 @@ private:
   // Return a list of eight children brick incices given a brick index
   std::list<unsigned int> ChildBricks(unsigned int _brickIndex);
 
-  std::ios::pos_type dataPos_;
+  //std::ios::pos_type dataPos_;
+  // Position of first data entry (after header)
+  off dataPos_;
 
   // Calculate weighted square distance between two RGBA colors
   // c2 should be an averaged or zero color

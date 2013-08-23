@@ -109,7 +109,8 @@ int main(int argc, char **argv) {
 
   // Create animator
   Animator *animator = Animator::New(config);
-  animator->SetNumTimesteps(brickManager->NumTimesteps());
+  // Use original (not adjusted) number of timesteps for animator
+  animator->SetNumTimesteps(brickManager->NumOrigTimesteps());
 
   // Create CL manager
   CLManager *clManager = CLManager::New();

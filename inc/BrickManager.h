@@ -54,6 +54,7 @@ public:
 
   // Header accessors
   unsigned int GridType() const { return gridType_; }
+  unsigned int NumOrigTimesteps() const { return numOrigTimesteps_; }
   unsigned int NumTimesteps() const { return numTimesteps_; }
   unsigned int XBrickDim() const { return xBrickDim_; }
   unsigned int YBrickDim() const { return yBrickDim_; }
@@ -72,6 +73,7 @@ private:
 
   // Header data
   unsigned int gridType_;
+  unsigned int numOrigTimesteps_;
   unsigned int numTimesteps_;
   unsigned int xBrickDim_;
   unsigned int yBrickDim_;
@@ -104,16 +106,6 @@ private:
   Texture3D *textureAtlas_;
 
   std::vector<std::vector<int> > brickLists_;
-
-  // Filestream to read from
-  // Opened in the ReadHeader() function and closed in destructor
-  /*
-  std::ifstream in_;
-
-  // Points to the first brick data (just after the header)
-  // This is set when the ReadHeader() function is run
-  std::ios::pos_type dataPos_;
-  */
 
   // C-style I/O
   std::FILE *file_;

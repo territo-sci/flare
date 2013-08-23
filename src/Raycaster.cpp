@@ -43,7 +43,7 @@ uint32_t ZOrder(uint16_t xPos, uint16_t yPos, uint16_t zPos) {
   z = (z | (z << 16)) & 0x030000FF;
   z = (z | (z <<  8)) & 0x0300F00F;
   z = (z | (z <<  4)) & 0x030C30C3;
-  z = (z | (z <<   2)) & 0x09249249;
+  z = (z | (z <<  2)) & 0x09249249;
   const uint32_t result = x | (y << 1) | (z << 2);
   return result;
 }
