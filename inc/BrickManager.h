@@ -14,7 +14,10 @@
 #include <boost/timer/timer.hpp>
 #include <stdio.h>
 
-#define real float
+// Make sure we get 64 bits for offset
+#define _FILE_OFFSET_BITS 64
+// For easy switching between offset types
+#define off off64_t
 
 namespace osp {
 
@@ -109,7 +112,7 @@ private:
 
   // C-style I/O
   std::FILE *file_;
-  size_t dataPos_;
+  off dataPos_;
 
   bool hasReadHeader_;
   bool atlasInitialized_;
@@ -125,7 +128,7 @@ private:
   void IncCoord();
   // Linear version of the current x, y, z coordinate to be assigned
   unsigned int LinearCoord(int _x, int _y, int _z);
-  // 3D coordinates from liner index
+  // 3D coordinates from linear index
   void CoordsFromLin(int _idx, int &_x, int &_y, int &_z); 
 
   // Fill a brick in the volume using a pointer to flattened brick data

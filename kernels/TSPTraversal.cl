@@ -1,5 +1,6 @@
 // Mirrors struct on host side
 struct TraversalConstants {
+  int gridType_;
   float stepsize_;
   int numTimesteps_;
   int numValuesPerNode_;
@@ -326,8 +327,12 @@ void TraverseOctree(float3 _rayO,
         float boxMid = boxDim;
 
         // Check which child encloses P
-        float3 sphericalP = CartesianToSpherical(P);
-        child = EnclosingChild(sphericalP, boxMid, offset);
+        
+        if (_constants->gridType_ == 0) { // Cartesian
+          child = EnclosingChild(P, boxMid, offset);
+        } else { // Spherical (==1)
+          child = EnclosingChild(CartesianToSpherical(P), boxMid, offset);
+        }
 
         // Update offset
         UpdateOffset(&offset, boxDim, child);

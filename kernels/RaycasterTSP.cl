@@ -1,4 +1,5 @@
 struct KernelConstants {
+  int gridType_;
   float stepsize_;
   float intensity_;
   int numTimesteps_;
@@ -407,6 +408,14 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
                                     _tsp,
                                     _timestep);
 
+        // Convert to spherical if needed
+        float3 sampleP;
+        if (_constants->gridType_ == 0) { // cartesian
+          sampleP = cartesianP;
+        } else { // spherical ( == 1)
+          sampleP = CartesianToSpherical(cartesianP);
+        }
+
       if (bstSuccess || 
           IsOctreeLeaf(otNodeIndex, _constants->numValuesPerNode_, _tsp)) {
         
@@ -414,9 +423,8 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
         //color += (float4)(s);
 
 
-        float3 sphericalP = CartesianToSpherical(cartesianP);
         // Sample the brick
-        SampleAtlas(&color, sphericalP, brickIndex, 
+        SampleAtlas(&color, sampleP, brickIndex, 
                     _constants->numBoxesPerAxis_, 
                     _constants->paddedBrickDim_,
                     level, 
@@ -436,8 +444,7 @@ float4 TraverseOctree(float3 _rayO, float3 _rayD, float _maxDist,
         float boxMid = boxDim;
 
         // Check which child encloses the sample point
-        float3 sphericalP = CartesianToSpherical(cartesianP);
-        child = EnclosingChild(sphericalP, boxMid, offset);
+        child = EnclosingChild(sampleP, boxMid, offset);
        
         // Update offset for next level
         UpdateOffset(&offset, boxDim, child);

@@ -1,5 +1,12 @@
+# Filenames
+# Don't change during runtime
+# (Transfer function values can be changed during runtime though)
+tsp_filename                    /media/snabba_disk/OpenSpace/processed_data/enlil_256_256_64.tsp
+transferfunction_filename       transferfunctions/fire.txt
+
 # Window dimensions
 # Don't change during runtime
+# NOT USE
 win_width           		512
 win_height          		512
 
@@ -17,28 +24,21 @@ local_worksize_y    		16
 # (A factor of 2 results in half the number of threads per dimension etc)
 texture_division_factor 	1
 
-# Filenames
-# Don't change during runtime
-# (Transfer function values can be changed during runtime though)
-tsp_filename                    /media/snabba_disk/OpenSpace/processed_data/enlil_128_24_32.tsp
-transferfunction_filename       transferfunctions/fire.txt
-
 # Error tolerances 
 # Use -1 for no tolerance 
 spatial_error_tolerance         -1
 temporal_error_tolerance        -1
 
 # Calculate error or not (0 no, 1 yes)
-# If not used, errors will correspond to levels in tree
 calculate_error			0
 
-# Step size for TSP traversal
+# Step size for TSP probing
 # Decrease this if holes appear in the rendering
-tsp_traversal_stepsize          0.05
+tsp_traversal_stepsize          0.02
 
 # Ray caster constants
-raycaster_stepsize              0.008
-raycaster_intensity             1.1
+raycaster_stepsize              0.01
+raycaster_intensity             1.2
 
 # Animation speed
 animator_refresh_interval       0.50
@@ -57,7 +57,7 @@ start_roll                      30.0
 start_yaw                       0.0
 
 # Automatic pitch/roll/yaw
-pitch_speed			0.6			
+pitch_speed			0.0			
 roll_speed			0.0
 yaw_speed			0.0
 

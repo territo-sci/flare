@@ -36,6 +36,8 @@ BrickManager::~BrickManager() {
 
 
 bool BrickManager::ReadHeader() {
+
+  INFO("\nReading header for Brick Manager");
   
   if (!config_) {
     ERROR("No config set");
@@ -43,11 +45,6 @@ bool BrickManager::ReadHeader() {
   }
 
   std::string inFilename = config_->TSPFilename();
-
-  if (file_) {
-    ERROR("File pointer is not NULL");
-    return false;
-  }
 
   file_ = fopen(inFilename.c_str(), "r");
   if (!file_) {
@@ -68,8 +65,6 @@ bool BrickManager::ReadHeader() {
   fread(reinterpret_cast<void*>(&zNumBricks_), s, 1, file_);
   //fread(reinterpret_cast<void*>(&s_), s, 1, file_);
 
-  
-  INFO("Header reading complete");
   INFO("Grid type: " << gridType_);
   INFO("Original num timesteps: " << numOrigTimesteps_);
   INFO("Num timesteps: " << numTimesteps_);
@@ -79,7 +74,7 @@ bool BrickManager::ReadHeader() {
   INFO("");
 
   // Keep track of position for data in file
-  dataPos_ = ftell(file_);
+  dataPos_ = ftello(file_);
 
   brickDim_ = xBrickDim_;
   numBricks_ = xNumBricks_;
@@ -108,14 +103,15 @@ bool BrickManager::ReadHeader() {
   volumeSize_ = brickSize_*numBricksFrame_;
   numValsTot_ = numBrickVals_*numBricksFrame_;
 
-  fseek(file_, 0, SEEK_END);
-  size_t fileSize = ftell(file_);
-  INFO("file size: " << fileSize);
-  size_t calcFileSize = size_t(numBricksTree_)*(size_t)brickSize_ + dataPos_;
-  INFO("calculated file size: " << calcFileSize);
+  fseeko(file_, 0, SEEK_END);
+  off fileSize = ftello(file_);
+  off calcFileSize = static_cast<off>(numBricksTree_) * 
+                     static_cast<off>(brickSize_) + dataPos_;
 
   if (fileSize != calcFileSize) {
     ERROR("Sizes don't match");
+    INFO("calculated file size: " << calcFileSize);
+    INFO("file size: " << fileSize);
     return false;
   }
 
@@ -128,10 +124,12 @@ bool BrickManager::ReadHeader() {
   brickLists_[EVEN].resize(numBricksTree_*3, -1);
   brickLists_[ODD].resize(numBricksTree_*3, -1);
 
+  // Allocate space for keeping tracks of bricks in PBO
   bricksInPBO_.resize(2);
   bricksInPBO_[EVEN].resize(numBricksTree_, -1);
   bricksInPBO_[ODD].resize(numBricksTree_, -1);
 
+  // Allocate space for keeping track of the used coordinates in atlas
   usedCoords_.resize(2);
   usedCoords_[EVEN].resize(numBricksFrame_, false);
   usedCoords_[ODD].resize(numBricksFrame_, false);
@@ -162,7 +160,6 @@ bool BrickManager::InitAtlas() {
   atlasInitialized_ = true;
 
   return true;
-
 }
 
 void BrickManager::IncCoord() {
@@ -181,9 +178,11 @@ void BrickManager::IncCoord() {
   }
 }
 
+
 unsigned int BrickManager::LinearCoord(int _x, int _y, int _z) {
  return _x + _y*xNumBricks_ + _z*xNumBricks_*yNumBricks_;
 }
+
 
 void BrickManager::CoordsFromLin(int _idx, int &_x, int &_y, int &_z) {
   _x = _idx % xNumBricks_;
@@ -193,10 +192,12 @@ void BrickManager::CoordsFromLin(int _idx, int &_x, int &_y, int &_z) {
   _z = _idx;
 }
 
+
 bool BrickManager::BuildBrickList(BUFFER_INDEX _bufIdx,
                                   std::vector<int> &_brickRequest) {
 
-
+  // Keep track of number bricks used and number of bricks cached
+  // (for benchmarking)
   int numBricks = 0;
   int numCached = 0;
 
@@ -206,28 +207,29 @@ bool BrickManager::BuildBrickList(BUFFER_INDEX _bufIdx,
 
     if (_brickRequest[i] > 0) {
 
+      numBricks++;
+
       //INFO("Checking brick " << i);
 
       // If the brick is already in the atlas, keep the coordinate
       if (bricksInPBO_[_bufIdx][i] != -1) {
 
-      numCached++;
-          
-       // INFO("Brick " << i << " already in atlas");
+        numCached++;
         
+        // Get the corresponding coordinates from index
         int x, y, z;
         CoordsFromLin(bricksInPBO_[_bufIdx][i], x, y, z);
         brickLists_[_bufIdx][3*i + 0] = x;
         brickLists_[_bufIdx][3*i + 1] = y;
         brickLists_[_bufIdx][3*i + 2] = z;
-        //INFO("At coord " << x << " " << y << " " << z);
 
         // Mark coordinate as used
         usedCoords_[_bufIdx][bricksInPBO_[_bufIdx][i]] = true;
 
       } else {
 
-        // If coord is already used, skip it and try the next one
+        // If coord is already usedi by another brick, 
+        // skip it and try the next one
         while (usedCoords_[_bufIdx][LinearCoord(xCoord_, yCoord_, zCoord_)]) {
           IncCoord();
         }
@@ -240,10 +242,10 @@ bool BrickManager::BuildBrickList(BUFFER_INDEX _bufIdx,
         IncCoord();
       }
 
-      numBricks++;
       
     } else {
 
+      // -1 is for "not used"
       brickLists_[_bufIdx][3*i + 0] = -1;
       brickLists_[_bufIdx][3*i + 1] = -1;
       brickLists_[_bufIdx][3*i + 2] = -1;
@@ -293,13 +295,6 @@ bool BrickManager::FillVolume(float *_in, float *_out,
           zValCoord*atlasDim_*atlasDim_;
           
           _out[idx] = _in[from];
-          /*
-          if (isnan(_out[idx]) || isinf(_out[idx])) {
-            INFO("Sneddies!");
-            INFO(_out[idx]);
-            return false;
-          }
-          */
           from++;
       }
     }
@@ -367,7 +362,9 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
                                 static_cast<std::ios::pos_type>(brickSize_);
     */
 
-    size_t offset = dataPos_ + (size_t)brickIndex * size_t(brickSize_);
+    off offset = dataPos_ + 
+                  static_cast<off>(brickIndex) * 
+                  static_cast<off>(brickSize_);
 
     // Skip reading if all bricks in sequence is already in PBO
     if (inPBO != sequence) {
@@ -388,7 +385,7 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
       in_.read(reinterpret_cast<char*>(seqBuffer), brickSize_*sequence);
       */
 
-      fseek(file_, offset, SEEK_SET);
+      fseeko(file_, offset, SEEK_SET);
       fread(reinterpret_cast<void*>(seqBuffer), bufSize, 1, file_);
       if (ferror(file_) != 0) {
         ERROR("File reading error");
@@ -404,13 +401,6 @@ bool BrickManager::DiskToPBO(BUFFER_INDEX _pboIndex) {
       // For each brick in the buffer, put it the correct buffer spot
       for (unsigned int i=0; i<sequence; ++i) {
 
-        for (unsigned int j=0; j<numBrickVals_; ++j) {
-          if (isnan(seqBuffer[j]) || isinf(seqBuffer[j])) {
-            INFO("Sneddies!");
-            INFO(j << " " << seqBuffer[j]);
-            return false;
-          }
-        }
 
         // Only upload if needed
         // Pointless if implementation only skips reading when ALL bricks in

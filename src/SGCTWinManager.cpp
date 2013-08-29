@@ -252,8 +252,6 @@ void SGCTWinManager::PostDraw() {
     // Reset reload flag
     reloadFlag_.setVal(false);
   }
-
-
 }
 
 

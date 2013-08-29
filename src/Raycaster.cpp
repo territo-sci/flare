@@ -105,6 +105,8 @@ bool Raycaster::Render(float _timestep) {
     ofs.close();
   }
 
+
+
   if (animator_ == NULL) {
     WARNING("Animator not set");
   }
@@ -219,15 +221,17 @@ bool Raycaster::Render(float _timestep) {
     nextBuf = BrickManager::EVEN;
   }
 
+
   // When starting a rendering iteration, the PBO corresponding to the
   // current timestep is loaded with the data.
+
 
   // Launch traversal of the next timestep
   if (!LaunchTSPTraversal(nextTimestep)) return false;
   
   // While traversal of next step is working, upload current data to atlas
   if (!brickManager_->PBOToAtlas(currentBuf)) return false;
-  
+
   // Make sure the traversal kernel is done
   if (!clManager_->FinishProgram("TSPTraversal")) return false;
 
@@ -252,6 +256,7 @@ bool Raycaster::Render(float _timestep) {
       CLManager::READ_ONLY)) return false;
               
   if (!clManager_->PrepareProgram("RaycasterTSP")) return false;
+
   if (!clManager_->LaunchProgram("RaycasterTSP",
                                  winWidth_,
                                  winHeight_, 
@@ -262,13 +267,13 @@ bool Raycaster::Render(float _timestep) {
   // While the raycaster kernel is working, build next brick list and start 
   // upload to the next PBO
   if (!brickManager_->BuildBrickList(nextBuf, brickRequest_)) return false;
-  
 
   if (!brickManager_->DiskToPBO(nextBuf)) return false;
 
   // Finish raycaster and render current frame
-  if (!clManager_->FinishProgram("RaycasterTSP")) return false;
   if (!clManager_->ReleaseBuffer("RaycasterTSP", brickListArg_)) return false;
+  if (!clManager_->FinishProgram("RaycasterTSP")) return false;
+
 
   // Render to framebuffer using quad
   glBindFramebuffer(GL_FRAMEBUFFER, SGCTWinManager::Instance()->FBOHandle());
@@ -301,7 +306,10 @@ bool Raycaster::Render(float _timestep) {
 
   glUseProgram(0);
   
+
+  
   // Window manager takes care of swapping buffers
+
   return true;
 }
 
@@ -813,6 +821,7 @@ bool Raycaster::UpdateKernelConstants() {
     return false;
   }
 
+  kernelConstants_.gridType_ = static_cast<int>(brickManager_->GridType());
   kernelConstants_.stepsize_ = config_->RaycasterStepsize();
   kernelConstants_.intensity_ = config_->RaycasterIntensity();
   kernelConstants_.numTimesteps_ = static_cast<int>(tsp_->NumTimesteps());
@@ -826,6 +835,7 @@ bool Raycaster::UpdateKernelConstants() {
   kernelConstants_.rootLevel_ = static_cast<int>(tsp_->NumOTLevels()) - 1;
   kernelConstants_.paddedBrickDim_ = static_cast<int>(tsp_->PaddedBrickDim());
 
+  traversalConstants_.gridType_ = static_cast<int>(brickManager_->GridType());
   traversalConstants_.stepsize_ = config_->TSPTraversalStepsize();
   traversalConstants_.numTimesteps_ = static_cast<int>(tsp_->NumTimesteps());
   traversalConstants_.numValuesPerNode_ = 

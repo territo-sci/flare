@@ -27,7 +27,7 @@ TSP::~TSP() {
 
 bool TSP::ReadHeader() {
 
-  INFO("Reading header");
+  INFO("\nReading header for TSP construction");
 
   std::string inFilename = config_->TSPFilename();
   std::FILE *in = fopen(inFilename.c_str(), "r");
@@ -48,6 +48,9 @@ bool TSP::ReadHeader() {
   fread(reinterpret_cast<void*>(&yNumBricks_), s, 1, in);
   fread(reinterpret_cast<void*>(&zNumBricks_), s, 1, in);
 
+  INFO("Brick dimensions: "<<xBrickDim_<<" "<<yBrickDim_<<" "<< zBrickDim_);
+  INFO("Num bricks: "<<xNumBricks_<<" "<<yNumBricks_ <<" "<< zNumBricks_);
+
   dataPos_ = ftello(in);
 
   paddedBrickDim_ = xBrickDim_ + 2*paddingWidth_;
@@ -62,11 +65,13 @@ bool TSP::ReadHeader() {
   INFO("Num OT nodes: " << numOTNodes_);
   INFO("Num BST levels: " << numBSTLevels_);
   INFO("Num BST nodes: " << numBSTNodes_);
+  INFO("NUm total nodes: " << numTotalNodes_);
 
   fclose(in);
 
   // Allocate space for TSP structure
   data_.resize(numTotalNodes_*NUM_DATA);
+  INFO("data size: " << data_.size());
 
   return true;
 
@@ -74,7 +79,7 @@ bool TSP::ReadHeader() {
 
 bool TSP::Construct() {
 
-  INFO("\nConstructing TSP tree, spatial ordering");
+  INFO("\nConstructing TSP tree");
 
   // Loop over the OTs (one per BST node)
   for (unsigned int OT=0; OT<numBSTNodes_; ++OT) {
@@ -136,8 +141,6 @@ bool TSP::Construct() {
       OTLevel++;
     }
   }
-
-  INFO("");
   return true;
 
 }
@@ -154,7 +157,7 @@ bool TSP::CalculateSpatialError() {
   }
 
   std::vector<float> buffer(numBrickVals);
-  std::vector<float> averages(numBrickVals);
+  std::vector<float> averages(numTotalNodes_);
   std::vector<float> stdDevs(numTotalNodes_);
 
   // First pass: Calculate average color for each brick
@@ -173,6 +176,7 @@ bool TSP::CalculateSpatialError() {
       average += *it;
     }
     
+    //INFO("averages[" << brick << "]");
     averages[brick] = average/static_cast<float>(numBrickVals);
   }
     
@@ -196,31 +200,41 @@ bool TSP::CalculateSpatialError() {
     std::list<unsigned int> coveredLeafBricks =
       CoveredLeafBricks(brick);
 
-    // Calculate "standard deviation" corresponding to leaves
-    for (auto lb=coveredLeafBricks.begin(); 
-         lb!=coveredLeafBricks.end(); ++lb) {
+    // If the brick is already a leaf, assign a negative error.
+    // Ad hoc "hack" to distinguish leafs from other nodes that happens
+    // to get a zero error due to rounding errors or other reasons.
+    if (coveredLeafBricks.size() == 1) {
+      stdDev = -0.1f;
+    } else {
+    
+      // Calculate "standard deviation" corresponding to leaves
+      for (auto lb=coveredLeafBricks.begin(); 
+           lb!=coveredLeafBricks.end(); ++lb) {
 
-      // Read brick
-      off offset = dataPos_+static_cast<off>((*lb)*numBrickVals*sizeof(float));
-      fseeko(in, offset, SEEK_SET);
-      fread(reinterpret_cast<void*>(&buffer[0]),
-            static_cast<size_t>(numBrickVals)*sizeof(float), 1, in);
+        // Read brick
+        off offset = dataPos_+static_cast<off>((*lb)*numBrickVals*sizeof(float));
+        fseeko(in, offset, SEEK_SET);
+        fread(reinterpret_cast<void*>(&buffer[0]),
+              static_cast<size_t>(numBrickVals)*sizeof(float), 1, in);
 
-      // Add to sum
-      for (auto v=buffer.begin(); v!=buffer.end(); ++v) {
-        stdDev += pow(*v-brickAvg, 2.f);
+        // Add to sum
+        for (auto v=buffer.begin(); v!=buffer.end(); ++v) {
+          stdDev += pow(*v-brickAvg, 2.f);
+        }
+
+
       }
 
-    }
+      // Finish calculation
+      if (sizeof(float) != sizeof(int)) {
+        ERROR("Float and int sizes don't match, can't reintepret");
+        return false;
+      }
 
-    // Finish calculation
-    if (sizeof(float) != sizeof(int)) {
-      ERROR("Float and int sizes don't match, can't reintepret");
-      return false;
-    }
+      stdDev /= static_cast<float>(coveredLeafBricks.size()*numBrickVals);
+      stdDev = sqrt(stdDev);
 
-    stdDev /= static_cast<float>(coveredLeafBricks.size()*numBrickVals);
-    stdDev = sqrt(stdDev);
+    } // if not leaf
 
     if (stdDev < minError) {
       minError = stdDev;
@@ -238,17 +252,21 @@ bool TSP::CalculateSpatialError() {
   std::sort(medianArray.begin(), medianArray.end());
   float medError = medianArray[medianArray.size()/2];
 
-  INFO("Min spatial std dev: " << minError);
+  /*
+  INFO("\nMin spatial std dev: " << minError);
   INFO("Max spatial std dev: " << maxError);
   INFO("Median spatial std dev: " << medError);
   INFO("");
+  */
 
-  // Normalize errors
+  // "Normalize" errors
   float minNorm = 1e20f;
   float maxNorm = 0.f;
   for (unsigned int i=0; i<numTotalNodes_; ++i) {
     //float normalized = (stdDevs[i]-minError)/(maxError-minError);
-    stdDevs[i] = pow(stdDevs[i], 0.5f);
+    if (stdDevs[i] > 0.f) {
+      stdDevs[i] = pow(stdDevs[i], 0.5f);
+    }
     data_[i*NUM_DATA+SPATIAL_ERR] = *reinterpret_cast<int*>(&stdDevs[i]);
     if (stdDevs[i] < minNorm) {
       minNorm = stdDevs[i];
@@ -264,10 +282,9 @@ bool TSP::CalculateSpatialError() {
   maxSpatialError_ = maxNorm;
   medianSpatialError_ = medNorm;
 
-  INFO("Min normalized spatial std dev: " << minNorm);
+  INFO("\nMin normalized spatial std dev: " << minNorm);
   INFO("Max normalized spatial std dev: " << maxNorm);
   INFO("Median normalized spatial std dev: " << medNorm);
-  INFO("");
 
   return true;
 }  
@@ -282,11 +299,11 @@ bool TSP::CalculateTemporalError() {
     return false;
   }
 
-  INFO("Calculating temporal error");
+  INFO("\nCalculating temporal error");
 
   // Statistics
-  float minErr = 1e20f;
-  float maxErr = 0.f;
+  //float minErr = 1e20f;
+  //float maxErr = 0.f;
   std::vector<float> meanArray(numTotalNodes_);
 
   // Save errors
@@ -294,6 +311,7 @@ bool TSP::CalculateTemporalError() {
 
   // Calculate temporal error for one brick at a time
   for (unsigned int brick=0; brick<numTotalNodes_; ++brick) {
+
 
     unsigned int numBrickVals = 
       paddedBrickDim_*paddedBrickDim_*paddedBrickDim_;
@@ -314,38 +332,50 @@ bool TSP::CalculateTemporalError() {
     // this brick covers
     std::list<unsigned int> coveredBricks = CoveredBSTLeafBricks(brick);
 
-    // Calculate standard deviation per voxel, average over brick
-    float avgStdDev = 0.f;
-    for (unsigned int voxel=0; voxel<numBrickVals; ++voxel) {
+    // If the brick is at the lowest BST level, automatically set the error 
+    // to -0.1 (enables using -1 as a marker for "no error accepted");
+    // Somewhat ad hoc to get around the fact that the error could be
+    // 0.0 higher up in the tree
+    if (coveredBricks.size() == 1) {
+      errors[brick] = -0.1f;
+    } else {
 
-      float stdDev = 0.f;
-      for (auto leaf = coveredBricks.begin(); 
-           leaf != coveredBricks.end(); ++leaf) {
+      // Calculate standard deviation per voxel, average over brick
+      float avgStdDev = 0.f;
+      for (unsigned int voxel=0; voxel<numBrickVals; ++voxel) {
 
-        // Sample the leaves at the corresponding voxel position
-        off sampleOffset = dataPos_ +
-          static_cast<off>((*leaf*numBrickVals+voxel)*sizeof(float));
-        fseeko(in, sampleOffset, SEEK_SET);
-        float sample;
-        fread(reinterpret_cast<void*>(&sample), sizeof(float), 1, in);
+        float stdDev = 0.f;
+        for (auto leaf = coveredBricks.begin(); 
+             leaf != coveredBricks.end(); ++leaf) {
 
-        stdDev += pow(sample-voxelAverages[voxel], 2.f);
-      }
-      stdDev /= static_cast<float>(coveredBricks.size());
-      stdDev = sqrt(stdDev);
+          // Sample the leaves at the corresponding voxel position
+          off sampleOffset = dataPos_ +
+            static_cast<off>((*leaf*numBrickVals+voxel)*sizeof(float));
+          fseeko(in, sampleOffset, SEEK_SET);
+          float sample;
+          fread(reinterpret_cast<void*>(&sample), sizeof(float), 1, in);
 
-      avgStdDev += stdDev;
-    } // for voxel
+          stdDev += pow(sample-voxelAverages[voxel], 2.f);
+        }
+        stdDev /= static_cast<float>(coveredBricks.size());
+        stdDev = sqrt(stdDev);
 
-    avgStdDev /= static_cast<float>(numBrickVals);
-    meanArray[brick] = avgStdDev;
-    errors[brick] = avgStdDev;
+        avgStdDev += stdDev;
+      } // for voxel
 
+      avgStdDev /= static_cast<float>(numBrickVals);
+      meanArray[brick] = avgStdDev;
+      errors[brick] = avgStdDev;
+
+    }
+
+    /*
     if (avgStdDev < minErr) {
       minErr = avgStdDev;
     } else if (avgStdDev > maxErr) {
       maxErr = avgStdDev;
     }
+    */
 
   } // for all bricks
   
@@ -354,16 +384,19 @@ bool TSP::CalculateTemporalError() {
   std::sort(meanArray.begin(), meanArray.end());
   float medErr = meanArray[meanArray.size()/2];
 
-  INFO("");
-  INFO("Min temporal error: " << minErr);
+  /*
+  INFO("\nMin temporal error: " << minErr);
   INFO("Max temporal error: " << maxErr);
   INFO("Median temporal error: " << medErr); 
+  */
 
   // Adjust errors using user-provided exponents
   float minNorm = 1e20f;
   float maxNorm = 0.f;
   for (unsigned int i=0; i<numTotalNodes_; ++i) {
-    errors[i] = pow(errors[i], 0.25f);
+    if (errors[i] > 0.f) {
+      errors[i] = pow(errors[i], 0.25f);
+    }
     data_[i*NUM_DATA+TEMPORAL_ERR] = *reinterpret_cast<int*>(&errors[i]);
     if (errors[i] < minNorm) {
       minNorm = errors[i];
@@ -379,10 +412,9 @@ bool TSP::CalculateTemporalError() {
   maxTemporalError_ = maxNorm;
   medianTemporalError_ = medNorm;
 
-  INFO("Min normalized spatial std dev: " << minNorm);
-  INFO("Max normalized spatial std dev: " << maxNorm);
-  INFO("Median normalized spatial std dev: " << medNorm);
-  INFO("");
+  INFO("\nMin normalized temporal std dev: " << minNorm);
+  INFO("Max normalized temporal std dev: " << maxNorm);
+  INFO("Median normalized temporal std dev: " << medNorm);
 
   return true;
 }
@@ -475,7 +507,6 @@ float TSP::SquaredDist(Color _c1, Color _c2) {
 bool TSP::ReadCache() {
 
   std::string cacheFilename = config_->TSPFilename() + ".cache";
-  INFO("Looking for cache file " << cacheFilename);
   
   std::FILE *in = fopen(cacheFilename.c_str(), "r");
   if (!in) {
@@ -494,7 +525,7 @@ bool TSP::ReadCache() {
 
   fclose(in);
 
-  INFO("");
+  INFO("\nCached errors:");
   INFO("Min spatial error: " << minSpatialError_);
   INFO("Max spatial error: " << maxSpatialError_);
   INFO("Median spatial error: " << medianSpatialError_);
@@ -525,6 +556,17 @@ bool TSP::WriteCache() {
   fwrite(reinterpret_cast<void*>(&data_[0]), data_.size()*sizeof(float),1,out);
 
   fclose(out);
+
+  /*
+  INFO("\nData:");
+  for (unsigned i=0; i<data_.size()/NUM_DATA; ++i) {
+    INFO("Brick nr " << i);
+    INFO("Brick index " << data_[i*NUM_DATA + BRICK_INDEX]);
+    INFO("Child index " << data_[i*NUM_DATA + CHILD_INDEX]);
+    INFO("Spatial err " << *reinterpret_cast<float*>(&data_[i*NUM_DATA + SPATIAL_ERR]));
+    INFO("Temporal err " << *reinterpret_cast<float*>(&data_[i*NUM_DATA + TEMPORAL_ERR]));
+  }
+  */
 
   return true;
 }
