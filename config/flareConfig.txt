@@ -1,14 +1,18 @@
 # Filenames
 # Don't change during runtime
 # (Transfer function values can be changed during runtime though)
-tsp_filename                    /media/snabba_disk/OpenSpace/processed_data/enlil_256_256_64.tsp
+tsp_filename                    /media/snabba_disk/OpenSpace/processed_data/enlil_128_1024_128.tsp
 transferfunction_filename       transferfunctions/fire.txt
 
 # Window dimensions
 # Don't change during runtime
-# NOT USE
+# NOT USED
 win_width           		512
 win_height          		512
+
+# Save screenshots every frame (saved in flare/ folder) 0/1
+take_screenshot 		0
+
 
 # 0 to not clear cache every frame, 1 to clear it
 # Used for benchmarking purposes
@@ -37,8 +41,8 @@ calculate_error			0
 tsp_traversal_stepsize          0.02
 
 # Ray caster constants
-raycaster_stepsize              0.01
-raycaster_intensity             1.2
+raycaster_stepsize              0.005
+raycaster_intensity             1.0
 
 # Animation speed
 animator_refresh_interval       0.50
@@ -52,12 +56,12 @@ quad_shader_vert_filename       shaders/quadVert.glsl
 quad_shader_frag_filename       shaders/quadFrag.glsl
 
 # Model
-start_pitch                     -30.0
+start_pitch                     -20.0
 start_roll                      30.0
 start_yaw                       0.0
 
 # Automatic pitch/roll/yaw
-pitch_speed			0.0			
+pitch_speed			0.0		
 roll_speed			0.0
 yaw_speed			0.0
 
@@ -72,7 +76,7 @@ translate_z                     -1.0
 # If mouse motion seems backwards, flip the sign of the roll and/or pitch factors
 mouse_pitch_factor              -0.05
 mouse_roll_factor               0.05
-zoom_factor                     0.05
+zoom_factor                     0.35
 
 
 

@@ -55,6 +55,7 @@ public:
   float PitchSpeed() const { return pitchSpeed_; }
   float RollSpeed() const { return rollSpeed_; }
   float YawSpeed() const { return yawSpeed_; }
+  bool TakeScreenshot() const { return takeScreenshot_; }
 
 private:
   Config();
@@ -96,6 +97,7 @@ private:
   float pitchSpeed_;
   float rollSpeed_;
   float yawSpeed_;
+  bool takeScreenshot_;
 
 
 };

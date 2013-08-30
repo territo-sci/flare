@@ -46,7 +46,8 @@ Config::Config(const std::string &_configFilename)
     calculateError_(1),
     pitchSpeed_(0.f),
     rollSpeed_(0.f),
-    yawSpeed_(0.f)
+    yawSpeed_(0.f),
+    takeScreenshot_(false) 
 {}
     
 Config::~Config() {}
@@ -181,6 +182,9 @@ bool Config::Read() {
       } else if (variable == "yaw_speed") {
         ss >> yawSpeed_;
         INFO("Yaw speed: " << yawSpeed_);
+      } else if (variable == "take_screenshot") {
+        ss >> takeScreenshot_;
+        INFO("Take screenshot: " << takeScreenshot_);
       } else { 
         ERROR("Variable name " << variable << " unknown");
       } 

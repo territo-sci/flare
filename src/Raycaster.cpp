@@ -105,7 +105,7 @@ bool Raycaster::Render(float _timestep) {
     ofs.close();
   }
 
-
+  //timer_.start();
 
   if (animator_ == NULL) {
     WARNING("Animator not set");
@@ -305,7 +305,10 @@ bool Raycaster::Render(float _timestep) {
   }
 
   glUseProgram(0);
-  
+
+  //timer_.stop();
+  //double time = timer_.elapsed().wall / 1.0e9;
+  //INFO("total time: " << time << "s"); 
 
   
   // Window manager takes care of swapping buffers

@@ -262,7 +262,6 @@ void SGCTWinManager::Draw() {
     Instance()->raycaster_->Reload();
   }
 
-
   // Set model and view params
   Instance()->raycaster_->SetModelParams(pitch_.getVal(),
                                          yaw_.getVal(),
@@ -274,6 +273,13 @@ void SGCTWinManager::Draw() {
   if (!Instance()->raycaster_->Render(elapsedTime_.getVal())) {
     exit(1);
   }
+  
+  // Save screenshot
+  if (Instance()->config_->TakeScreenshot()) {
+    Instance()->engine_->takeScreenshot();
+  }
+
+
 
   // Update animator with synchronized time
   Instance()->animator_->SetPaused(animationPaused_.getVal());

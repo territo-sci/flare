@@ -263,8 +263,8 @@ bool BrickManager::BuildBrickList(BUFFER_INDEX _bufIdx,
     *it = false;
   }
 
-  //INFO("Num bricks used: " << numBricks);
-  //INFO("Num bricks cached: " << numCached);
+  //INFO("bricks NOT used: " << (float)(numBricksFrame_-numBricks) / (float)(numBricksFrame_));
+  //INFO("bricks cached: " << (float)numCached / (float)(numBricksFrame_));
 
   return true;
 }
